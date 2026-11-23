@@ -109,6 +109,43 @@ export async function createClient(data: {
   }
 }
 
+export async function updateClient(
+  id: string,
+  data: {
+    name?: string;
+    pin?: string;
+    logoUrl?: string | null;
+  }
+): Promise<{ client: ClientData | null; isUsingFallback: boolean }> {
+  try {
+    const updated = await prisma.client.update({
+      where: { id },
+      data: {
+        ...(data.name && { name: data.name }),
+        ...(data.pin && { pin: data.pin }),
+        ...(data.logoUrl !== undefined && { logoUrl: data.logoUrl }),
+      },
+      include: {
+        _count: {
+          select: { posts: true },
+        },
+      },
+    });
+    return { client: updated, isUsingFallback: false };
+  } catch (error) {
+    console.warn('Erro ao atualizar cliente no Prisma, atualizando local:', error);
+    const client = localClientsStore.find((c) => c.id === id);
+    if (client) {
+      if (data.name) client.name = data.name;
+      if (data.pin) client.pin = data.pin;
+      if (data.logoUrl !== undefined) client.logoUrl = data.logoUrl;
+      client.updatedAt = new Date();
+      return { client, isUsingFallback: true };
+    }
+    return { client: null, isUsingFallback: true };
+  }
+}
+
 export async function getClientBySlug(slug: string): Promise<{ client: ClientData | null; isUsingFallback: boolean }> {
   try {
     const client = await prisma.client.findUnique({

@@ -27,7 +27,7 @@ import {
   Send,
   MessageCircle,
 } from 'lucide-react';
-import { generateSlug, generatePin, formatDate, parseMediaUrl } from '@/lib/utils';
+import { generateSlug, generatePin, formatDate, parseMediaUrl, parseThumbnailUrl } from '@/lib/utils';
 
 interface ClientItem {
   id: string;
@@ -53,8 +53,17 @@ export default function AdminDashboardPage() {
   const [newClientName, setNewClientName] = useState('');
   const [newClientSlug, setNewClientSlug] = useState('');
   const [newClientPin, setNewClientPin] = useState('');
+  const [newClientLogoUrl, setNewClientLogoUrl] = useState('');
   const [formSubmitting, setFormSubmitting] = useState(false);
   const [formError, setFormError] = useState('');
+
+  // Modal Editar Logo do Cliente State
+  const [editLogoModalOpen, setEditLogoModalOpen] = useState(false);
+  const [editingClient, setEditingClient] = useState<ClientItem | null>(null);
+  const [editLogoUrl, setEditLogoUrl] = useState('');
+  const [editSubmitting, setEditSubmitting] = useState(false);
+  const [editError, setEditError] = useState('');
+  const [editSuccess, setEditSuccess] = useState('');
 
   // Modal Novo Post State
   const [postModalOpen, setPostModalOpen] = useState(false);
@@ -103,8 +112,54 @@ export default function AdminDashboardPage() {
     setNewClientName('');
     setNewClientSlug('');
     setNewClientPin(generatePin());
+    setNewClientLogoUrl('');
     setFormError('');
     setModalOpen(true);
+  };
+
+  const handleOpenEditLogo = (client: ClientItem) => {
+    setEditingClient(client);
+    setEditLogoUrl(client.logoUrl || '');
+    setEditError('');
+    setEditSuccess('');
+    setEditLogoModalOpen(true);
+  };
+
+  const handleSaveEditLogo = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingClient) return;
+    setEditSubmitting(true);
+    setEditError('');
+    setEditSuccess('');
+
+    try {
+      const res = await fetch('/api/admin/clients', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: editingClient.id,
+          logoUrl: editLogoUrl.trim(),
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        setEditError(data.error || 'Não foi possível atualizar o logo.');
+        setEditSubmitting(false);
+        return;
+      }
+
+      setEditSuccess('Logo atualizado com sucesso!');
+      await fetchClients();
+      setTimeout(() => {
+        setEditLogoModalOpen(false);
+        setEditingClient(null);
+      }, 700);
+    } catch {
+      setEditError('Erro de conexão ao salvar logo.');
+    } finally {
+      setEditSubmitting(false);
+    }
   };
 
   const handleOpenPostModal = (specificClientId?: string) => {
@@ -144,6 +199,7 @@ export default function AdminDashboardPage() {
           name: newClientName,
           slug: newClientSlug,
           pin: newClientPin,
+          logoUrl: newClientLogoUrl.trim() || undefined,
         }),
       });
 
@@ -468,16 +524,46 @@ export default function AdminDashboardPage() {
                     {/* Topo do Card */}
                     <div className="flex items-start justify-between gap-3 mb-5">
                       <div className="flex items-center gap-3">
-                        <div
-                          style={{ backgroundColor: '#FD3100', color: '#FFFFFF' }}
-                          className="w-12 h-12 rounded-2xl flex items-center justify-center font-black text-lg shadow-md"
-                        >
-                          {client.name.slice(0, 2).toUpperCase()}
+                        <div className="relative group/logo shrink-0">
+                          {client.logoUrl ? (
+                            <div className="w-12 h-12 rounded-2xl overflow-hidden border-2 border-[#DCD6CC] bg-white flex items-center justify-center shadow-md p-1">
+                              <img
+                                src={client.logoUrl}
+                                alt={`Logo ${client.name}`}
+                                className="w-full h-full object-contain"
+                              />
+                            </div>
+                          ) : (
+                            <div
+                              style={{ backgroundColor: '#FD3100', color: '#FFFFFF' }}
+                              className="w-12 h-12 rounded-2xl flex items-center justify-center font-black text-lg shadow-md"
+                            >
+                              {client.name.slice(0, 2).toUpperCase()}
+                            </div>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => handleOpenEditLogo(client)}
+                            className="absolute -bottom-1 -right-1 p-1 bg-white hover:bg-[#FAF9F7] text-[#66635D] hover:text-[#FD3100] border border-[#DCD6CC] rounded-lg shadow-sm transition-all"
+                            title="Editar ou adicionar logo da empresa"
+                          >
+                            <ImageIcon className="w-3 h-3" />
+                          </button>
                         </div>
                         <div>
-                          <h3 className="font-black text-[#111111] text-lg group-hover:text-[#FD3100] transition-colors leading-tight">
-                            {client.name}
-                          </h3>
+                          <div className="flex items-center gap-2">
+                            <h3 className="font-black text-[#111111] text-lg group-hover:text-[#FD3100] transition-colors leading-tight">
+                              {client.name}
+                            </h3>
+                            <button
+                              type="button"
+                              onClick={() => handleOpenEditLogo(client)}
+                              className="text-[10px] font-bold text-[#66635D] hover:text-[#FD3100] underline opacity-0 group-hover:opacity-100 transition-opacity"
+                              title="Editar logo"
+                            >
+                              {client.logoUrl ? 'trocar logo' : '+ logo'}
+                            </button>
+                          </div>
                           <span className="text-xs text-[#66635D] flex items-center gap-1 mt-0.5 font-medium">
                             <Calendar className="w-3 h-3" style={{ color: '#FD3100' }} />
                             {formatDate(client.createdAt)}
@@ -936,6 +1022,26 @@ export default function AdminDashboardPage() {
                 </p>
               </div>
 
+              <div>
+                <label className="block text-xs font-black uppercase tracking-wider text-[#111111] mb-2 flex items-center justify-between">
+                  <span>Logo da Empresa (Opcional)</span>
+                  <span className="text-[10px] text-[#66635D] font-normal normal-case">Google Drive ou link direto de imagem</span>
+                </label>
+                <div className="flex items-center rounded-2xl bg-[#FAF9F7] border border-[#DCD6CC] px-4 py-3 text-sm focus-within:border-[#FD3100]">
+                  <LinkIcon className="w-4 h-4 mr-2 shrink-0" style={{ color: '#FD3100' }} />
+                  <input
+                    type="url"
+                    value={newClientLogoUrl}
+                    onChange={(e) => setNewClientLogoUrl(e.target.value)}
+                    placeholder="https://drive.google.com/file/d/... ou https://..."
+                    className="w-full bg-transparent text-[#111111] placeholder-[#A09D96] text-xs font-medium focus:outline-none"
+                  />
+                </div>
+                <p className="text-[11px] text-[#66635D] font-medium mt-1">
+                  Pode colar link de compartilhamento do Google Drive ou link direto (.png, .jpg).
+                </p>
+              </div>
+
               <div className="pt-4 border-t border-[#EEEDEA] flex items-center justify-end gap-3">
                 <button
                   type="button"
@@ -951,6 +1057,129 @@ export default function AdminDashboardPage() {
                   className="btn-vb-primary px-7 py-3 rounded-2xl text-xs uppercase tracking-wider transition-all disabled:opacity-50"
                 >
                   {formSubmitting ? 'Cadastrando...' : 'Cadastrar Cliente'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 3: Editar Logo do Cliente */}
+      {editLogoModalOpen && editingClient && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white border-2 border-[#FFCEBF] rounded-3xl w-full max-w-lg p-6 sm:p-8 shadow-2xl relative overflow-hidden">
+            <div className="absolute top-0 left-0 right-0 h-2 bg-[#FD3100]" />
+
+            <div className="flex items-center justify-between pb-4 border-b border-[#EEEDEA]">
+              <div className="flex items-center gap-3">
+                <div className="w-11 h-11 bg-[#FFF0EC] border border-[#FFCEBF] rounded-2xl flex items-center justify-center shadow-sm" style={{ color: '#FD3100' }}>
+                  <ImageIcon className="w-6 h-6 stroke-[2.5]" />
+                </div>
+                <div>
+                  <h3 className="font-black text-[#111111] text-lg uppercase tracking-tight">
+                    Logo da <span style={{ color: '#FD3100' }}>Empresa</span>
+                  </h3>
+                  <p className="text-xs text-[#66635D] font-medium">
+                    {editingClient.name}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setEditLogoModalOpen(false)}
+                className="text-[#66635D] hover:text-[#111111] p-1.5 rounded-xl hover:bg-[#FAF9F7] transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {editError && (
+              <div className="mt-4 p-3.5 bg-rose-50 border border-rose-200 rounded-2xl text-rose-700 text-xs font-semibold">
+                {editError}
+              </div>
+            )}
+
+            {editSuccess && (
+              <div className="mt-4 p-3.5 bg-emerald-50 border border-emerald-200 rounded-2xl text-emerald-700 text-xs font-semibold flex items-center gap-2">
+                <Check className="w-4 h-4 stroke-[3]" />
+                <span>{editSuccess}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleSaveEditLogo} className="mt-6 space-y-5">
+              {/* Prévia do Logo Atual / Novo */}
+              <div className="flex items-center gap-4 bg-[#FAF9F7] p-4 rounded-2xl border border-[#DCD6CC]">
+                <div className="w-16 h-16 rounded-2xl overflow-hidden border-2 border-[#DCD6CC] bg-white flex items-center justify-center shadow-md p-1 shrink-0">
+                  {editLogoUrl.trim() ? (
+                    <img
+                      src={parseThumbnailUrl(editLogoUrl.trim())}
+                      alt="Prévia do Logo"
+                      className="w-full h-full object-contain"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = '/logo-vb.png?v=4';
+                      }}
+                    />
+                  ) : editingClient.logoUrl ? (
+                    <img
+                      src={editingClient.logoUrl}
+                      alt={editingClient.name}
+                      className="w-full h-full object-contain"
+                    />
+                  ) : (
+                    <div
+                      style={{ backgroundColor: '#FD3100', color: '#FFFFFF' }}
+                      className="w-full h-full rounded-xl flex items-center justify-center font-black text-xl"
+                    >
+                      {editingClient.name.slice(0, 2).toUpperCase()}
+                    </div>
+                  )}
+                </div>
+                <div className="text-xs">
+                  <p className="font-black text-[#111111] uppercase">Prévia do Logo</p>
+                  <p className="text-[#66635D] font-medium mt-0.5">
+                    {editLogoUrl.trim()
+                      ? 'Visualização em tempo real do link acima'
+                      : editingClient.logoUrl
+                      ? 'Logo atual cadastrado'
+                      : 'Nenhum logo cadastrado no momento'}
+                  </p>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-black uppercase tracking-wider text-[#111111] mb-2 flex items-center justify-between">
+                  <span>Link do Logo da Empresa</span>
+                  <span className="text-[10px] text-[#66635D] font-normal normal-case">Google Drive ou link direto</span>
+                </label>
+                <div className="flex items-center rounded-2xl bg-[#FAF9F7] border border-[#DCD6CC] px-4 py-3 text-sm focus-within:border-[#FD3100]">
+                  <LinkIcon className="w-4 h-4 mr-2 shrink-0" style={{ color: '#FD3100' }} />
+                  <input
+                    type="url"
+                    value={editLogoUrl}
+                    onChange={(e) => setEditLogoUrl(e.target.value)}
+                    placeholder="https://drive.google.com/file/d/... ou link direto da imagem"
+                    className="w-full bg-transparent text-[#111111] placeholder-[#A09D96] text-xs font-medium focus:outline-none"
+                  />
+                </div>
+                <p className="text-[11px] text-[#66635D] font-medium mt-1">
+                  Cole o link público de visualização do Google Drive ou deixe em branco para remover o logo.
+                </p>
+              </div>
+
+              <div className="pt-4 border-t border-[#EEEDEA] flex items-center justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setEditLogoModalOpen(false)}
+                  className="btn-vb-secondary px-5 py-3 rounded-2xl text-xs font-black uppercase tracking-wider transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={editSubmitting}
+                  style={{ backgroundColor: '#FD3100', color: '#FFFFFF' }}
+                  className="btn-vb-primary px-7 py-3 rounded-2xl text-xs uppercase tracking-wider transition-all disabled:opacity-50"
+                >
+                  {editSubmitting ? 'Salvando...' : 'Salvar Logo'}
                 </button>
               </div>
             </form>

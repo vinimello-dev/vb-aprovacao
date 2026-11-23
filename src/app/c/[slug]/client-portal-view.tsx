@@ -26,6 +26,7 @@ interface ClientPortalViewProps {
     name: string;
     slug: string;
     pin: string;
+    logoUrl?: string | null;
   };
 }
 
@@ -110,6 +111,16 @@ export function ClientPortalView({ client }: ClientPortalViewProps) {
                 className="h-16 w-auto object-contain"
               />
             </div>
+
+            {client.logoUrl && (
+              <div className="w-16 h-16 mx-auto mb-4 rounded-2xl overflow-hidden border-2 border-[#DCD6CC] bg-white flex items-center justify-center shadow-md p-1.5">
+                <img
+                  src={client.logoUrl}
+                  alt={`Logo ${client.name}`}
+                  className="w-full h-full object-contain"
+                />
+              </div>
+            )}
 
             <span
               style={{ backgroundColor: '#FFF0EC', color: '#FD3100', borderColor: '#FFCEBF' }}
@@ -196,6 +207,15 @@ export function ClientPortalView({ client }: ClientPortalViewProps) {
                 className="h-12 w-auto object-contain"
               />
             </div>
+            {client.logoUrl && (
+              <div className="h-11 w-11 rounded-2xl overflow-hidden border border-[#DCD6CC] bg-white flex items-center justify-center shrink-0 p-1 shadow-sm">
+                <img
+                  src={client.logoUrl}
+                  alt={`Logo ${client.name}`}
+                  className="w-full h-full object-contain"
+                />
+              </div>
+            )}
             <div>
               <div className="flex items-center gap-2">
                 <span className="font-black text-lg text-[#111111] tracking-tight uppercase">
@@ -314,11 +334,19 @@ export function ClientPortalView({ client }: ClientPortalViewProps) {
               <div className="flex items-center gap-4">
                 <div
                   style={{ backgroundColor: '#FD3100' }}
-                  className="w-16 h-16 rounded-full p-1 flex items-center justify-center shadow-md"
+                  className="w-16 h-16 rounded-full p-0.5 flex items-center justify-center shadow-md overflow-hidden shrink-0"
                 >
-                  <div className="w-full h-full bg-white rounded-full flex items-center justify-center font-black text-xl" style={{ color: '#FD3100' }}>
-                    {client.name.slice(0, 2).toUpperCase()}
-                  </div>
+                  {client.logoUrl ? (
+                    <img
+                      src={client.logoUrl}
+                      alt={client.name}
+                      className="w-full h-full rounded-full object-cover bg-white"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-white rounded-full flex items-center justify-center font-black text-xl" style={{ color: '#FD3100' }}>
+                      {client.name.slice(0, 2).toUpperCase()}
+                    </div>
+                  )}
                 </div>
 
                 <div>

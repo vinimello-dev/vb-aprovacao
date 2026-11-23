@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { isAuthenticatedAdmin } from '@/lib/auth';
-import { getClients, createClient } from '@/lib/services/client-service';
-import { generateSlug, generatePin } from '@/lib/utils';
+import { getClients, createClient, updateClient } from '@/lib/services/client-service';
+import { generateSlug, generatePin, parseThumbnailUrl } from '@/lib/utils';
 
 export async function GET() {
   const isAuth = await isAuthenticatedAdmin();
@@ -54,7 +54,7 @@ export async function POST(request: Request) {
       name,
       slug,
       pin,
-      logoUrl: body.logoUrl?.trim() || undefined,
+      logoUrl: body.logoUrl?.trim() ? parseThumbnailUrl(body.logoUrl) : undefined,
     });
 
     return NextResponse.json(
@@ -75,5 +75,36 @@ export async function POST(request: Request) {
       { error: 'Erro ao cadastrar cliente no banco de dados.' },
       { status: 500 }
     );
+  }
+}
+
+export async function PATCH(request: Request) {
+  const isAuth = await isAuthenticatedAdmin();
+  if (!isAuth) {
+    return NextResponse.json({ error: 'Não autorizado.' }, { status: 401 });
+  }
+
+  try {
+    const body = await request.json();
+    const { id, name, pin, logoUrl } = body;
+
+    if (!id) {
+      return NextResponse.json({ error: 'ID do cliente é obrigatório.' }, { status: 400 });
+    }
+
+    const { client, isUsingFallback } = await updateClient(id, {
+      name: name?.trim() || undefined,
+      pin: pin?.trim() || undefined,
+      logoUrl: logoUrl !== undefined ? (logoUrl?.trim() ? parseThumbnailUrl(logoUrl) : null) : undefined,
+    });
+
+    if (!client) {
+      return NextResponse.json({ error: 'Cliente não encontrado.' }, { status: 404 });
+    }
+
+    return NextResponse.json({ client, isUsingFallback, success: true });
+  } catch (error) {
+    console.error('Erro ao atualizar cliente:', error);
+    return NextResponse.json({ error: 'Erro ao atualizar dados do cliente.' }, { status: 500 });
   }
 }

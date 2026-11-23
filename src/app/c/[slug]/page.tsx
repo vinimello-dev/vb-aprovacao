@@ -21,6 +21,7 @@ export default async function ClientPortalPage({ params }: ClientPortalProps) {
         name: client.name,
         slug: client.slug,
         pin: client.pin,
+        logoUrl: client.logoUrl || null,
       }}
     />
   );
