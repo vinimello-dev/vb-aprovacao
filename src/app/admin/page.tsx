@@ -748,7 +748,7 @@ export default function AdminDashboardPage() {
               </div>
 
               {/* Capa do Vídeo (Thumbnail / Feed Instagram) */}
-              {(postFormat === 'VIDEO' || postFormat === 'REELS') && (
+              {postFormat === 'VIDEO' && (
                 <div className="bg-[#FAF9F7] p-3.5 rounded-2xl border border-[#DCD6CC]">
                   <div className="flex items-center justify-between mb-1.5">
                     <label className="block text-xs font-black uppercase tracking-wider text-[#111111]">
