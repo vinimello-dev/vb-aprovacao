@@ -1,0 +1,91 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum PostFormat {
+  VIDEO
+  CAROUSEL
+  STATIC
+  REELS
+  STORIES
+}
+
+enum PostStatus {
+  PENDENTE
+  AJUSTES
+  APROVADO
+}
+
+model Client {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  pin       String   // PIN de 4 dígitos
+  logoUrl   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  posts     Post[]
+
+  @@map("clients")
+}
+
+model Post {
+  id            String      @id @default(cuid())
+  clientId      String
+  client        Client      @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  
+  title         String
+  caption       String?     @db.Text // Legenda do post
+  format        PostFormat  @default(STATIC)
+  status        PostStatus  @default(PENDENTE)
+  scheduledDate DateTime?   // Data de agendamento/publicação no mês
+  
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  media         PostMedia[]
+  comments      Comment[]
+
+  @@map("posts")
+}
+
+model PostMedia {
+  id           String   @id @default(cuid())
+  postId       String
+  post         Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  
+  url          String   @db.Text
+  mediaType    String   // "VIDEO" ou "IMAGE"
+  order        Int      @default(0)
+  thumbnailUrl String?  @db.Text
+  duration     Float?   // Duração em segundos (se vídeo)
+  
+  createdAt    DateTime @default(now())
+
+  @@map("post_medias")
+}
+
+model Comment {
+  id               String   @id @default(cuid())
+  postId           String
+  post             Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  
+  author           String   @default("Cliente")
+  authorRole       String   @default("CLIENT") // "CLIENT" ou "AGENCY"
+  content          String   @db.Text
+  
+  timestampSeconds Float?   // Segundos do player de vídeo
+  slideIndex       Int?     // Índice da lâmina do carrossel (0, 1, 2...)
+  resolved         Boolean  @default(false)
+  
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@map("comments")
+}
