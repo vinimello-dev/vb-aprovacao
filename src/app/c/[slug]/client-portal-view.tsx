@@ -23,6 +23,7 @@ import { PostData } from '@/lib/services/post-service';
 import { PostReviewModal } from '@/components/post-review-modal';
 import { formatDate } from '@/lib/utils';
 import { ChatMessage } from '@/lib/services/chat-service';
+import { playMessageSound } from '@/lib/audio-notification';
 
 interface ClientPortalViewProps {
   client: {
@@ -56,13 +57,35 @@ export function ClientPortalView({ client }: ClientPortalViewProps) {
   const [chatSending, setChatSending] = useState(false);
   const [clientUnreadChat, setClientUnreadChat] = useState(0);
   const chatBottomRef = useRef<HTMLDivElement>(null);
+  const knownClientMsgIdsRef = useRef<Set<string>>(new Set());
+  const initialClientChatRef = useRef<boolean>(true);
 
   const fetchChatMessages = async (isSilent = false) => {
     try {
-      const res = await fetch(`/api/chat?clientId=${client.id || client.slug}&reader=CLIENT`);
+      const res = await fetch(
+        `/api/chat?clientId=${encodeURIComponent(client.id || client.slug)}&clientSlug=${encodeURIComponent(client.slug)}&reader=CLIENT`
+      );
       if (res.ok) {
         const data = await res.json();
-        setChatMessages(data.messages || []);
+        const incomingMessages: ChatMessage[] = data.messages || [];
+        setChatMessages(incomingMessages);
+
+        // Notificação sonora estilo WhatsApp caso chegue mensagem da agência
+        let hasNewAgencyMsg = false;
+        incomingMessages.forEach((msg) => {
+          if (!knownClientMsgIdsRef.current.has(msg.id)) {
+            knownClientMsgIdsRef.current.add(msg.id);
+            if (!initialClientChatRef.current && msg.sender === 'AGENCY') {
+              hasNewAgencyMsg = true;
+            }
+          }
+        });
+        initialClientChatRef.current = false;
+
+        if (hasNewAgencyMsg) {
+          playMessageSound();
+        }
+
         if (viewMode === 'chat') {
           setClientUnreadChat(0);
         } else {
@@ -108,6 +131,7 @@ export function ClientPortalView({ client }: ClientPortalViewProps) {
       readByAgency: false,
       readByClient: true,
     };
+    knownClientMsgIdsRef.current.add(tempMsg.id);
     setChatMessages((prev) => [...prev, tempMsg]);
 
     try {
@@ -116,6 +140,7 @@ export function ClientPortalView({ client }: ClientPortalViewProps) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           clientId: client.id || client.slug,
+          clientSlug: client.slug,
           sender: 'CLIENT',
           senderName: client.name,
           content: text,
@@ -123,9 +148,12 @@ export function ClientPortalView({ client }: ClientPortalViewProps) {
       });
       if (res.ok) {
         const data = await res.json();
-        setChatMessages((prev) =>
-          prev.map((m) => (m.id === tempMsg.id ? data.message : m))
-        );
+        if (data.message) {
+          knownClientMsgIdsRef.current.add(data.message.id);
+          setChatMessages((prev) =>
+            prev.map((m) => (m.id === tempMsg.id ? data.message : m))
+          );
+        }
       }
     } catch (err) {
       console.error('Erro ao enviar mensagem no portal do cliente:', err);

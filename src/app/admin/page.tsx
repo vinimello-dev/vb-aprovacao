@@ -1,6 +1,6 @@
 ﻿'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -48,6 +48,7 @@ import { ClientReviewsHub } from '@/components/client-reviews-hub';
 import { FinancialHub } from '@/components/financial-hub';
 import { ClientChatHub } from '@/components/client-chat-hub';
 import { PostReviewModal } from '@/components/post-review-modal';
+import { playMessageSound } from '@/lib/audio-notification';
 
 interface ClientItem {
   id: string;
@@ -80,6 +81,8 @@ export default function AdminDashboardPage() {
   const [activeView, setActiveView] = useState<'demands' | 'reviews' | 'financial' | 'chat' | 'clients'>('demands');
   const [chatUnreadTotal, setChatUnreadTotal] = useState(0);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const prevChatUnreadRef = useRef<number>(0);
+  const initialChatUnreadRef = useRef<boolean>(true);
 
   // Modal de Revisão Interativa de Post (ao clicar para fazer revisão)
   const [reviewModalPost, setReviewModalPost] = useState<any | null>(null);
@@ -167,7 +170,13 @@ export default function AdminDashboardPage() {
       const res = await fetch('/api/chat');
       if (res.ok) {
         const data = await res.json();
-        setChatUnreadTotal(data.total || 0);
+        const newTotal = data.total || 0;
+        if (!initialChatUnreadRef.current && newTotal > prevChatUnreadRef.current) {
+          playMessageSound();
+        }
+        initialChatUnreadRef.current = false;
+        prevChatUnreadRef.current = newTotal;
+        setChatUnreadTotal(newTotal);
       }
     } catch (err) {
       console.error('Erro ao buscar chat unread:', err);

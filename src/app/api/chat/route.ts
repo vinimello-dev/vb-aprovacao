@@ -3,7 +3,7 @@ import {
   getChatMessages,
   sendChatMessage,
   markChatAsRead,
-  getChatUnreadCountForAgency,
+  getChatSummaryForAgency,
   getChatUnreadCountForClient,
 } from '@/lib/services/chat-service';
 
@@ -11,15 +11,20 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const clientId = searchParams.get('clientId');
+    const clientSlug = searchParams.get('clientSlug') || undefined;
     const reader = (searchParams.get('reader') as 'AGENCY' | 'CLIENT') || 'AGENCY';
 
     if (clientId) {
       // Se solicitou as mensagens de um cliente específico
-      const messages = await getChatMessages(clientId);
+      const messages = await getChatMessages(clientId, clientSlug);
       // Marca como lidas se especificado
       await markChatAsRead(clientId, reader);
+      if (clientSlug) {
+        await markChatAsRead(clientSlug, reader);
+      }
 
-      const unreadForAgency = (await getChatUnreadCountForAgency()).byClient[clientId] || 0;
+      const summary = await getChatSummaryForAgency();
+      const unreadForAgency = summary.byClient[clientId] || (clientSlug ? summary.byClient[clientSlug] : 0) || 0;
       const unreadForClient = await getChatUnreadCountForClient(clientId);
 
       return NextResponse.json({
@@ -29,9 +34,9 @@ export async function GET(request: Request) {
       });
     }
 
-    // Se não passou clientId, retorna contagem geral de não lidas para o painel admin
-    const unread = await getChatUnreadCountForAgency();
-    return NextResponse.json(unread);
+    // Se não passou clientId, retorna resumo geral para a Agência (não lidas e última mensagem por cliente para ordenação no topo)
+    const summary = await getChatSummaryForAgency();
+    return NextResponse.json(summary);
   } catch (err) {
     console.error('Erro na rota de chat (GET):', err);
     return NextResponse.json({ error: 'Erro ao carregar mensagens.' }, { status: 500 });
@@ -41,7 +46,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { clientId, sender, senderName, content } = body;
+    const { clientId, clientSlug, sender, senderName, content } = body;
 
     if (!clientId || !content || !content.trim()) {
       return NextResponse.json(
@@ -52,6 +57,7 @@ export async function POST(request: Request) {
 
     const message = await sendChatMessage({
       clientId,
+      clientSlug,
       sender: sender || 'AGENCY',
       senderName,
       content,
@@ -67,7 +73,7 @@ export async function POST(request: Request) {
 export async function PATCH(request: Request) {
   try {
     const body = await request.json();
-    const { clientId, reader } = body;
+    const { clientId, clientSlug, reader } = body;
 
     if (!clientId || !reader) {
       return NextResponse.json(
@@ -77,6 +83,10 @@ export async function PATCH(request: Request) {
     }
 
     await markChatAsRead(clientId, reader);
+    if (clientSlug) {
+      await markChatAsRead(clientSlug, reader);
+    }
+
     return NextResponse.json({ success: true });
   } catch (err) {
     console.error('Erro ao marcar mensagens como lidas (PATCH):', err);
