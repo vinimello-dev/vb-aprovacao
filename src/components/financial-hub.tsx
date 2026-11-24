@@ -140,7 +140,8 @@ export function FinancialHub({ clients }: FinancialHubProps) {
   // Adicionar Recebimento
   const handleAddIncome = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    if (!newIncomeDesc.trim()) return;
+    const desc = newIncomeDesc.trim();
+    if (!desc) return;
 
     setSubmittingIncome(true);
     try {
@@ -150,7 +151,7 @@ export function FinancialHub({ clients }: FinancialHubProps) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           type: 'INCOME',
-          description: newIncomeDesc.trim(),
+          description: desc,
           amount: parsedAmount,
           month: currentMonth,
           year: currentYear,
@@ -160,6 +161,10 @@ export function FinancialHub({ clients }: FinancialHubProps) {
       });
 
       if (res.ok) {
+        const data = await res.json();
+        if (data.entry) {
+          setEntries((prev) => [...prev, data.entry]);
+        }
         setNewIncomeDesc('');
         setNewIncomeAmount('');
         setNewIncomeClientId('');
@@ -175,7 +180,8 @@ export function FinancialHub({ clients }: FinancialHubProps) {
   // Adicionar Conta a Pagar
   const handleAddExpense = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    if (!newExpenseDesc.trim()) return;
+    const desc = newExpenseDesc.trim();
+    if (!desc) return;
 
     setSubmittingExpense(true);
     try {
@@ -185,7 +191,7 @@ export function FinancialHub({ clients }: FinancialHubProps) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           type: 'EXPENSE',
-          description: newExpenseDesc.trim(),
+          description: desc,
           amount: parsedAmount,
           month: currentMonth,
           year: currentYear,
@@ -194,6 +200,10 @@ export function FinancialHub({ clients }: FinancialHubProps) {
       });
 
       if (res.ok) {
+        const data = await res.json();
+        if (data.entry) {
+          setEntries((prev) => [...prev, data.entry]);
+        }
         setNewExpenseDesc('');
         setNewExpenseAmount('');
         fetchData();
@@ -219,7 +229,6 @@ export function FinancialHub({ clients }: FinancialHubProps) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           id: item.id,
-          description: item.description,
           status: nextStatus,
         }),
       });
@@ -232,6 +241,7 @@ export function FinancialHub({ clients }: FinancialHubProps) {
 
   // Excluir Linha
   const handleDeleteEntry = async (id: string) => {
+    setEntries((prev) => prev.filter((e) => e.id !== id));
     try {
       const res = await fetch(`/api/admin/financial?id=${id}`, {
         method: 'DELETE',
@@ -241,6 +251,7 @@ export function FinancialHub({ clients }: FinancialHubProps) {
       }
     } catch (err) {
       console.error('Erro ao excluir item:', err);
+      fetchData();
     }
   };
 
@@ -255,12 +266,19 @@ export function FinancialHub({ clients }: FinancialHubProps) {
   const saveEditing = async (id: string) => {
     try {
       const parsedAmount = parseFloat(editAmount.replace(',', '.')) || 0;
+      const desc = editDesc.trim();
+      setEntries((prev) =>
+        prev.map((e) =>
+          e.id === id ? { ...e, description: desc || e.description, amount: parsedAmount } : e
+        )
+      );
+
       await fetch('/api/admin/financial', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           id,
-          description: editDesc.trim(),
+          description: desc || undefined,
           amount: parsedAmount,
         }),
       });
@@ -307,6 +325,13 @@ export function FinancialHub({ clients }: FinancialHubProps) {
   // Separar em recebimentos e contas
   const incomes = entries.filter((e) => e.type === 'INCOME');
   const expenses = entries.filter((e) => e.type === 'EXPENSE');
+
+  // Cálculos dinâmicos em tempo real a partir de entries e extra
+  const totalIncome = incomes.reduce((acc, curr) => acc + (Number(curr.amount) || 0), 0);
+  const totalExpense = expenses.reduce((acc, curr) => acc + (Number(curr.amount) || 0), 0);
+  const balance = totalIncome - totalExpense;
+  const extraAmount = Number(extra?.extraCardAmount) || 0;
+  const finalTotal = balance + extraAmount;
 
   return (
     <div className="w-full flex flex-col space-y-6 animate-in fade-in duration-200">
@@ -381,7 +406,7 @@ export function FinancialHub({ clients }: FinancialHubProps) {
           </div>
           <div>
             <h3 className="text-lg sm:text-2xl font-black text-emerald-700 tracking-tight">
-              {formatCurrency(summary.totalIncome)}
+              {formatCurrency(totalIncome)}
             </h3>
             <p className="text-[10px] text-[#66635D] font-bold mt-0.5">
               {incomes.length} empresas no mês
@@ -401,7 +426,7 @@ export function FinancialHub({ clients }: FinancialHubProps) {
           </div>
           <div>
             <h3 className="text-lg sm:text-2xl font-black text-rose-600 tracking-tight">
-              {formatCurrency(summary.totalExpense)}
+              {formatCurrency(totalExpense)}
             </h3>
             <p className="text-[10px] text-[#66635D] font-bold mt-0.5">
               {expenses.length} despesas listadas
@@ -421,7 +446,7 @@ export function FinancialHub({ clients }: FinancialHubProps) {
           </div>
           <div>
             <h3 className="text-lg sm:text-2xl font-black text-[#111111] tracking-tight">
-              {formatCurrency(summary.balance)}
+              {formatCurrency(balance)}
             </h3>
             <p className="text-[10px] text-[#FD3100] font-bold mt-0.5">
               Receitas - Contas
@@ -468,7 +493,7 @@ export function FinancialHub({ clients }: FinancialHubProps) {
                 className="text-lg sm:text-2xl font-black text-[#111111] tracking-tight cursor-pointer hover:text-[#FD3100] transition-colors"
                 title="Clique para editar"
               >
-                {formatCurrency(summary.extraAmount)}
+                {formatCurrency(extraAmount)}
               </h3>
             )}
             <p className="text-[10px] text-[#66635D] font-bold mt-0.5">
@@ -487,7 +512,7 @@ export function FinancialHub({ clients }: FinancialHubProps) {
           </div>
           <div>
             <h3 className="text-xl sm:text-2xl font-black text-white tracking-tight">
-              {formatCurrency(summary.finalTotal)}
+              {formatCurrency(finalTotal)}
             </h3>
             <p className="text-[10px] text-white/60 font-bold mt-0.5">
               Sobra + Cartão
@@ -546,7 +571,7 @@ export function FinancialHub({ clients }: FinancialHubProps) {
               </div>
 
               <span className="px-3 py-1 rounded-full text-xs font-black bg-emerald-50 text-emerald-800 border border-emerald-200">
-                {formatCurrency(summary.totalIncome)}
+                {formatCurrency(totalIncome)}
               </span>
             </div>
 
@@ -664,7 +689,7 @@ export function FinancialHub({ clients }: FinancialHubProps) {
                                 </button>
                               </div>
                             ) : (
-                              <div className="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <div className="flex items-center justify-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                                 <button
                                   onClick={() => startEditing(item)}
                                   className="p-1 text-[#66635D] hover:text-[#111111] hover:bg-[#EEEDEA] rounded-md"
@@ -731,7 +756,7 @@ export function FinancialHub({ clients }: FinancialHubProps) {
             <div className="p-4 bg-emerald-50/60 border-t border-emerald-100 flex items-center justify-between text-xs font-black uppercase text-emerald-900">
               <span>Total Recebimentos:</span>
               <span className="text-sm font-black text-emerald-800">
-                {formatCurrency(summary.totalIncome)}
+                {formatCurrency(totalIncome)}
               </span>
             </div>
           </div>
@@ -757,7 +782,7 @@ export function FinancialHub({ clients }: FinancialHubProps) {
               </div>
 
               <span className="px-3 py-1 rounded-full text-xs font-black bg-rose-50 text-rose-800 border border-rose-200">
-                {formatCurrency(summary.totalExpense)}
+                {formatCurrency(totalExpense)}
               </span>
             </div>
 
@@ -877,7 +902,7 @@ export function FinancialHub({ clients }: FinancialHubProps) {
                                 </button>
                               </div>
                             ) : (
-                              <div className="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <div className="flex items-center justify-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                                 <button
                                   onClick={() => startEditing(item)}
                                   className="p-1 text-[#66635D] hover:text-[#111111] hover:bg-[#EEEDEA] rounded-md"
@@ -944,7 +969,7 @@ export function FinancialHub({ clients }: FinancialHubProps) {
             <div className="p-4 bg-rose-50/60 border-t border-rose-100 flex items-center justify-between text-xs font-black uppercase text-rose-900">
               <span>Total Contas:</span>
               <span className="text-sm font-black text-rose-800">
-                {formatCurrency(summary.totalExpense)}
+                {formatCurrency(totalExpense)}
               </span>
             </div>
 
@@ -953,21 +978,21 @@ export function FinancialHub({ clients }: FinancialHubProps) {
               <div className="flex items-center justify-between text-xs font-black uppercase text-[#111111]">
                 <span>Sobra (Dinheiro):</span>
                 <span className="text-sm text-[#FD3100]">
-                  {formatCurrency(summary.balance)}
+                  {formatCurrency(balance)}
                 </span>
               </div>
 
               <div className="flex items-center justify-between text-xs font-black uppercase text-[#66635D]">
                 <span>Cartão / Reserva:</span>
                 <span className="text-xs text-[#111111]">
-                  {formatCurrency(summary.extraAmount)}
+                  {formatCurrency(extraAmount)}
                 </span>
               </div>
 
               <div className="pt-2 border-t border-[#EEEDEA] flex items-center justify-between text-xs font-black uppercase text-[#111111]">
                 <span>Total Disponível:</span>
                 <span className="text-base text-emerald-700 font-black">
-                  {formatCurrency(summary.finalTotal)}
+                  {formatCurrency(finalTotal)}
                 </span>
               </div>
             </div>

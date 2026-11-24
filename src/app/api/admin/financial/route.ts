@@ -92,10 +92,18 @@ export async function PATCH(request: Request) {
       category?: string;
     } = {};
 
-    if (description !== undefined && description !== null) updateData.description = description;
-    if (amount !== undefined && amount !== null) updateData.amount = Number(amount);
-    if (status !== undefined && status !== null) updateData.status = status;
-    if (category !== undefined && category !== null) updateData.category = category;
+    if (description !== undefined && description !== null && typeof description === 'string' && description.trim() !== '') {
+      updateData.description = description.trim();
+    }
+    if (amount !== undefined && amount !== null && !isNaN(Number(amount))) {
+      updateData.amount = Number(amount);
+    }
+    if (status !== undefined && (status === 'PAID' || status === 'PENDING')) {
+      updateData.status = status;
+    }
+    if (category !== undefined && category !== null) {
+      updateData.category = category;
+    }
 
     const updated = await updateFinancialEntry(id, updateData);
 
