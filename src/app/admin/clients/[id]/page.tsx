@@ -36,9 +36,11 @@ import {
   Tag,
   AlertCircle,
   Eye,
+  CalendarDays,
 } from 'lucide-react';
 import { formatDate, parseThumbnailUrl, parseMediaUrl, getScheduledDateInput } from '@/lib/utils';
 import { PostReviewModal } from '@/components/post-review-modal';
+import { AdminClientCalendar } from '@/components/admin-client-calendar';
 import { ImageUploadInput } from '@/components/image-upload-input';
 import { CarouselUploader, CarouselSlide } from '@/components/carousel-uploader';
 import { PostData } from '@/lib/services/post-service';
@@ -105,8 +107,8 @@ export default function ClientHubPage({ params }: PageProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  // Abas do Hub do Cliente: 'cycles' (Entregas), 'scripts' (Roteiros), 'crm' (Dados), 'documents' (Documentos)
-  const [activeTab, setActiveTab] = useState<'cycles' | 'scripts' | 'crm' | 'documents'>('cycles');
+  // Abas do Hub do Cliente: 'cycles' (Entregas), 'calendar' (Calendário do Mês), 'scripts' (Roteiros), 'crm' (Dados), 'documents' (Documentos)
+  const [activeTab, setActiveTab] = useState<'cycles' | 'calendar' | 'scripts' | 'crm' | 'documents'>('cycles');
 
   // Ciclo Selecionado na aba de Entregas
   const [selectedCycleId, setSelectedCycleId] = useState<string>('ALL');
@@ -805,7 +807,7 @@ export default function ClientHubPage({ params }: PageProps) {
         <div className="flex items-center gap-2 border-b-2 border-[#DCD6CC] pb-0 mb-8 overflow-x-auto">
           <button
             onClick={() => setActiveTab('cycles')}
-            className={`flex items-center gap-2 px-5 py-3 text-xs font-black uppercase tracking-wider border-b-2 transition-all -mb-[2px] ${
+            className={`flex items-center gap-2 px-5 py-3 text-xs font-black uppercase tracking-wider border-b-2 transition-all -mb-[2px] whitespace-nowrap shrink-0 ${
               activeTab === 'cycles'
                 ? 'border-[#FD3100] text-[#FD3100] bg-white rounded-t-2xl'
                 : 'border-transparent text-[#66635D] hover:text-[#111111]'
@@ -813,6 +815,18 @@ export default function ClientHubPage({ params }: PageProps) {
           >
             <Calendar className="w-4 h-4" />
             <span>Entregas & Ciclos ({client.cycles.length})</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('calendar')}
+            className={`flex items-center gap-2 px-5 py-3 text-xs font-black uppercase tracking-wider border-b-2 transition-all -mb-[2px] whitespace-nowrap shrink-0 ${
+              activeTab === 'calendar'
+                ? 'border-[#FD3100] text-[#FD3100] bg-white rounded-t-2xl'
+                : 'border-transparent text-[#66635D] hover:text-[#111111]'
+            }`}
+          >
+            <CalendarDays className="w-4 h-4" />
+            <span>Calendário do Mês</span>
           </button>
 
           <button
@@ -1105,6 +1119,36 @@ export default function ClientHubPage({ params }: PageProps) {
               </div>
             )}
           </div>
+        )}
+
+        {/* ABA CALENDÁRIO DO MÊS (VISÃO MENSAL COM ARRASTAR E MOVER POSTS) */}
+        {activeTab === 'calendar' && (
+          <AdminClientCalendar
+            cycles={client.cycles}
+            orphanPosts={client.posts}
+            onSelectPost={(post) => setSelectedPost(post)}
+            onPostDateChanged={(postId, newDateObj) => {
+              setClient((prev) => {
+                if (!prev) return prev;
+                return {
+                  ...prev,
+                  cycles: prev.cycles.map((c) => ({
+                    ...c,
+                    posts: c.posts.map((p) =>
+                      p.id === postId ? { ...p, scheduledDate: newDateObj } : p
+                    ),
+                  })),
+                  posts: prev.posts.map((p) =>
+                    p.id === postId ? { ...p, scheduledDate: newDateObj } : p
+                  ),
+                };
+              });
+            }}
+            onOpenAddPost={(cycleId) => {
+              if (cycleId) setPostCycleId(cycleId);
+              setPostModalOpen(true);
+            }}
+          />
         )}
 
         {/* ABA 2: ROTEIROS DE GRAVAÇÃO (CAPTAÇÕES) */}
