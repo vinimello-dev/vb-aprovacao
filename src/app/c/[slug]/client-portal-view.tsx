@@ -370,35 +370,23 @@ export function ClientPortalView({ client }: ClientPortalViewProps) {
 
         <div className="w-full max-w-md relative z-10">
           <div className="bg-gradient-to-b from-white via-white to-[#FFF4EF] border-2 border-[#DCD6CC] rounded-3xl p-8 sm:p-10 shadow-xl text-center overflow-hidden">
-            {/* Selo Discreto VB HUB no topo */}
-            <div className="flex items-center justify-center gap-2 mb-6">
+            {/* Logo Oficial da VB em Destaque */}
+            <div className="flex flex-col items-center justify-center mb-6">
               <img
                 src="/logo-vb.png?v=4"
                 alt="Logo VB"
-                className="h-6 w-auto object-contain opacity-85"
+                className="h-16 sm:h-20 w-auto object-contain mb-2"
               />
+              <span className="font-black text-xl tracking-tight text-[#111111] uppercase">
+                VB <span style={{ color: '#FD3100' }}>HUB</span>
+              </span>
               <span
                 style={{ backgroundColor: '#FFF0EC', color: '#FD3100', borderColor: '#FFCEBF' }}
-                className="px-2.5 py-0.5 rounded-full text-[10px] font-black tracking-wide uppercase border shadow-xs"
+                className="mt-2 px-3 py-0.5 rounded-full text-[10px] font-black tracking-wide uppercase border shadow-xs"
               >
-                VB HUB • Portal do Cliente
+                Portal do Cliente
               </span>
             </div>
-
-            {/* Logo da Empresa em Evidência e Proporcional */}
-            {client.logoUrl ? (
-              <div className="w-40 h-24 sm:w-48 sm:h-28 mx-auto mb-5 p-2 rounded-2xl overflow-hidden border-2 border-[#DCD6CC] bg-white flex items-center justify-center shadow-md">
-                <img
-                  src={client.logoUrl}
-                  alt={`Logo ${client.name}`}
-                  className="w-full h-full object-contain"
-                />
-              </div>
-            ) : (
-              <div className="w-20 h-20 mx-auto mb-5 rounded-2xl bg-[#FFF0EC] text-[#FD3100] border-2 border-[#FFCEBF] font-black text-2xl flex items-center justify-center shadow-md">
-                {client.name.slice(0, 2).toUpperCase()}
-              </div>
-            )}
 
             <h1 className="text-2xl font-black text-[#111111] uppercase tracking-tight">
               {client.name}
@@ -471,33 +459,18 @@ export function ClientPortalView({ client }: ClientPortalViewProps) {
       {/* Header do Cliente */}
       <header className="border-b border-[#DCD6CC] bg-white sticky top-0 z-30 shadow-sm">
         <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-16 sm:h-20 flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2 sm:gap-3.5 min-w-0 flex-1">
-            {/* Logo VB Discreto e Alinhado */}
+          <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0 flex-1">
+            {/* Logo Oficial VB */}
             <div className="flex items-center justify-center shrink-0">
               <img
                 src="/logo-vb.png?v=4"
                 alt="Logo VB"
-                className="h-5 sm:h-7 w-auto object-contain opacity-85"
+                className="h-8 sm:h-11 w-auto object-contain"
               />
             </div>
 
             {/* Separador */}
             <div className="h-6 sm:h-8 w-px bg-[#DCD6CC] shrink-0" />
-
-            {/* Logo do Cliente em Evidência */}
-            {client.logoUrl ? (
-              <div className="h-10 w-24 sm:h-12 sm:w-28 p-1 rounded-xl sm:rounded-2xl overflow-hidden border border-[#DCD6CC] bg-white flex items-center justify-center shrink-0 shadow-sm">
-                <img
-                  src={client.logoUrl}
-                  alt={`Logo ${client.name}`}
-                  className="w-full h-full object-contain"
-                />
-              </div>
-            ) : (
-              <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-xl sm:rounded-2xl bg-[#FFF0EC] text-[#FD3100] border border-[#FFCEBF] font-black text-xs sm:text-sm flex items-center justify-center shrink-0">
-                {client.name.slice(0, 2).toUpperCase()}
-              </div>
-            )}
 
             {/* Nome da Empresa e Tag */}
             <div className="min-w-0 flex-1">
