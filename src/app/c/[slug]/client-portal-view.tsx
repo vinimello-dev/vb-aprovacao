@@ -370,31 +370,35 @@ export function ClientPortalView({ client }: ClientPortalViewProps) {
 
         <div className="w-full max-w-md relative z-10">
           <div className="bg-white border-2 border-[#DCD6CC] rounded-3xl p-8 sm:p-10 shadow-xl text-center">
-            {/* Logo Oficial da VB */}
-            <div className="h-16 flex items-center justify-center mb-5">
+            {/* Selo Discreto VB HUB no topo */}
+            <div className="flex items-center justify-center gap-2 mb-6">
               <img
                 src="/logo-vb.png?v=4"
                 alt="Logo VB"
-                className="h-16 w-auto object-contain"
+                className="h-6 w-auto object-contain opacity-85"
               />
+              <span
+                style={{ backgroundColor: '#FFF0EC', color: '#FD3100', borderColor: '#FFCEBF' }}
+                className="px-2.5 py-0.5 rounded-full text-[10px] font-black tracking-wide uppercase border shadow-xs"
+              >
+                VB HUB • Portal do Cliente
+              </span>
             </div>
 
-            {client.logoUrl && (
-              <div className="w-16 h-16 mx-auto mb-4 rounded-2xl overflow-hidden border-2 border-[#DCD6CC] bg-white flex items-center justify-center shadow-md">
+            {/* Logo da Empresa em Evidência */}
+            {client.logoUrl ? (
+              <div className="h-24 w-full max-w-[240px] mx-auto mb-5 px-4 py-2.5 rounded-2xl overflow-hidden border-2 border-[#DCD6CC] bg-white flex items-center justify-center shadow-md">
                 <img
                   src={client.logoUrl}
                   alt={`Logo ${client.name}`}
-                  className="w-full h-full object-cover"
+                  className="max-h-full max-w-full w-auto h-auto object-contain"
                 />
               </div>
+            ) : (
+              <div className="w-20 h-20 mx-auto mb-5 rounded-2xl bg-[#FFF0EC] text-[#FD3100] border-2 border-[#FFCEBF] font-black text-2xl flex items-center justify-center shadow-md">
+                {client.name.slice(0, 2).toUpperCase()}
+              </div>
             )}
-
-            <span
-              style={{ backgroundColor: '#FFF0EC', color: '#FD3100', borderColor: '#FFCEBF' }}
-              className="px-3 py-1 rounded-full text-[11px] font-black tracking-wide uppercase border inline-block mb-2 shadow-sm"
-            >
-              VB HUB • Portal do Cliente
-            </span>
 
             <h1 className="text-2xl font-black text-[#111111] uppercase tracking-tight">
               {client.name}
@@ -468,29 +472,29 @@ export function ClientPortalView({ client }: ClientPortalViewProps) {
       <header className="border-b border-[#DCD6CC] bg-white sticky top-0 z-30 shadow-sm">
         <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-16 sm:h-20 flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 sm:gap-3.5 min-w-0 flex-1">
-            {/* Logo VB */}
-            <div className="h-9 sm:h-12 flex items-center justify-center shrink-0">
+            {/* Logo VB Discreto e Alinhado */}
+            <div className="flex items-center justify-center shrink-0">
               <img
                 src="/logo-vb.png?v=4"
                 alt="Logo VB"
-                className="h-8 sm:h-12 w-auto object-contain"
+                className="h-5 sm:h-7 w-auto object-contain opacity-85"
               />
             </div>
 
             {/* Separador */}
-            <div className="h-6 w-px bg-[#DCD6CC] shrink-0" />
+            <div className="h-6 sm:h-8 w-px bg-[#DCD6CC] shrink-0" />
 
-            {/* Logo do Cliente */}
+            {/* Logo do Cliente em Evidência */}
             {client.logoUrl ? (
-              <div className="h-9 w-9 sm:h-11 sm:w-11 rounded-xl sm:rounded-2xl overflow-hidden border border-[#DCD6CC] bg-white flex items-center justify-center shrink-0 shadow-sm">
+              <div className="h-10 sm:h-12 min-w-[44px] max-w-[130px] px-2 py-1 rounded-xl sm:rounded-2xl overflow-hidden border border-[#DCD6CC] bg-white flex items-center justify-center shrink-0 shadow-sm">
                 <img
                   src={client.logoUrl}
                   alt={`Logo ${client.name}`}
-                  className="w-full h-full object-cover"
+                  className="max-h-full max-w-full w-auto h-auto object-contain"
                 />
               </div>
             ) : (
-              <div className="h-9 w-9 sm:h-11 sm:w-11 rounded-xl sm:rounded-2xl bg-[#FFF0EC] text-[#FD3100] border border-[#FFCEBF] font-black text-xs sm:text-sm flex items-center justify-center shrink-0">
+              <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-xl sm:rounded-2xl bg-[#FFF0EC] text-[#FD3100] border border-[#FFCEBF] font-black text-xs sm:text-sm flex items-center justify-center shrink-0">
                 {client.name.slice(0, 2).toUpperCase()}
               </div>
             )}
