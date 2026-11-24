@@ -15,7 +15,7 @@ export async function POST(request: Request, { params }: RouteParams) {
   try {
     const { id } = await params;
     const body = await request.json();
-    const { name, month, year } = body;
+    const { name, month, year, targetDate } = body;
 
     if (!name?.trim()) {
       return NextResponse.json({ error: 'O nome da entrega / ciclo é obrigatório.' }, { status: 400 });
@@ -27,6 +27,7 @@ export async function POST(request: Request, { params }: RouteParams) {
         name: name.trim(),
         month: month ? Number(month) : null,
         year: year ? Number(year) : null,
+        targetDate: targetDate ? new Date(targetDate) : null,
       },
       include: {
         posts: true,

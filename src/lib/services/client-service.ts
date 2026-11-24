@@ -8,6 +8,13 @@ export interface ClientData {
   logoUrl?: string | null;
   createdAt: Date;
   updatedAt: Date;
+  cycles?: Array<{
+    id: string;
+    name: string;
+    month?: number | null;
+    year?: number | null;
+    active: boolean;
+  }>;
   _count?: {
     posts: number;
   };
@@ -55,6 +62,10 @@ export async function getClients(): Promise<{ clients: ClientData[]; isUsingFall
     const clients = await prisma.client.findMany({
       orderBy: { createdAt: 'desc' },
       include: {
+        cycles: {
+          select: { id: true, name: true, month: true, year: true, active: true },
+          orderBy: { createdAt: 'desc' },
+        },
         _count: {
           select: { posts: true },
         },

@@ -46,6 +46,7 @@ interface CycleItem {
   name: string;
   month?: number | null;
   year?: number | null;
+  targetDate?: string | null;
   active: boolean;
   createdAt: string;
   posts: PostData[];
@@ -116,6 +117,7 @@ export default function ClientHubPage({ params }: PageProps) {
   const [cycleName, setCycleName] = useState('');
   const [cycleMonth, setCycleMonth] = useState(new Date().getMonth() + 1);
   const [cycleYear, setCycleYear] = useState(new Date().getFullYear());
+  const [cycleTargetDate, setCycleTargetDate] = useState('');
   const [submittingCycle, setSubmittingCycle] = useState(false);
 
   // Modal Novo Post
@@ -129,6 +131,19 @@ export default function ClientHubPage({ params }: PageProps) {
   const [postCycleId, setPostCycleId] = useState('');
   const [submittingPost, setSubmittingPost] = useState(false);
   const [postError, setPostError] = useState('');
+
+  // Modal Editar Post
+  const [editPostModalOpen, setEditPostModalOpen] = useState(false);
+  const [editingPostId, setEditingPostId] = useState<string | null>(null);
+  const [editPostTitle, setEditPostTitle] = useState('');
+  const [editPostFormat, setEditPostFormat] = useState<'VIDEO' | 'CAROUSEL' | 'STATIC'>('VIDEO');
+  const [editPostMediaUrl, setEditPostMediaUrl] = useState('');
+  const [editPostThumbnailUrl, setEditPostThumbnailUrl] = useState('');
+  const [editPostCaption, setEditPostCaption] = useState('');
+  const [editPostDate, setEditPostDate] = useState('');
+  const [editPostCycleId, setEditPostCycleId] = useState('');
+  const [savingEditPost, setSavingEditPost] = useState(false);
+  const [editPostError, setEditPostError] = useState('');
 
   // Modal Novo Roteiro de Gravação
   const [scriptModalOpen, setScriptModalOpen] = useState(false);
@@ -215,11 +230,13 @@ export default function ClientHubPage({ params }: PageProps) {
           name: cycleName.trim(),
           month: cycleMonth,
           year: cycleYear,
+          targetDate: cycleTargetDate || null,
         }),
       });
 
       if (res.ok) {
         setCycleName('');
+        setCycleTargetDate('');
         setCycleModalOpen(false);
         await fetchClientData();
       }
@@ -284,6 +301,75 @@ export default function ClientHubPage({ params }: PageProps) {
       setPostError('Erro de conexão ao criar post.');
     } finally {
       setSubmittingPost(false);
+    }
+  };
+
+  // Abrir Modal de Edição de Post
+  const handleOpenEditPost = (post: PostData) => {
+    setEditingPostId(post.id);
+    setEditPostTitle(post.title);
+    setEditPostFormat(
+      post.format === 'CAROUSEL' ? 'CAROUSEL' : post.format === 'STATIC' ? 'STATIC' : 'VIDEO'
+    );
+    setEditPostMediaUrl(post.media && post.media.length > 0 ? post.media[0].url : '');
+    setEditPostThumbnailUrl(post.media && post.media.length > 0 ? (post.media[0].thumbnailUrl || '') : '');
+    setEditPostCaption(post.caption || '');
+    setEditPostDate(
+      post.scheduledDate ? new Date(post.scheduledDate).toISOString().split('T')[0] : ''
+    );
+    setEditPostCycleId(post.cycleId || '');
+    setEditPostError('');
+    setEditPostModalOpen(true);
+  };
+
+  // Salvar Edição do Post
+  const handleSaveEditPost = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingPostId || !editPostTitle.trim()) return;
+    setSavingEditPost(true);
+    setEditPostError('');
+
+    try {
+      const res = await fetch('/api/admin/posts', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: editingPostId,
+          title: editPostTitle.trim(),
+          caption: editPostCaption,
+          format: editPostFormat,
+          scheduledDate: editPostDate || null,
+          cycleId: editPostCycleId || null,
+          mediaUrl: editPostMediaUrl.trim() || undefined,
+          thumbnailUrl: editPostThumbnailUrl.trim() || undefined,
+        }),
+      });
+
+      if (res.ok) {
+        setEditPostModalOpen(false);
+        setEditingPostId(null);
+        await fetchClientData();
+      } else {
+        const d = await res.json();
+        setEditPostError(d.error || 'Erro ao salvar alterações do post.');
+      }
+    } catch {
+      setEditPostError('Erro de conexão ao salvar post.');
+    } finally {
+      setSavingEditPost(false);
+    }
+  };
+
+  // Excluir Post
+  const handleDeletePost = async (postId: string) => {
+    if (!confirm('Deseja realmente excluir este post?')) return;
+    try {
+      await fetch(`/api/admin/posts?id=${postId}`, {
+        method: 'DELETE',
+      });
+      await fetchClientData();
+    } catch (err) {
+      console.error(err);
     }
   };
 
@@ -778,11 +864,17 @@ export default function ClientHubPage({ params }: PageProps) {
                               {cycle.posts.length} {cycle.posts.length === 1 ? 'post' : 'posts'}
                             </span>
                           </div>
-                          {cycle.month && cycle.year && (
-                            <p className="text-[11px] font-bold text-[#66635D]">
-                              {MONTHS[cycle.month - 1]} de {cycle.year}
-                            </p>
-                          )}
+                          <div className="flex flex-wrap items-center gap-2 mt-0.5 text-[11px] font-bold text-[#66635D]">
+                            {cycle.targetDate && (
+                              <span className="flex items-center gap-1 text-[#FD3100] bg-[#FFF0EC] px-2 py-0.5 rounded-md border border-[#FFCEBF]">
+                                <Calendar className="w-3 h-3" />
+                                <span>Data: {formatDate(cycle.targetDate)}</span>
+                              </span>
+                            )}
+                            {cycle.month && cycle.year && (
+                              <span>• {MONTHS[cycle.month - 1]} de {cycle.year}</span>
+                            )}
+                          </div>
                         </div>
                       </div>
 
@@ -854,13 +946,32 @@ export default function ClientHubPage({ params }: PageProps) {
                                 {post.scheduledDate ? formatDate(post.scheduledDate) : 'Sem data'}
                               </span>
 
-                              <button
-                                onClick={() => setSelectedPost(post)}
-                                className="px-3 py-1.5 bg-white hover:bg-[#FD3100] hover:text-white text-[#111111] rounded-xl text-xs font-black uppercase border border-[#DCD6CC] transition-all flex items-center gap-1"
-                              >
-                                <Eye className="w-3 h-3" />
-                                <span>Ver Post</span>
-                              </button>
+                              <div className="flex items-center gap-1.5">
+                                <button
+                                  type="button"
+                                  onClick={() => handleOpenEditPost(post)}
+                                  className="p-1.5 bg-white hover:bg-[#EEEDEA] text-[#66635D] hover:text-[#FD3100] rounded-xl border border-[#DCD6CC] transition-all"
+                                  title="Editar legenda, data e informações deste post"
+                                >
+                                  <Edit className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeletePost(post.id)}
+                                  className="p-1.5 bg-white hover:bg-rose-50 text-[#66635D] hover:text-rose-600 rounded-xl border border-[#DCD6CC] transition-all"
+                                  title="Excluir post"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setSelectedPost(post)}
+                                  className="px-2.5 py-1.5 bg-white hover:bg-[#FD3100] hover:text-white text-[#111111] rounded-xl text-xs font-black uppercase border border-[#DCD6CC] transition-all flex items-center gap-1"
+                                >
+                                  <Eye className="w-3 h-3" />
+                                  <span>Ver</span>
+                                </button>
+                              </div>
                             </div>
                           </div>
                         ))}
@@ -900,16 +1011,36 @@ export default function ClientHubPage({ params }: PageProps) {
                       </div>
 
                       <div className="mt-4 pt-3 border-t border-[#DCD6CC]/60 flex items-center justify-between">
-                        <span className="text-[10px] font-bold text-[#66635D]">
+                        <span className="text-[10px] font-bold text-[#66635D] flex items-center gap-1">
+                          <Calendar className="w-3 h-3 text-[#FD3100]" />
                           {post.scheduledDate ? formatDate(post.scheduledDate) : 'Sem data'}
                         </span>
-                        <button
-                          onClick={() => setSelectedPost(post)}
-                          className="px-3 py-1.5 bg-white hover:bg-[#FD3100] hover:text-white text-[#111111] rounded-xl text-xs font-black uppercase border border-[#DCD6CC] transition-all flex items-center gap-1"
-                        >
-                          <Eye className="w-3 h-3" />
-                          <span>Ver</span>
-                        </button>
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => handleOpenEditPost(post)}
+                            className="p-1.5 bg-white hover:bg-[#EEEDEA] text-[#66635D] hover:text-[#FD3100] rounded-xl border border-[#DCD6CC] transition-all"
+                            title="Editar legenda, data e informações deste post"
+                          >
+                            <Edit className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeletePost(post.id)}
+                            className="p-1.5 bg-white hover:bg-rose-50 text-[#66635D] hover:text-rose-600 rounded-xl border border-[#DCD6CC] transition-all"
+                            title="Excluir post"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setSelectedPost(post)}
+                            className="px-2.5 py-1.5 bg-white hover:bg-[#FD3100] hover:text-white text-[#111111] rounded-xl text-xs font-black uppercase border border-[#DCD6CC] transition-all flex items-center gap-1"
+                          >
+                            <Eye className="w-3 h-3" />
+                            <span>Ver</span>
+                          </button>
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -1347,6 +1478,19 @@ export default function ClientHubPage({ params }: PageProps) {
                 </select>
               </div>
 
+              <div>
+                <label className="block text-xs font-black uppercase tracking-wider text-[#111111] mb-1.5 flex items-center justify-between">
+                  <span>Data da Entrega / Post (Opcional)</span>
+                  <span className="text-[10px] text-[#66635D] font-normal normal-case">Dia específico</span>
+                </label>
+                <input
+                  type="date"
+                  value={cycleTargetDate}
+                  onChange={(e) => setCycleTargetDate(e.target.value)}
+                  className="w-full px-4 py-3 bg-[#FAF9F7] border border-[#DCD6CC] focus:border-[#FD3100] rounded-2xl text-xs font-bold text-[#111111] focus:outline-none"
+                />
+              </div>
+
               <div className="pt-4 border-t border-[#EEEDEA] flex items-center justify-end gap-3">
                 <button
                   type="button"
@@ -1401,26 +1545,47 @@ export default function ClientHubPage({ params }: PageProps) {
             )}
 
             <form onSubmit={handleCreatePost} className="mt-4 space-y-4">
-              {/* Ciclo / Entrega */}
-              {client.cycles.length > 0 && (
+              {/* Ciclo de Entrega e Data do Post lado a lado */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-black uppercase tracking-wider text-[#111111] mb-1.5">
-                    Ciclo de Entrega
+                  <label className="block text-xs font-black uppercase tracking-wider text-[#111111] mb-1.5 flex items-center justify-between">
+                    <span className="flex items-center gap-1.5">
+                      <Calendar className="w-3.5 h-3.5 text-[#FD3100]" />
+                      <span>Ciclo de Entrega</span>
+                    </span>
+                    <span className="text-[10px] text-[#66635D] font-normal normal-case">Lote mensal</span>
                   </label>
                   <select
                     value={postCycleId}
                     onChange={(e) => setPostCycleId(e.target.value)}
-                    className="w-full px-3 py-2 bg-[#FAF9F7] border border-[#DCD6CC] rounded-xl text-xs font-bold text-[#111111] focus:outline-none"
+                    className="w-full px-3 py-2 bg-[#FAF9F7] border border-[#DCD6CC] focus:border-[#FD3100] rounded-xl text-xs font-bold text-[#111111] focus:outline-none"
                   >
                     <option value="">📌 Sem ciclo específico (Geral)</option>
                     {client.cycles.map((c) => (
                       <option key={c.id} value={c.id}>
-                        📅 {c.name}
+                        🗓️ {c.name}
                       </option>
                     ))}
                   </select>
                 </div>
-              )}
+
+                <div>
+                  <label className="block text-xs font-black uppercase tracking-wider text-[#111111] mb-1.5 flex items-center justify-between">
+                    <span className="flex items-center gap-1.5">
+                      <Clock className="w-3.5 h-3.5 text-[#FD3100]" />
+                      <span>Data do Post *</span>
+                    </span>
+                    <span className="text-[10px] text-[#66635D] font-normal normal-case">Dia agendado</span>
+                  </label>
+                  <input
+                    type="date"
+                    value={postDate}
+                    onChange={(e) => setPostDate(e.target.value)}
+                    required
+                    className="w-full px-3 py-2 bg-[#FAF9F7] border border-[#DCD6CC] focus:border-[#FD3100] rounded-xl text-xs font-bold text-[#111111] focus:outline-none"
+                  />
+                </div>
+              </div>
 
               <div>
                 <label className="block text-xs font-black uppercase tracking-wider text-[#111111] mb-1.5">
@@ -1432,7 +1597,7 @@ export default function ClientHubPage({ params }: PageProps) {
                   onChange={(e) => setPostTitle(e.target.value)}
                   placeholder="Ex: Vídeo de Depoimento Aluna..."
                   required
-                  className="w-full px-3 py-2 bg-[#FAF9F7] border border-[#DCD6CC] rounded-xl text-xs font-bold text-[#111111] focus:outline-none"
+                  className="w-full px-3 py-2 bg-[#FAF9F7] border border-[#DCD6CC] focus:border-[#FD3100] rounded-xl text-xs font-bold text-[#111111] focus:outline-none"
                 />
               </div>
 
@@ -1514,6 +1679,182 @@ export default function ClientHubPage({ params }: PageProps) {
                   className="btn-vb-primary px-6 py-2 rounded-xl text-xs font-black uppercase disabled:opacity-50"
                 >
                   {submittingPost ? 'Salvando...' : 'Criar Publicação'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: Editar Post */}
+      {editPostModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white border-2 border-[#FFCEBF] rounded-3xl w-full max-w-lg p-6 sm:p-8 shadow-2xl relative overflow-hidden">
+            <div className="absolute top-0 left-0 right-0 h-2 bg-[#FD3100]" />
+
+            <div className="flex items-center justify-between pb-4 border-b border-[#EEEDEA]">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-2xl bg-[#FFF0EC] border border-[#FFCEBF] flex items-center justify-center text-[#FD3100]">
+                  <FileEdit className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-black text-lg text-[#111111] uppercase tracking-tight">
+                    Editar Publicação
+                  </h3>
+                  <p className="text-xs text-[#66635D] font-medium">
+                    Altere legenda, data, título, mídia ou ciclo deste post
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setEditPostModalOpen(false)}
+                className="text-[#66635D] hover:text-[#111111] p-1.5 rounded-xl"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {editPostError && (
+              <div className="mt-3 p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-xs font-bold">
+                {editPostError}
+              </div>
+            )}
+
+            <form onSubmit={handleSaveEditPost} className="mt-4 space-y-4">
+              {/* Ciclo de Entrega e Data do Post lado a lado */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-black uppercase tracking-wider text-[#111111] mb-1.5 flex items-center justify-between">
+                    <span className="flex items-center gap-1.5">
+                      <Calendar className="w-3.5 h-3.5 text-[#FD3100]" />
+                      <span>Ciclo de Entrega</span>
+                    </span>
+                    <span className="text-[10px] text-[#66635D] font-normal normal-case">Lote</span>
+                  </label>
+                  <select
+                    value={editPostCycleId}
+                    onChange={(e) => setEditPostCycleId(e.target.value)}
+                    className="w-full px-3 py-2 bg-[#FAF9F7] border border-[#DCD6CC] focus:border-[#FD3100] rounded-xl text-xs font-bold text-[#111111] focus:outline-none"
+                  >
+                    <option value="">📌 Sem ciclo específico (Geral)</option>
+                    {client.cycles.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        🗓️ {c.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-black uppercase tracking-wider text-[#111111] mb-1.5 flex items-center justify-between">
+                    <span className="flex items-center gap-1.5">
+                      <Clock className="w-3.5 h-3.5 text-[#FD3100]" />
+                      <span>Data do Post *</span>
+                    </span>
+                    <span className="text-[10px] text-[#66635D] font-normal normal-case">Agendamento</span>
+                  </label>
+                  <input
+                    type="date"
+                    value={editPostDate}
+                    onChange={(e) => setEditPostDate(e.target.value)}
+                    required
+                    className="w-full px-3 py-2 bg-[#FAF9F7] border border-[#DCD6CC] focus:border-[#FD3100] rounded-xl text-xs font-bold text-[#111111] focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-black uppercase tracking-wider text-[#111111] mb-1.5">
+                  Título do Post *
+                </label>
+                <input
+                  type="text"
+                  value={editPostTitle}
+                  onChange={(e) => setEditPostTitle(e.target.value)}
+                  placeholder="Ex: Vídeo de Depoimento Aluna..."
+                  required
+                  className="w-full px-3 py-2 bg-[#FAF9F7] border border-[#DCD6CC] focus:border-[#FD3100] rounded-xl text-xs font-bold text-[#111111] focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-black uppercase tracking-wider text-[#111111] mb-1.5">
+                  Formato do Post
+                </label>
+                <div className="grid grid-cols-3 gap-2 text-xs font-bold">
+                  {(['VIDEO', 'CAROUSEL', 'STATIC'] as const).map((fmt) => (
+                    <button
+                      key={fmt}
+                      type="button"
+                      onClick={() => setEditPostFormat(fmt)}
+                      style={editPostFormat === fmt ? { backgroundColor: '#FD3100', color: '#FFFFFF' } : {}}
+                      className={`py-2 rounded-xl border text-center uppercase tracking-wider font-black ${
+                        editPostFormat === fmt ? 'border-[#FD3100]' : 'border-[#DCD6CC] bg-[#FAF9F7] text-[#111111]'
+                      }`}
+                    >
+                      {fmt === 'VIDEO' ? 'Vídeo / Reels' : fmt === 'CAROUSEL' ? 'Carrossel' : 'Estático'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-black uppercase tracking-wider text-[#111111] mb-1.5">
+                  Link da Mídia (Google Drive ou Direto) *
+                </label>
+                <input
+                  type="url"
+                  value={editPostMediaUrl}
+                  onChange={(e) => setEditPostMediaUrl(e.target.value)}
+                  placeholder="https://drive.google.com/file/d/..."
+                  required
+                  className="w-full px-3 py-2 bg-[#FAF9F7] border border-[#DCD6CC] focus:border-[#FD3100] rounded-xl text-xs font-mono font-medium text-[#111111] focus:outline-none"
+                />
+              </div>
+
+              {editPostFormat === 'VIDEO' && (
+                <div>
+                  <label className="block text-xs font-black uppercase tracking-wider text-[#111111] mb-1.5">
+                    Capa do Vídeo (Thumbnail / Feed 1:1) - Opcional
+                  </label>
+                  <input
+                    type="url"
+                    value={editPostThumbnailUrl}
+                    onChange={(e) => setEditPostThumbnailUrl(e.target.value)}
+                    placeholder="Link do Google Drive ou link direto da imagem"
+                    className="w-full px-3 py-2 bg-[#FAF9F7] border border-[#DCD6CC] focus:border-[#FD3100] rounded-xl text-xs font-mono font-medium text-[#111111] focus:outline-none"
+                  />
+                </div>
+              )}
+
+              <div>
+                <label className="block text-xs font-black uppercase tracking-wider text-[#111111] mb-1.5">
+                  Legenda do Post (Caption)
+                </label>
+                <textarea
+                  value={editPostCaption}
+                  onChange={(e) => setEditPostCaption(e.target.value)}
+                  placeholder="Escreva a legenda com hashtags..."
+                  rows={4}
+                  className="w-full px-3 py-2 bg-[#FAF9F7] border border-[#DCD6CC] focus:border-[#FD3100] rounded-xl text-xs font-medium text-[#111111] focus:outline-none resize-none"
+                />
+              </div>
+
+              <div className="pt-3 border-t border-[#EEEDEA] flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setEditPostModalOpen(false)}
+                  className="btn-vb-secondary px-4 py-2 rounded-xl text-xs font-black uppercase"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={savingEditPost}
+                  style={{ backgroundColor: '#FD3100', color: '#FFFFFF' }}
+                  className="btn-vb-primary px-6 py-2 rounded-xl text-xs font-black uppercase disabled:opacity-50"
+                >
+                  {savingEditPost ? 'Salvando...' : 'Salvar Alterações'}
                 </button>
               </div>
             </form>

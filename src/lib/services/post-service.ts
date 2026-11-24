@@ -340,6 +340,93 @@ export async function updatePostThumbnail(postId: string, thumbnailUrl: string):
   }
 }
 
+export async function updatePost(
+  postId: string,
+  data: {
+    title?: string;
+    caption?: string | null;
+    scheduledDate?: Date | string | null;
+    format?: 'VIDEO' | 'CAROUSEL' | 'STATIC' | 'REELS' | 'STORIES';
+    cycleId?: string | null;
+    mediaUrl?: string;
+    thumbnailUrl?: string | null;
+  }
+): Promise<PostData | null> {
+  const updateData: any = {};
+  if (data.title !== undefined) updateData.title = data.title.trim();
+  if (data.caption !== undefined) updateData.caption = data.caption ? data.caption.trim() : null;
+  if (data.scheduledDate !== undefined) {
+    updateData.scheduledDate = data.scheduledDate ? new Date(data.scheduledDate) : null;
+  }
+  if (data.format !== undefined) updateData.format = data.format;
+  if (data.cycleId !== undefined) updateData.cycleId = data.cycleId || null;
+
+  try {
+    const updated = await prisma.post.update({
+      where: { id: postId },
+      data: updateData,
+      include: {
+        media: { orderBy: { order: 'asc' } },
+        comments: { orderBy: { createdAt: 'asc' } },
+      },
+    });
+
+    if (data.mediaUrl || data.thumbnailUrl !== undefined) {
+      if (updated.media.length > 0) {
+        const mediaUpdate: any = {};
+        if (data.mediaUrl) mediaUpdate.url = data.mediaUrl;
+        if (data.thumbnailUrl !== undefined) mediaUpdate.thumbnailUrl = data.thumbnailUrl;
+        await prisma.postMedia.update({
+          where: { id: updated.media[0].id },
+          data: mediaUpdate,
+        });
+      }
+    }
+
+    const finalPost = await prisma.post.findUnique({
+      where: { id: postId },
+      include: {
+        media: { orderBy: { order: 'asc' } },
+        comments: { orderBy: { createdAt: 'asc' } },
+      },
+    });
+
+    return finalPost as unknown as PostData;
+  } catch (err) {
+    console.warn('Atualizando post em memória temporária:', err);
+    const post = localPostsStore.find((p) => p.id === postId);
+    if (post) {
+      if (data.title !== undefined) post.title = data.title;
+      if (data.caption !== undefined) post.caption = data.caption;
+      if (data.scheduledDate !== undefined) {
+        post.scheduledDate = data.scheduledDate ? new Date(data.scheduledDate) : null;
+      }
+      if (data.format !== undefined) post.format = data.format;
+      if (data.cycleId !== undefined) post.cycleId = data.cycleId;
+      if (data.mediaUrl && post.media.length > 0) post.media[0].url = data.mediaUrl;
+      if (data.thumbnailUrl !== undefined && post.media.length > 0) {
+        post.media[0].thumbnailUrl = data.thumbnailUrl;
+      }
+      post.updatedAt = new Date();
+      return post;
+    }
+    return null;
+  }
+}
+
+export async function deletePost(postId: string): Promise<boolean> {
+  try {
+    await prisma.post.delete({
+      where: { id: postId },
+    });
+    return true;
+  } catch (err) {
+    console.warn('Excluindo post em memória temporária:', err);
+    localPostsStore = localPostsStore.filter((p) => p.id !== postId);
+    return true;
+  }
+}
+
 export async function addComment(
   postId: string,
   data: {

@@ -148,6 +148,7 @@ model ClientCycle {
   name        String    // Ex: "Ciclo 11 - Novembro 2026", "Entrega Teste"
   month       Int?      // 1 a 12
   year        Int?      // Ex: 2026
+  targetDate  DateTime? // Data específica do post ou da entrega
   active      Boolean   @default(true)
   
   posts       Post[]

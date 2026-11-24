@@ -44,6 +44,13 @@ interface ClientItem {
   pin: string;
   logoUrl?: string | null;
   createdAt: string;
+  cycles?: Array<{
+    id: string;
+    name: string;
+    month?: number | null;
+    year?: number | null;
+    active: boolean;
+  }>;
   _count?: {
     posts: number;
   };
@@ -80,6 +87,7 @@ export default function AdminDashboardPage() {
   // Modal Novo Post State
   const [postModalOpen, setPostModalOpen] = useState(false);
   const [postClientId, setPostClientId] = useState('');
+  const [postCycleId, setPostCycleId] = useState('');
   const [postTitle, setPostTitle] = useState('');
   const [postFormat, setPostFormat] = useState<'VIDEO' | 'CAROUSEL' | 'STATIC'>('VIDEO');
   const [postMediaUrl, setPostMediaUrl] = useState('');
@@ -180,6 +188,8 @@ export default function AdminDashboardPage() {
     } else if (clients.length > 0 && !postClientId) {
       setPostClientId(clients[0].id);
     }
+    setPostCycleId('');
+    setPostDate(new Date().toISOString().split('T')[0]);
     setPostTitle('');
     setPostMediaUrl('');
     setPostThumbnailUrl('');
@@ -262,6 +272,7 @@ export default function AdminDashboardPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           clientId: postClientId,
+          cycleId: postCycleId || undefined,
           title: postTitle,
           caption: postCaption,
           format: postFormat,
@@ -935,7 +946,10 @@ export default function AdminDashboardPage() {
                 </label>
                 <select
                   value={postClientId}
-                  onChange={(e) => setPostClientId(e.target.value)}
+                  onChange={(e) => {
+                    setPostClientId(e.target.value);
+                    setPostCycleId('');
+                  }}
                   required
                   className="w-full px-4 py-3 bg-[#FAF9F7] border border-[#DCD6CC] focus:border-[#FD3100] rounded-2xl text-[#111111] text-sm font-bold focus:outline-none"
                 >
@@ -945,6 +959,47 @@ export default function AdminDashboardPage() {
                     </option>
                   ))}
                 </select>
+              </div>
+
+              {/* Ciclo de Entrega e Data do Post */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-black uppercase tracking-wider text-[#111111] mb-1.5 flex items-center justify-between">
+                    <span>Ciclo de Entrega</span>
+                    <span className="text-[10px] text-[#66635D] font-normal normal-case">Lote mensal</span>
+                  </label>
+                  <select
+                    value={postCycleId}
+                    onChange={(e) => setPostCycleId(e.target.value)}
+                    className="w-full px-3 py-2.5 bg-[#FAF9F7] border border-[#DCD6CC] focus:border-[#FD3100] rounded-2xl text-[#111111] text-xs font-bold focus:outline-none"
+                  >
+                    <option value="">📌 Sem ciclo específico (Geral)</option>
+                    {clients
+                      .find((c) => c.id === postClientId)
+                      ?.cycles?.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          🗓️ {c.name}
+                        </option>
+                      ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-black uppercase tracking-wider text-[#111111] mb-1.5 flex items-center justify-between">
+                    <span className="flex items-center gap-1">
+                      <Clock className="w-3.5 h-3.5 text-[#FD3100]" />
+                      <span>Data do Post *</span>
+                    </span>
+                    <span className="text-[10px] text-[#66635D] font-normal normal-case">Dia agendado</span>
+                  </label>
+                  <input
+                    type="date"
+                    value={postDate}
+                    onChange={(e) => setPostDate(e.target.value)}
+                    required
+                    className="w-full px-3 py-2.5 bg-[#FAF9F7] border border-[#DCD6CC] focus:border-[#FD3100] rounded-2xl text-[#111111] text-xs font-bold focus:outline-none"
+                  />
+                </div>
               </div>
 
               {/* Título do Post */}
@@ -1061,19 +1116,7 @@ export default function AdminDashboardPage() {
                 </div>
               )}
 
-              {/* Data Programada */}
-              <div>
-                <label className="block text-xs font-black uppercase tracking-wider text-[#111111] mb-2">
-                  Data Programada para Postagem
-                </label>
-                <input
-                  type="date"
-                  value={postDate}
-                  onChange={(e) => setPostDate(e.target.value)}
-                  required
-                  className="w-full px-4 py-2.5 bg-[#FAF9F7] border border-[#DCD6CC] focus:border-[#FD3100] rounded-2xl text-[#111111] text-xs font-bold focus:outline-none"
-                />
-              </div>
+
 
               {/* Legenda (Copy) */}
               <div>
