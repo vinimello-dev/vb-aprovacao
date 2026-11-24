@@ -113,11 +113,11 @@ export function ClientPortalView({ client }: ClientPortalViewProps) {
             </div>
 
             {client.logoUrl && (
-              <div className="w-16 h-16 mx-auto mb-4 rounded-2xl overflow-hidden border-2 border-[#DCD6CC] bg-white flex items-center justify-center shadow-md p-1.5">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-2xl overflow-hidden border-2 border-[#DCD6CC] bg-white flex items-center justify-center shadow-md">
                 <img
                   src={client.logoUrl}
                   alt={`Logo ${client.name}`}
-                  className="w-full h-full object-contain"
+                  className="w-full h-full object-cover"
                 />
               </div>
             )}
@@ -208,11 +208,11 @@ export function ClientPortalView({ client }: ClientPortalViewProps) {
               />
             </div>
             {client.logoUrl && (
-              <div className="h-11 w-11 rounded-2xl overflow-hidden border border-[#DCD6CC] bg-white flex items-center justify-center shrink-0 p-1 shadow-sm">
+              <div className="h-11 w-11 rounded-2xl overflow-hidden border border-[#DCD6CC] bg-white flex items-center justify-center shrink-0 shadow-sm">
                 <img
                   src={client.logoUrl}
                   alt={`Logo ${client.name}`}
-                  className="w-full h-full object-contain"
+                  className="w-full h-full object-cover"
                 />
               </div>
             )}

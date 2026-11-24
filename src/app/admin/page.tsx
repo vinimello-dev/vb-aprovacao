@@ -526,11 +526,11 @@ export default function AdminDashboardPage() {
                       <div className="flex items-center gap-3">
                         <div className="relative group/logo shrink-0">
                           {client.logoUrl ? (
-                            <div className="w-12 h-12 rounded-2xl overflow-hidden border-2 border-[#DCD6CC] bg-white flex items-center justify-center shadow-md p-1">
+                            <div className="w-12 h-12 rounded-2xl overflow-hidden border-2 border-[#DCD6CC] bg-white flex items-center justify-center shadow-md">
                               <img
                                 src={client.logoUrl}
                                 alt={`Logo ${client.name}`}
-                                className="w-full h-full object-contain"
+                                className="w-full h-full object-cover"
                               />
                             </div>
                           ) : (
@@ -1108,12 +1108,12 @@ export default function AdminDashboardPage() {
             <form onSubmit={handleSaveEditLogo} className="mt-6 space-y-5">
               {/* Prévia do Logo Atual / Novo */}
               <div className="flex items-center gap-4 bg-[#FAF9F7] p-4 rounded-2xl border border-[#DCD6CC]">
-                <div className="w-16 h-16 rounded-2xl overflow-hidden border-2 border-[#DCD6CC] bg-white flex items-center justify-center shadow-md p-1 shrink-0">
+                <div className="w-16 h-16 rounded-2xl overflow-hidden border-2 border-[#DCD6CC] bg-white flex items-center justify-center shadow-md shrink-0">
                   {editLogoUrl.trim() ? (
                     <img
                       src={parseThumbnailUrl(editLogoUrl.trim())}
                       alt="Prévia do Logo"
-                      className="w-full h-full object-contain"
+                      className="w-full h-full object-cover"
                       onError={(e) => {
                         (e.target as HTMLImageElement).src = '/logo-vb.png?v=4';
                       }}
@@ -1122,7 +1122,7 @@ export default function AdminDashboardPage() {
                     <img
                       src={editingClient.logoUrl}
                       alt={editingClient.name}
-                      className="w-full h-full object-contain"
+                      className="w-full h-full object-cover"
                     />
                   ) : (
                     <div
