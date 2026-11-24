@@ -365,11 +365,11 @@ export function ClientPortalView({ client }: ClientPortalViewProps) {
   // TELA 1: Bloqueio por PIN de 4 dígitos
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#EEEDEA] px-4 py-12 relative overflow-hidden font-sans">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-[#FAF9F7] via-[#F2EFEA] to-[#FBE8E1] px-4 py-12 relative overflow-hidden font-sans">
         <div className="h-1.5 bg-[#FD3100] w-full fixed top-0 left-0" />
 
         <div className="w-full max-w-md relative z-10">
-          <div className="bg-white border-2 border-[#DCD6CC] rounded-3xl p-8 sm:p-10 shadow-xl text-center">
+          <div className="bg-gradient-to-b from-white via-white to-[#FFF4EF] border-2 border-[#DCD6CC] rounded-3xl p-8 sm:p-10 shadow-xl text-center overflow-hidden">
             {/* Selo Discreto VB HUB no topo */}
             <div className="flex items-center justify-center gap-2 mb-6">
               <img
@@ -385,13 +385,13 @@ export function ClientPortalView({ client }: ClientPortalViewProps) {
               </span>
             </div>
 
-            {/* Logo da Empresa em Evidência */}
+            {/* Logo da Empresa em Evidência e Proporcional */}
             {client.logoUrl ? (
-              <div className="h-24 w-full max-w-[240px] mx-auto mb-5 px-4 py-2.5 rounded-2xl overflow-hidden border-2 border-[#DCD6CC] bg-white flex items-center justify-center shadow-md">
+              <div className="w-40 h-24 sm:w-48 sm:h-28 mx-auto mb-5 p-2 rounded-2xl overflow-hidden border-2 border-[#DCD6CC] bg-white flex items-center justify-center shadow-md">
                 <img
                   src={client.logoUrl}
                   alt={`Logo ${client.name}`}
-                  className="max-h-full max-w-full w-auto h-auto object-contain"
+                  className="w-full h-full object-contain"
                 />
               </div>
             ) : (
@@ -486,11 +486,11 @@ export function ClientPortalView({ client }: ClientPortalViewProps) {
 
             {/* Logo do Cliente em Evidência */}
             {client.logoUrl ? (
-              <div className="h-10 sm:h-12 min-w-[44px] max-w-[130px] px-2 py-1 rounded-xl sm:rounded-2xl overflow-hidden border border-[#DCD6CC] bg-white flex items-center justify-center shrink-0 shadow-sm">
+              <div className="h-10 w-24 sm:h-12 sm:w-28 p-1 rounded-xl sm:rounded-2xl overflow-hidden border border-[#DCD6CC] bg-white flex items-center justify-center shrink-0 shadow-sm">
                 <img
                   src={client.logoUrl}
                   alt={`Logo ${client.name}`}
-                  className="max-h-full max-w-full w-auto h-auto object-contain"
+                  className="w-full h-full object-contain"
                 />
               </div>
             ) : (
