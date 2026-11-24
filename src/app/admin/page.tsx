@@ -1299,8 +1299,8 @@ export default function AdminDashboardPage() {
           {pendingAdjustmentsCount > 0 && (
             <div className="mb-6 p-3.5 sm:p-5 rounded-3xl bg-gradient-to-r from-[#FFF0EC] via-white to-[#FFF0EC] border-2 border-[#FFCEBF] shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 animate-in fade-in">
               <div className="flex items-start sm:items-center gap-3 min-w-0">
-                <span className="w-9 h-9 sm:w-11 sm:h-11 rounded-2xl bg-rose-600 text-white flex items-center justify-center text-base sm:text-xl font-black shadow-md shrink-0">
-                  🚨
+                <span className="w-9 h-9 sm:w-11 sm:h-11 rounded-2xl bg-rose-600 text-white flex items-center justify-center shadow-md shrink-0">
+                  <Bell className="w-5 h-5 text-white stroke-[1.75]" />
                 </span>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 flex-wrap">

@@ -316,8 +316,8 @@ export function ClientReviewsHub({
         </div>
       ) : filteredPosts.length === 0 ? (
         <div className="p-12 sm:p-16 bg-white rounded-3xl border-2 border-[#DCD6CC] text-center flex flex-col items-center justify-center">
-          <div className="w-16 h-16 rounded-3xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-3xl mb-4 shadow-sm">
-            🎉
+          <div className="w-16 h-16 rounded-3xl bg-emerald-50 border border-emerald-200 flex items-center justify-center mb-4 shadow-sm">
+            <CheckCircle2 className="w-8 h-8 text-emerald-600 stroke-[1.75]" />
           </div>
           <h3 className="text-lg font-black uppercase text-[#111111] tracking-tight">
             Nenhuma publicação encontrada

@@ -939,8 +939,8 @@ export default function ClientHubPage({ params }: PageProps) {
                   >
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-[#EEEDEA] mb-6">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-2xl bg-[#FFF0EC] border border-[#FFCEBF] flex items-center justify-center text-[#FD3100] font-black text-sm">
-                          📅
+                        <div className="w-10 h-10 rounded-2xl bg-[#FFF0EC] border border-[#FFCEBF] flex items-center justify-center text-[#FD3100]">
+                          <Calendar className="w-5 h-5 stroke-[1.75]" />
                         </div>
                         <div>
                           <div className="flex items-center gap-2">

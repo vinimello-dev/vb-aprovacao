@@ -23,6 +23,7 @@ import {
   Tag,
   Flag,
   GripVertical,
+  ClipboardList,
 } from 'lucide-react';
 import { DemandColumnData, DemandData } from '@/lib/services/demand-service';
 import { formatDate, getScheduledDateInput } from '@/lib/utils';
@@ -469,9 +470,9 @@ export function DemandsBoard({ clients, onOpenCreatePostModal }: DemandsBoardPro
           <div className="flex items-center gap-2">
             <span
               style={{ backgroundColor: '#FD3100', color: '#FFFFFF' }}
-              className="w-9 h-9 rounded-xl flex items-center justify-center font-black text-sm shadow-md shrink-0"
+              className="w-9 h-9 rounded-xl flex items-center justify-center shadow-md shrink-0"
             >
-              📋
+              <ClipboardList className="w-5 h-5 text-white stroke-[1.75]" />
             </span>
             <div>
               <h2 className="text-base sm:text-xl font-black text-[#111111] uppercase tracking-tight flex items-center gap-2 flex-wrap">
