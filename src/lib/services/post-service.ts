@@ -206,6 +206,59 @@ export async function getPostById(postId: string): Promise<PostData | null> {
   }
 }
 
+export interface PostWithClientData extends PostData {
+  client?: {
+    id: string;
+    name: string;
+    slug: string;
+    logoUrl?: string | null;
+  } | null;
+}
+
+export async function getAllPosts(options?: {
+  status?: string;
+  clientId?: string;
+}): Promise<PostWithClientData[]> {
+  const where: any = {};
+  if (options?.status && options.status !== 'ALL') {
+    where.status = options.status;
+  }
+  if (options?.clientId && options.clientId !== 'ALL') {
+    where.clientId = options.clientId;
+  }
+
+  try {
+    const posts = await prisma.post.findMany({
+      where,
+      orderBy: { updatedAt: 'desc' },
+      include: {
+        client: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            logoUrl: true,
+          },
+        },
+        media: { orderBy: { order: 'asc' } },
+        comments: { orderBy: { createdAt: 'desc' } },
+      },
+    });
+
+    return posts as unknown as PostWithClientData[];
+  } catch (error) {
+    console.warn('PostgreSQL indisponível. Usando posts do armazenamento temporário:', error);
+    let list = [...localPostsStore] as PostWithClientData[];
+    if (options?.status && options.status !== 'ALL') {
+      list = list.filter((p) => p.status === options.status);
+    }
+    if (options?.clientId && options.clientId !== 'ALL') {
+      list = list.filter((p) => p.clientId === options.clientId);
+    }
+    return list;
+  }
+}
+
 export async function createPost(data: {
   clientId: string;
   cycleId?: string | null;

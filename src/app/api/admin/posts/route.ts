@@ -1,7 +1,26 @@
 import { NextResponse } from 'next/server';
 import { isAuthenticatedAdmin } from '@/lib/auth';
-import { createPost, updatePost, deletePost } from '@/lib/services/post-service';
+import { createPost, updatePost, deletePost, getAllPosts } from '@/lib/services/post-service';
 import { parseMediaUrl, parseThumbnailUrl, getAutoThumbnail } from '@/lib/utils';
+
+export async function GET(request: Request) {
+  const isAuth = await isAuthenticatedAdmin();
+  if (!isAuth) {
+    return NextResponse.json({ error: 'Não autorizado.' }, { status: 401 });
+  }
+
+  try {
+    const { searchParams } = new URL(request.url);
+    const status = searchParams.get('status') || undefined;
+    const clientId = searchParams.get('clientId') || undefined;
+
+    const posts = await getAllPosts({ status, clientId });
+    return NextResponse.json({ posts });
+  } catch (error) {
+    console.error('Erro ao listar posts no admin:', error);
+    return NextResponse.json({ error: 'Erro ao buscar publicações.' }, { status: 500 });
+  }
+}
 
 export async function POST(request: Request) {
   const isAuth = await isAuthenticatedAdmin();

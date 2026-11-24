@@ -41,6 +41,8 @@ import { DemandsBoard } from '@/components/demands-board';
 import { ImageUploadInput } from '@/components/image-upload-input';
 import { CarouselUploader, CarouselSlide } from '@/components/carousel-uploader';
 import { NotificationItem } from '@/lib/services/notification-service';
+import { ClientReviewsHub } from '@/components/client-reviews-hub';
+import { PostReviewModal } from '@/components/post-review-modal';
 
 interface ClientItem {
   id: string;
@@ -68,9 +70,12 @@ export default function AdminDashboardPage() {
   const [isUsingFallback, setIsUsingFallback] = useState(false);
   const [search, setSearch] = useState('');
 
-  // Visualização Ativa: 'demands' (Quadro estilo Trello) ou 'clients' (Gestão de Clientes)
-  const [activeView, setActiveView] = useState<'demands' | 'clients'>('demands');
+  // Visualização Ativa: 'demands' (Quadro estilo Trello), 'reviews' (Central de Revisões dos Clientes) ou 'clients' (Gestão de Clientes)
+  const [activeView, setActiveView] = useState<'demands' | 'reviews' | 'clients'>('demands');
   const [sidebarOpen, setSidebarOpen] = useState(true);
+
+  // Modal de Revisão Interativa de Post (ao clicar para fazer revisão)
+  const [reviewModalPost, setReviewModalPost] = useState<any | null>(null);
 
   // Modal Novo Cliente State
   const [modalOpen, setModalOpen] = useState(false);
@@ -424,11 +429,11 @@ export default function AdminDashboardPage() {
             </div>
           </div>
 
-          {/* Seletores de Visão: Quadro de Demandas (Trello) vs Clientes */}
+          {/* Seletores de Visão: Quadro de Demandas (Trello) vs Revisões dos Clientes vs Clientes */}
           <div className="flex items-center bg-[#FAF9F7] p-1 rounded-xl sm:rounded-2xl border-2 border-[#DCD6CC] shadow-sm text-[11px] sm:text-xs font-black uppercase">
             <button
               onClick={() => setActiveView('demands')}
-              className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-4 py-1.5 sm:py-2 rounded-lg sm:rounded-xl transition-all font-black ${
+              className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3.5 py-1.5 sm:py-2 rounded-lg sm:rounded-xl transition-all font-black ${
                 activeView === 'demands'
                   ? 'btn-vb-primary shadow-sm'
                   : 'text-[#111111] hover:bg-[#EEEDEA]'
@@ -440,8 +445,26 @@ export default function AdminDashboardPage() {
             </button>
 
             <button
+              onClick={() => setActiveView('reviews')}
+              className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3.5 py-1.5 sm:py-2 rounded-lg sm:rounded-xl transition-all font-black ${
+                activeView === 'reviews'
+                  ? 'btn-vb-primary shadow-sm'
+                  : 'text-[#111111] hover:bg-[#EEEDEA]'
+              }`}
+              title="Central de Revisões dos Clientes"
+            >
+              <FileEdit className="w-3.5 sm:w-4 h-3.5 sm:h-4 stroke-[2.5]" />
+              <span className="truncate">Revisões</span>
+              {pendingAdjustmentsCount > 0 && (
+                <span className="ml-0.5 px-1.5 py-0.2 rounded-full text-[9px] sm:text-[10px] font-black bg-rose-600 text-white shadow-sm">
+                  {pendingAdjustmentsCount}
+                </span>
+              )}
+            </button>
+
+            <button
               onClick={() => setActiveView('clients')}
-              className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-4 py-1.5 sm:py-2 rounded-lg sm:rounded-xl transition-all font-black ${
+              className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3.5 py-1.5 sm:py-2 rounded-lg sm:rounded-xl transition-all font-black ${
                 activeView === 'clients'
                   ? 'btn-vb-primary shadow-sm'
                   : 'text-[#111111] hover:bg-[#EEEDEA]'
@@ -663,6 +686,32 @@ export default function AdminDashboardPage() {
 
                   <button
                     onClick={() => {
+                      setActiveView('reviews');
+                      setSidebarOpen(false);
+                    }}
+                    className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-black uppercase tracking-wider transition-all ${
+                      activeView === 'reviews'
+                        ? 'btn-vb-primary shadow-md'
+                        : 'text-[#111111] hover:bg-[#FAF9F7]'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <FileEdit className="w-4 h-4 stroke-[2.5]" />
+                      <span>Revisões Clientes</span>
+                    </div>
+                    {pendingAdjustmentsCount > 0 ? (
+                      <span className="text-[10px] px-2 py-0.5 rounded-full font-black bg-rose-600 text-white shadow-sm">
+                        {pendingAdjustmentsCount}
+                      </span>
+                    ) : (
+                      <span className="text-[10px] px-2 py-0.5 rounded-full font-black bg-[#FAF9F7] border border-[#DCD6CC] text-[#66635D]">
+                        Ajustes
+                      </span>
+                    )}
+                  </button>
+
+                  <button
+                    onClick={() => {
                       setActiveView('clients');
                       setSidebarOpen(false);
                     }}
@@ -783,7 +832,7 @@ export default function AdminDashboardPage() {
                   onClick={() => setActiveView('demands')}
                   className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-black uppercase tracking-wider transition-all ${
                     activeView === 'demands'
-                      ? 'bg-[#FD3100] text-white shadow-md'
+                      ? 'btn-vb-primary shadow-md'
                       : 'text-[#111111] hover:bg-[#FAF9F7]'
                   }`}
                 >
@@ -803,10 +852,39 @@ export default function AdminDashboardPage() {
                 </button>
 
                 <button
+                  onClick={() => setActiveView('reviews')}
+                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-black uppercase tracking-wider transition-all ${
+                    activeView === 'reviews'
+                      ? 'btn-vb-primary shadow-md'
+                      : 'text-[#111111] hover:bg-[#FAF9F7]'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <FileEdit className="w-4 h-4 stroke-[2.5]" />
+                    <span>Revisões dos Clientes</span>
+                  </div>
+                  {pendingAdjustmentsCount > 0 ? (
+                    <span className="text-[10px] px-2 py-0.5 rounded-full font-black bg-rose-600 text-white shadow-sm">
+                      {pendingAdjustmentsCount}
+                    </span>
+                  ) : (
+                    <span
+                      className={`text-[10px] px-2 py-0.5 rounded-full font-black ${
+                        activeView === 'reviews'
+                          ? 'bg-white/20 text-white'
+                          : 'bg-[#FAF9F7] border border-[#DCD6CC] text-[#66635D]'
+                      }`}
+                    >
+                      Ajustes
+                    </span>
+                  )}
+                </button>
+
+                <button
                   onClick={() => setActiveView('clients')}
                   className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-black uppercase tracking-wider transition-all ${
                     activeView === 'clients'
-                      ? 'bg-[#FD3100] text-white shadow-md'
+                      ? 'btn-vb-primary shadow-md'
                       : 'text-[#111111] hover:bg-[#FAF9F7]'
                   }`}
                 >
@@ -928,23 +1006,33 @@ export default function AdminDashboardPage() {
                 <button
                   type="button"
                   onClick={() => {
-                    setActiveView('demands');
+                    setActiveView('reviews');
                   }}
                   className="btn-vb-primary px-4 py-2.5 rounded-xl text-xs uppercase font-black tracking-wider flex items-center gap-2 shadow-sm"
                 >
-                  <Kanban className="w-3.5 h-3.5" />
-                  <span>Ver Quadro de Demandas</span>
+                  <FileEdit className="w-3.5 h-3.5" />
+                  <span>Abrir Aba de Revisões ({pendingAdjustmentsCount})</span>
                 </button>
               </div>
             </div>
           )}
 
-          {activeView === 'demands' ? (
+          {activeView === 'demands' && (
             <DemandsBoard
               clients={clients}
               onOpenCreatePostModal={handleOpenPostModal}
             />
-          ) : (
+          )}
+
+          {activeView === 'reviews' && (
+            <ClientReviewsHub
+              clients={clients}
+              onSelectPostForReview={(post) => setReviewModalPost(post)}
+              onRefreshNotifications={fetchNotifications}
+            />
+          )}
+
+          {activeView === 'clients' && (
             <div>
               {/* Banner de Boas-vindas e Ação Principal */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
@@ -1778,6 +1866,18 @@ export default function AdminDashboardPage() {
             </form>
           </div>
         </div>
+      )}
+
+      {/* MODAL DE REVISÃO INTERATIVA DO POST (CENTRAL DE REVISÕES) */}
+      {reviewModalPost && (
+        <PostReviewModal
+          post={reviewModalPost}
+          onClose={() => setReviewModalPost(null)}
+          onPostUpdated={() => {
+            setReviewModalPost(null);
+            fetchNotifications();
+          }}
+        />
       )}
     </div>
   );
