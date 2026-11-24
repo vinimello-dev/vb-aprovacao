@@ -5,6 +5,7 @@ import {
   createDemand,
   updateDemand,
   deleteDemand,
+  reorderDemands,
 } from '@/lib/services/demand-service';
 
 export async function GET() {
@@ -94,6 +95,34 @@ export async function PATCH(request: Request) {
     console.error('Erro ao atualizar demanda:', error);
     return NextResponse.json(
       { error: 'Erro ao atualizar demanda no banco de dados.' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function PUT(request: Request) {
+  const isAuth = await isAuthenticatedAdmin();
+  if (!isAuth) {
+    return NextResponse.json({ error: 'Não autorizado.' }, { status: 401 });
+  }
+
+  try {
+    const body = await request.json();
+    const { items } = body;
+
+    if (!Array.isArray(items)) {
+      return NextResponse.json(
+        { error: 'Parâmetro items inválido.' },
+        { status: 400 }
+      );
+    }
+
+    await reorderDemands(items);
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Erro ao reordenar demandas:', error);
+    return NextResponse.json(
+      { error: 'Erro ao reordenar demandas no banco de dados.' },
       { status: 500 }
     );
   }

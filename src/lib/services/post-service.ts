@@ -350,6 +350,12 @@ export async function updatePost(
     cycleId?: string | null;
     mediaUrl?: string;
     thumbnailUrl?: string | null;
+    mediaUrls?: Array<{
+      url: string;
+      mediaType?: string;
+      order?: number;
+      thumbnailUrl?: string | null;
+    }>;
   }
 ): Promise<PostData | null> {
   const updateData: any = {};
@@ -371,7 +377,20 @@ export async function updatePost(
       },
     });
 
-    if (data.mediaUrl || data.thumbnailUrl !== undefined) {
+    if (data.mediaUrls && Array.isArray(data.mediaUrls) && data.mediaUrls.length > 0) {
+      await prisma.postMedia.deleteMany({
+        where: { postId },
+      });
+      await prisma.postMedia.createMany({
+        data: data.mediaUrls.map((m, idx) => ({
+          postId,
+          url: m.url,
+          mediaType: m.mediaType || 'IMAGE',
+          order: typeof m.order === 'number' ? m.order : idx,
+          thumbnailUrl: m.thumbnailUrl || null,
+        })),
+      });
+    } else if (data.mediaUrl || data.thumbnailUrl !== undefined) {
       if (updated.media.length > 0) {
         const mediaUpdate: any = {};
         if (data.mediaUrl) mediaUpdate.url = data.mediaUrl;

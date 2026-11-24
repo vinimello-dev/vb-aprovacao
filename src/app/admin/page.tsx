@@ -37,6 +37,7 @@ import {
 import { generateSlug, generatePin, formatDate, parseMediaUrl, parseThumbnailUrl } from '@/lib/utils';
 import { DemandsBoard } from '@/components/demands-board';
 import { ImageUploadInput } from '@/components/image-upload-input';
+import { CarouselUploader, CarouselSlide } from '@/components/carousel-uploader';
 
 interface ClientItem {
   id: string;
@@ -93,6 +94,7 @@ export default function AdminDashboardPage() {
   const [postFormat, setPostFormat] = useState<'VIDEO' | 'CAROUSEL' | 'STATIC'>('VIDEO');
   const [postMediaUrl, setPostMediaUrl] = useState('');
   const [postThumbnailUrl, setPostThumbnailUrl] = useState('');
+  const [postCarouselSlides, setPostCarouselSlides] = useState<CarouselSlide[]>([]);
   const [postCaption, setPostCaption] = useState('');
   const [postDate, setPostDate] = useState(new Date().toISOString().split('T')[0]);
   const [postSubmitting, setPostSubmitting] = useState(false);
@@ -194,6 +196,7 @@ export default function AdminDashboardPage() {
     setPostTitle('');
     setPostMediaUrl('');
     setPostThumbnailUrl('');
+    setPostCarouselSlides([]);
     setPostCaption('');
     setPostError('');
     setPostSuccess('');
@@ -248,25 +251,44 @@ export default function AdminDashboardPage() {
     setPostError('');
     setPostSuccess('');
 
-    if (!postMediaUrl.trim()) {
-      setPostError('Por favor, informe o link do vídeo ou imagem (Google Drive, Dropbox ou link direto).');
-      return;
+    if (postFormat === 'CAROUSEL') {
+      if (postCarouselSlides.length === 0) {
+        setPostError('Adicione pelo menos 1 foto ao carrossel.');
+        return;
+      }
+    } else {
+      if (!postMediaUrl.trim()) {
+        setPostError('Por favor, selecione ou informe o arquivo da publicação.');
+        return;
+      }
     }
 
     setPostSubmitting(true);
 
     try {
-      // Se for carrossel e o usuário colocar múltiplos links separados por vírgula ou linha:
-      const rawUrls = postMediaUrl
-        .split(/[\n,]/)
-        .map((u) => u.trim())
-        .filter((u) => u.length > 0);
-
-      const mediaUrls = rawUrls.map((url, idx) => ({
-        url: parseMediaUrl(url),
-        mediaType: postFormat === 'VIDEO' ? 'VIDEO' : 'IMAGE',
-        order: idx,
-      }));
+      const mediaUrlsPayload =
+        postFormat === 'CAROUSEL'
+          ? postCarouselSlides.map((s, idx) => ({
+              url: s.url,
+              mediaType: 'IMAGE',
+              order: idx,
+            }))
+          : postFormat === 'STATIC'
+          ? [
+              {
+                url: postMediaUrl.trim(),
+                mediaType: 'IMAGE',
+                order: 0,
+              },
+            ]
+          : [
+              {
+                url: parseMediaUrl(postMediaUrl.trim()),
+                mediaType: 'VIDEO',
+                order: 0,
+                thumbnailUrl: postThumbnailUrl.trim() || undefined,
+              },
+            ];
 
       const res = await fetch('/api/admin/posts', {
         method: 'POST',
@@ -278,7 +300,7 @@ export default function AdminDashboardPage() {
           caption: postCaption,
           format: postFormat,
           scheduledDate: postDate,
-          mediaUrls,
+          mediaUrls: mediaUrlsPayload,
           thumbnailUrl: postThumbnailUrl.trim() || undefined,
         }),
       });
@@ -1062,8 +1084,13 @@ export default function AdminDashboardPage() {
                 </div>
               </div>
 
-              {/* Mídia do Post (Foto com Upload Direto ou Vídeo do Google Drive) */}
-              {postFormat === 'STATIC' ? (
+              {/* Mídia do Post (Carrossel com Reordenação, Foto com Upload Direto ou Vídeo do Google Drive) */}
+              {postFormat === 'CAROUSEL' ? (
+                <CarouselUploader
+                  slides={postCarouselSlides}
+                  onChange={setPostCarouselSlides}
+                />
+              ) : postFormat === 'STATIC' ? (
                 <ImageUploadInput
                   value={postMediaUrl}
                   onChange={setPostMediaUrl}

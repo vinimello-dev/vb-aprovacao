@@ -21,8 +21,57 @@ import {
   FolderPlus,
   ChevronDown,
   Tag,
+  Flag,
+  GripVertical,
 } from 'lucide-react';
 import { DemandColumnData, DemandData } from '@/lib/services/demand-service';
+
+export const PRIORITY_CONFIG: Record<
+  string,
+  {
+    label: string;
+    short: string;
+    badgeClass: string;
+    flagColor: string;
+    chipColor: string;
+  }
+> = {
+  BAIXA: {
+    label: 'Baixa Prioridade',
+    short: 'Baixa',
+    badgeClass: 'bg-emerald-50 text-emerald-800 border-emerald-200',
+    flagColor: 'text-emerald-500 fill-emerald-500',
+    chipColor: 'bg-emerald-500',
+  },
+  MEDIA: {
+    label: 'Média Prioridade',
+    short: 'Média',
+    badgeClass: 'bg-amber-50 text-amber-800 border-amber-200',
+    flagColor: 'text-amber-500 fill-amber-500',
+    chipColor: 'bg-amber-500',
+  },
+  NORMAL: {
+    label: 'Média Prioridade',
+    short: 'Média',
+    badgeClass: 'bg-amber-50 text-amber-800 border-amber-200',
+    flagColor: 'text-amber-500 fill-amber-500',
+    chipColor: 'bg-amber-500',
+  },
+  ALTA: {
+    label: 'Alta Prioridade',
+    short: 'Alta',
+    badgeClass: 'bg-rose-50 text-rose-800 border-rose-200',
+    flagColor: 'text-rose-600 fill-rose-600',
+    chipColor: 'bg-rose-600',
+  },
+  URGENTE: {
+    label: 'Urgente',
+    short: 'Urgente',
+    badgeClass: 'bg-purple-50 text-purple-800 border-purple-200',
+    flagColor: 'text-purple-600 fill-purple-600',
+    chipColor: 'bg-purple-600',
+  },
+};
 
 interface ClientOption {
   id: string;
@@ -43,12 +92,19 @@ export function DemandsBoard({ clients, onOpenCreatePostModal }: DemandsBoardPro
 
   // Filtros
   const [selectedClientId, setSelectedClientId] = useState<string>('ALL'); // 'ALL' | 'INTERNAL' | client.id
+  const [selectedPriority, setSelectedPriority] = useState<string>('ALL'); // 'ALL' | 'ALTA' | 'MEDIA' | 'BAIXA' | 'URGENTE'
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Drag and Drop State (Clicar e segurar cartão)
+  const [draggedDemandId, setDraggedDemandId] = useState<string | null>(null);
+  const [dragOverColId, setDragOverColId] = useState<string | null>(null);
+  const [dragOverTarget, setDragOverTarget] = useState<{ colId: string; index: number } | null>(null);
 
   // Formulário Inline de Novo Cartão por Coluna (colId -> text)
   const [activeNewCardColId, setActiveNewCardColId] = useState<string | null>(null);
   const [newCardTitle, setNewCardTitle] = useState('');
   const [newCardClientId, setNewCardClientId] = useState<string>('');
+  const [newCardPriority, setNewCardPriority] = useState<string>('NORMAL');
   const [submittingCard, setSubmittingCard] = useState(false);
 
   // Adicionar Nova Coluna / Lista
@@ -100,12 +156,14 @@ export function DemandsBoard({ clients, onOpenCreatePostModal }: DemandsBoardPro
           title: newCardTitle.trim(),
           columnId,
           clientId: newCardClientId ? newCardClientId : null,
+          priority: newCardPriority,
         }),
       });
 
       if (res.ok) {
         setNewCardTitle('');
         setNewCardClientId('');
+        setNewCardPriority('NORMAL');
         setActiveNewCardColId(null);
         await fetchBoard();
       }
@@ -113,6 +171,92 @@ export function DemandsBoard({ clients, onOpenCreatePostModal }: DemandsBoardPro
       console.error(err);
     } finally {
       setSubmittingCard(false);
+    }
+  };
+
+  // Reordenação via Drag & Drop (Clicar e Segurar)
+  const handleDropCard = async (targetColId: string, dropIndex?: number) => {
+    if (!draggedDemandId) return;
+
+    let movedItem: DemandData | null = null;
+    let sourceColId = '';
+    for (const col of columns) {
+      const found = col.demands.find((d) => d.id === draggedDemandId);
+      if (found) {
+        movedItem = found;
+        sourceColId = col.id;
+        break;
+      }
+    }
+
+    if (!movedItem) {
+      setDraggedDemandId(null);
+      setDragOverTarget(null);
+      setDragOverColId(null);
+      return;
+    }
+
+    const nextColumns = columns.map((col) => {
+      if (col.id === sourceColId && sourceColId !== targetColId) {
+        const remaining = col.demands.filter((d) => d.id !== draggedDemandId);
+        return {
+          ...col,
+          demands: remaining.map((d, idx) => ({ ...d, order: idx })),
+        };
+      }
+
+      if (col.id === targetColId) {
+        const withoutItem = col.demands.filter((d) => d.id !== draggedDemandId);
+        const insertPos =
+          dropIndex !== undefined
+            ? Math.max(0, Math.min(dropIndex, withoutItem.length))
+            : withoutItem.length;
+
+        const updatedItem: DemandData = {
+          ...movedItem!,
+          columnId: targetColId,
+        };
+
+        const updatedList = [...withoutItem];
+        updatedList.splice(insertPos, 0, updatedItem);
+
+        return {
+          ...col,
+          demands: updatedList.map((d, idx) => ({ ...d, order: idx })),
+        };
+      }
+
+      return col;
+    });
+
+    setColumns(nextColumns);
+    setDraggedDemandId(null);
+    setDragOverTarget(null);
+    setDragOverColId(null);
+
+    const itemsToPersist: Array<{ id: string; columnId: string; order: number }> = [];
+
+    const targetCol = nextColumns.find((c) => c.id === targetColId);
+    targetCol?.demands.forEach((d, idx) => {
+      itemsToPersist.push({ id: d.id, columnId: targetCol.id, order: idx });
+    });
+
+    if (sourceColId !== targetColId) {
+      const sourceCol = nextColumns.find((c) => c.id === sourceColId);
+      sourceCol?.demands.forEach((d, idx) => {
+        itemsToPersist.push({ id: d.id, columnId: sourceCol.id, order: idx });
+      });
+    }
+
+    try {
+      await fetch('/api/admin/demands', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ items: itemsToPersist }),
+      });
+    } catch (err) {
+      console.error('Erro ao salvar reordenação:', err);
+      await fetchBoard();
     }
   };
 
@@ -299,6 +443,10 @@ export function DemandsBoard({ clients, onOpenCreatePostModal }: DemandsBoardPro
     ) {
       return false;
     }
+    if (selectedPriority !== 'ALL') {
+      const p = demand.priority === 'NORMAL' ? 'MEDIA' : demand.priority || 'MEDIA';
+      if (p !== selectedPriority) return false;
+    }
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       const matchTitle = demand.title.toLowerCase().includes(q);
@@ -375,6 +523,22 @@ export function DemandsBoard({ clients, onOpenCreatePostModal }: DemandsBoardPro
             </select>
           </div>
 
+          {/* Filtro por Prioridade */}
+          <div className="flex items-center gap-1.5 bg-[#FAF9F7] border border-[#DCD6CC] px-3 py-1.5 rounded-xl text-xs font-bold text-[#111111]">
+            <Flag className="w-3.5 h-3.5 text-rose-600 fill-rose-600" />
+            <select
+              value={selectedPriority}
+              onChange={(e) => setSelectedPriority(e.target.value)}
+              className="bg-transparent text-xs font-black text-[#111111] focus:outline-none cursor-pointer"
+            >
+              <option value="ALL">Todas as Prioridades</option>
+              <option value="ALTA">🚩 Alta Prioridade</option>
+              <option value="MEDIA">🚩 Média Prioridade</option>
+              <option value="BAIXA">🚩 Baixa Prioridade</option>
+              <option value="URGENTE">🚩 Urgente</option>
+            </select>
+          </div>
+
           <button
             onClick={fetchBoard}
             className="p-2 hover:bg-[#EEEDEA] text-[#66635D] hover:text-[#111111] rounded-xl transition-colors"
@@ -391,10 +555,27 @@ export function DemandsBoard({ clients, onOpenCreatePostModal }: DemandsBoardPro
           {columns.map((column, colIdx) => {
             const visibleDemands = column.demands.filter(filterDemand);
 
+            const isColumnDropTarget = dragOverColId === column.id && !dragOverTarget;
+
             return (
               <div
                 key={column.id}
-                className="w-72 sm:w-80 bg-[#F1F2F4] rounded-2xl p-3 border border-[#DCD6CC] shadow-sm flex flex-col max-h-[calc(100vh-250px)]"
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  if (dragOverColId !== column.id) setDragOverColId(column.id);
+                }}
+                onDragLeave={() => {
+                  if (dragOverColId === column.id) setDragOverColId(null);
+                }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  handleDropCard(column.id);
+                }}
+                className={`w-72 sm:w-80 rounded-2xl p-3 border shadow-sm flex flex-col max-h-[calc(100vh-250px)] transition-all ${
+                  isColumnDropTarget
+                    ? 'bg-[#FFF0EC] border-[#FD3100] ring-2 ring-[#FD3100]/30'
+                    : 'bg-[#F1F2F4] border-[#DCD6CC]'
+                }`}
               >
                 {/* Cabeçalho da Coluna */}
                 <div className="flex items-center justify-between px-2 py-2 mb-2">
@@ -418,132 +599,217 @@ export function DemandsBoard({ clients, onOpenCreatePostModal }: DemandsBoardPro
                   )}
                 </div>
 
-                {/* Lista de Cartões (Scrollável se tiver muitos) */}
-                <div className="space-y-2.5 overflow-y-auto pr-1 flex-1 min-h-[30px]">
-                  {visibleDemands.map((demand) => {
+                {/* Lista de Cartões (Scrollável com Drag & Drop) */}
+                <div className="space-y-2.5 overflow-y-auto pr-1 flex-1 min-h-[40px]">
+                  {visibleDemands.map((demand, cardIdx) => {
                     const isOverdue =
                       demand.dueDate &&
                       new Date(demand.dueDate) < new Date() &&
                       !demand.completed;
 
+                    const isDragged = draggedDemandId === demand.id;
+                    const isOverThis =
+                      dragOverTarget?.colId === column.id &&
+                      dragOverTarget?.index === cardIdx;
+                    const priorityMeta =
+                      PRIORITY_CONFIG[demand.priority] || PRIORITY_CONFIG.MEDIA;
+
                     return (
-                      <div
-                        key={demand.id}
-                        className={`bg-white rounded-xl p-3 border shadow-sm transition-all hover:shadow-md group relative ${
-                          demand.completed
-                            ? 'opacity-60 border-emerald-300 bg-emerald-50/20'
-                            : 'border-[#DFE1E6] hover:border-[#FD3100]'
-                        }`}
-                      >
-                        {/* Tag do Cliente (se associado) */}
-                        {demand.client && (
-                          <div className="flex items-center gap-1.5 mb-2">
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider bg-[#FFF0EC] text-[#FD3100] border border-[#FFCEBF] max-w-[200px] truncate">
-                              {demand.client.logoUrl ? (
-                                <img
-                                  src={demand.client.logoUrl}
-                                  alt=""
-                                  className="w-3 h-3 rounded object-cover"
-                                />
-                              ) : (
-                                <Tag className="w-2.5 h-2.5" />
-                              )}
-                              <span className="truncate">{demand.client.name}</span>
-                            </span>
-                          </div>
+                      <div key={demand.id}>
+                        {/* Linha indicadora de drop acima do cartão */}
+                        {isOverThis && !isDragged && (
+                          <div className="h-1.5 bg-[#FD3100] rounded-full animate-pulse my-1.5 shadow-sm" />
                         )}
 
-                        {/* Corpo do Cartão: Checkbox + Título */}
-                        <div className="flex items-start gap-2.5">
-                          <button
-                            type="button"
-                            onClick={() => handleToggleComplete(demand)}
-                            className={`mt-0.5 w-4 h-4 rounded-md border flex items-center justify-center transition-colors shrink-0 ${
-                              demand.completed
-                                ? 'bg-emerald-600 border-emerald-600 text-white'
-                                : 'border-[#97A0AF] hover:border-[#FD3100] bg-white'
-                            }`}
-                            title={demand.completed ? 'Marcar como pendente' : 'Marcar como concluído'}
-                          >
-                            {demand.completed && <Check className="w-3 h-3 stroke-[3]" />}
-                          </button>
+                        <div
+                          draggable={!demand.completed}
+                          onDragStart={(e) => {
+                            setDraggedDemandId(demand.id);
+                            e.dataTransfer.setData('text/plain', demand.id);
+                            e.dataTransfer.effectAllowed = 'move';
+                          }}
+                          onDragEnd={() => {
+                            setDraggedDemandId(null);
+                            setDragOverTarget(null);
+                            setDragOverColId(null);
+                          }}
+                          onDragOver={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            if (
+                              dragOverTarget?.colId !== column.id ||
+                              dragOverTarget?.index !== cardIdx
+                            ) {
+                              setDragOverTarget({ colId: column.id, index: cardIdx });
+                              setDragOverColId(column.id);
+                            }
+                          }}
+                          onDrop={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleDropCard(column.id, cardIdx);
+                          }}
+                          className={`bg-white rounded-xl p-3 border shadow-sm transition-all hover:shadow-md group relative cursor-grab active:cursor-grabbing ${
+                            isDragged
+                              ? 'opacity-30 border-dashed border-[#FD3100] scale-95'
+                              : demand.completed
+                              ? 'opacity-60 border-emerald-300 bg-emerald-50/20'
+                              : 'border-[#DFE1E6] hover:border-[#FD3100]'
+                          }`}
+                        >
+                          {/* Topo do Cartão: Grip + Tags (Cliente & Bandeira Prioridade) */}
+                          <div className="flex items-center justify-between gap-1.5 mb-2">
+                            <div className="flex items-center gap-1.5 flex-wrap flex-1 min-w-0">
+                              {/* Grip Vertical */}
+                              <GripVertical className="w-3 h-3 text-[#97A0AF] group-hover:text-[#111111] shrink-0" />
 
-                          <div
-                            onClick={() => handleOpenEdit(demand)}
-                            className="flex-1 cursor-pointer"
-                          >
-                            <p
-                              className={`text-xs font-bold text-[#172B4D] leading-snug break-words ${
-                                demand.completed ? 'line-through text-[#626F86]' : ''
-                              }`}
-                            >
-                              {demand.title}
-                            </p>
+                              {/* Tag do Cliente */}
+                              {demand.client && (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider bg-[#FFF0EC] text-[#FD3100] border border-[#FFCEBF] max-w-[130px] truncate">
+                                  {demand.client.logoUrl ? (
+                                    <img
+                                      src={demand.client.logoUrl}
+                                      alt=""
+                                      className="w-3 h-3 rounded object-cover"
+                                    />
+                                  ) : (
+                                    <Tag className="w-2.5 h-2.5" />
+                                  )}
+                                  <span className="truncate">{demand.client.name}</span>
+                                </span>
+                              )}
+                            </div>
 
-                            {demand.description && (
-                              <p className="text-[11px] text-[#626F86] mt-1 line-clamp-2 font-medium">
-                                {demand.description}
-                              </p>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Rodapé do Cartão: Prazo + Mover */}
-                        <div className="flex items-center justify-between pt-2.5 mt-2 border-t border-[#F1F2F4] text-[10px]">
-                          {/* Badge de Prazo */}
-                          {demand.dueDate ? (
+                            {/* Bandeirinha de Prioridade */}
                             <span
-                              className={`flex items-center gap-1 px-1.5 py-0.5 rounded-md font-bold ${
-                                demand.completed
-                                  ? 'bg-emerald-100 text-emerald-800'
-                                  : isOverdue
-                                  ? 'bg-rose-100 text-rose-800 font-black'
-                                  : 'bg-emerald-50 text-emerald-700'
-                              }`}
+                              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-black border shrink-0 ${priorityMeta.badgeClass}`}
+                              title={priorityMeta.label}
                             >
-                              <Clock className="w-2.5 h-2.5" />
-                              {new Date(demand.dueDate).toLocaleDateString('pt-BR', {
-                                day: '2-digit',
-                                month: 'short',
-                              })}
+                              <Flag className={`w-2.5 h-2.5 ${priorityMeta.flagColor}`} />
+                              {priorityMeta.short}
                             </span>
-                          ) : (
-                            <span />
-                          )}
+                          </div>
 
-                          {/* Ações de Mover e Editar */}
-                          <div className="flex items-center gap-1 opacity-80 group-hover:opacity-100 transition-opacity">
-                            {colIdx > 0 && (
-                              <button
-                                onClick={() =>
-                                  handleMoveDemand(demand, columns[colIdx - 1].id)
-                                }
-                                className="p-1 hover:bg-[#EEEDEA] text-[#626F86] hover:text-[#111111] rounded"
-                                title={`Mover para ${columns[colIdx - 1].title}`}
-                              >
-                                <ArrowLeft className="w-3 h-3" />
-                              </button>
-                            )}
-
-                            {colIdx < columns.length - 1 && (
-                              <button
-                                onClick={() =>
-                                  handleMoveDemand(demand, columns[colIdx + 1].id)
-                                }
-                                className="p-1 hover:bg-[#EEEDEA] text-[#626F86] hover:text-[#111111] rounded"
-                                title={`Mover para ${columns[colIdx + 1].title}`}
-                              >
-                                <ArrowRight className="w-3 h-3" />
-                              </button>
-                            )}
-
+                          {/* Corpo do Cartão: Checkbox + Título */}
+                          <div className="flex items-start gap-2.5">
                             <button
-                              onClick={() => handleOpenEdit(demand)}
-                              className="p-1 hover:bg-[#EEEDEA] text-[#626F86] hover:text-[#FD3100] rounded"
-                              title="Editar cartão"
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleToggleComplete(demand);
+                              }}
+                              className={`mt-0.5 w-4 h-4 rounded-md border flex items-center justify-center transition-colors shrink-0 ${
+                                demand.completed
+                                  ? 'bg-emerald-600 border-emerald-600 text-white'
+                                  : 'border-[#97A0AF] hover:border-[#FD3100] bg-white'
+                              }`}
+                              title={
+                                demand.completed
+                                  ? 'Marcar como pendente'
+                                  : 'Marcar como concluído'
+                              }
                             >
-                              <Edit2 className="w-3 h-3" />
+                              {demand.completed && (
+                                <Check className="w-3 h-3 stroke-[3]" />
+                              )}
                             </button>
+
+                            <div
+                              onClick={() => handleOpenEdit(demand)}
+                              className="flex-1 cursor-pointer"
+                            >
+                              <p
+                                className={`text-xs font-bold text-[#172B4D] leading-snug break-words ${
+                                  demand.completed
+                                    ? 'line-through text-[#626F86]'
+                                    : ''
+                                }`}
+                              >
+                                {demand.title}
+                              </p>
+
+                              {demand.description && (
+                                <p className="text-[11px] text-[#626F86] mt-1 line-clamp-2 font-medium">
+                                  {demand.description}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Rodapé do Cartão: Prazo + Mover */}
+                          <div className="flex items-center justify-between pt-2.5 mt-2 border-t border-[#F1F2F4] text-[10px]">
+                            {/* Badge de Prazo */}
+                            {demand.dueDate ? (
+                              <span
+                                className={`flex items-center gap-1 px-1.5 py-0.5 rounded-md font-bold ${
+                                  demand.completed
+                                    ? 'bg-emerald-100 text-emerald-800'
+                                    : isOverdue
+                                    ? 'bg-rose-100 text-rose-800 font-black'
+                                    : 'bg-emerald-50 text-emerald-700'
+                                }`}
+                              >
+                                <Clock className="w-2.5 h-2.5" />
+                                {new Date(demand.dueDate).toLocaleDateString(
+                                  'pt-BR',
+                                  {
+                                    day: '2-digit',
+                                    month: 'short',
+                                  }
+                                )}
+                              </span>
+                            ) : (
+                              <span />
+                            )}
+
+                            {/* Ações de Mover e Editar */}
+                            <div className="flex items-center gap-1 opacity-80 group-hover:opacity-100 transition-opacity">
+                              {colIdx > 0 && (
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleMoveDemand(
+                                      demand,
+                                      columns[colIdx - 1].id
+                                    );
+                                  }}
+                                  className="p-1 hover:bg-[#EEEDEA] text-[#626F86] hover:text-[#111111] rounded"
+                                  title={`Mover para ${columns[colIdx - 1].title}`}
+                                >
+                                  <ArrowLeft className="w-3 h-3" />
+                                </button>
+                              )}
+
+                              {colIdx < columns.length - 1 && (
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleMoveDemand(
+                                      demand,
+                                      columns[colIdx + 1].id
+                                    );
+                                  }}
+                                  className="p-1 hover:bg-[#EEEDEA] text-[#626F86] hover:text-[#111111] rounded"
+                                  title={`Mover para ${columns[colIdx + 1].title}`}
+                                >
+                                  <ArrowRight className="w-3 h-3" />
+                                </button>
+                              )}
+
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleOpenEdit(demand);
+                                }}
+                                className="p-1 hover:bg-[#EEEDEA] text-[#626F86] hover:text-[#FD3100] rounded"
+                                title="Editar cartão"
+                              >
+                                <Edit2 className="w-3 h-3" />
+                              </button>
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -586,6 +852,46 @@ export function DemandsBoard({ clients, onOpenCreatePostModal }: DemandsBoardPro
                         </select>
                       </div>
 
+                      {/* Selecionar Prioridade no Novo Cartão com Bandeirinhas */}
+                      <div className="pt-1">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-[10px] font-black uppercase tracking-wider text-[#66635D]">
+                            Prioridade:
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-4 gap-1">
+                          {[
+                            { key: 'BAIXA', label: 'Baixa', color: 'text-emerald-500 fill-emerald-500', activeBg: 'bg-emerald-600 text-white border-emerald-600' },
+                            { key: 'NORMAL', label: 'Média', color: 'text-amber-500 fill-amber-500', activeBg: 'bg-amber-500 text-white border-amber-500' },
+                            { key: 'ALTA', label: 'Alta', color: 'text-rose-600 fill-rose-600', activeBg: 'bg-rose-600 text-white border-rose-600' },
+                            { key: 'URGENTE', label: 'Urgente', color: 'text-purple-600 fill-purple-600', activeBg: 'bg-purple-600 text-white border-purple-600' },
+                          ].map((p) => {
+                            const isSelected =
+                              newCardPriority === p.key ||
+                              (p.key === 'NORMAL' && newCardPriority === 'MEDIA');
+                            return (
+                              <button
+                                key={p.key}
+                                type="button"
+                                onClick={() => setNewCardPriority(p.key)}
+                                className={`py-1 px-1 rounded-lg text-[10px] font-black border transition-all flex items-center justify-center gap-1 ${
+                                  isSelected
+                                    ? `${p.activeBg} shadow-sm`
+                                    : 'bg-[#FAF9F7] border-[#DCD6CC] text-[#66635D] hover:bg-white'
+                                }`}
+                              >
+                                <Flag
+                                  className={`w-2.5 h-2.5 ${
+                                    isSelected ? 'text-white fill-white' : p.color
+                                  }`}
+                                />
+                                <span className="truncate">{p.label}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+
                       <div className="flex items-center justify-between gap-2 pt-1">
                         <button
                           type="button"
@@ -602,6 +908,7 @@ export function DemandsBoard({ clients, onOpenCreatePostModal }: DemandsBoardPro
                             setActiveNewCardColId(null);
                             setNewCardTitle('');
                             setNewCardClientId('');
+                            setNewCardPriority('NORMAL');
                           }}
                           className="p-1 text-[#626F86] hover:text-[#111111] rounded-lg"
                         >
@@ -615,6 +922,7 @@ export function DemandsBoard({ clients, onOpenCreatePostModal }: DemandsBoardPro
                       onClick={() => {
                         setActiveNewCardColId(column.id);
                         setNewCardTitle('');
+                        setNewCardPriority('NORMAL');
                         setNewCardClientId(
                           selectedClientId !== 'ALL' && selectedClientId !== 'INTERNAL'
                             ? selectedClientId
@@ -792,6 +1100,60 @@ export function DemandsBoard({ clients, onOpenCreatePostModal }: DemandsBoardPro
                       </option>
                     ))}
                   </select>
+                </div>
+              </div>
+
+              {/* Prioridade com Bandeirinhas */}
+              <div>
+                <label className="block text-xs font-black uppercase tracking-wider text-[#111111] mb-1.5">
+                  Prioridade do Cartão
+                </label>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  {[
+                    {
+                      key: 'BAIXA',
+                      label: 'Baixa',
+                      color: 'text-emerald-500 fill-emerald-500',
+                      badgeClass: 'bg-emerald-50 text-emerald-800 border-emerald-400',
+                    },
+                    {
+                      key: 'NORMAL',
+                      label: 'Média',
+                      color: 'text-amber-500 fill-amber-500',
+                      badgeClass: 'bg-amber-50 text-amber-800 border-amber-400',
+                    },
+                    {
+                      key: 'ALTA',
+                      label: 'Alta',
+                      color: 'text-rose-600 fill-rose-600',
+                      badgeClass: 'bg-rose-50 text-rose-800 border-rose-400',
+                    },
+                    {
+                      key: 'URGENTE',
+                      label: 'Urgente',
+                      color: 'text-purple-600 fill-purple-600',
+                      badgeClass: 'bg-purple-50 text-purple-800 border-purple-400',
+                    },
+                  ].map((p) => {
+                    const isSelected =
+                      editPriority === p.key ||
+                      (p.key === 'NORMAL' && editPriority === 'MEDIA');
+                    return (
+                      <button
+                        key={p.key}
+                        type="button"
+                        onClick={() => setEditPriority(p.key)}
+                        className={`py-2 px-3 rounded-2xl text-xs font-black border-2 transition-all flex items-center justify-center gap-1.5 ${
+                          isSelected
+                            ? `${p.badgeClass} ring-2 ring-[#FD3100] shadow-sm`
+                            : 'bg-[#FAF9F7] border-[#DCD6CC] text-[#66635D] hover:bg-white'
+                        }`}
+                      >
+                        <Flag className={`w-3.5 h-3.5 ${p.color}`} />
+                        <span>{p.label}</span>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 

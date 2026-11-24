@@ -64,11 +64,20 @@ export async function PATCH(request: Request) {
 
   try {
     const body = await request.json();
-    const { id, title, caption, scheduledDate, format, cycleId, mediaUrl, thumbnailUrl } = body;
+    const { id, title, caption, scheduledDate, format, cycleId, mediaUrl, thumbnailUrl, mediaUrls } = body;
 
     if (!id) {
       return NextResponse.json({ error: 'ID do post é obrigatório.' }, { status: 400 });
     }
+
+    const parsedMediaUrls = Array.isArray(mediaUrls)
+      ? mediaUrls.map((m: any, idx: number) => ({
+          url: parseMediaUrl(m.url),
+          mediaType: m.mediaType || 'IMAGE',
+          order: typeof m.order === 'number' ? m.order : idx,
+          thumbnailUrl: m.thumbnailUrl ? parseThumbnailUrl(m.thumbnailUrl) : undefined,
+        }))
+      : undefined;
 
     const post = await updatePost(id, {
       title,
@@ -78,6 +87,7 @@ export async function PATCH(request: Request) {
       cycleId,
       mediaUrl: mediaUrl ? parseMediaUrl(mediaUrl) : undefined,
       thumbnailUrl: thumbnailUrl ? parseThumbnailUrl(thumbnailUrl) : undefined,
+      mediaUrls: parsedMediaUrls,
     });
 
     if (!post) {

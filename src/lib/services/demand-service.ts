@@ -169,6 +169,28 @@ export async function deleteDemand(id: string): Promise<boolean> {
   return true;
 }
 
+export async function reorderDemands(
+  items: Array<{ id: string; columnId: string; order: number }>
+): Promise<boolean> {
+  try {
+    await prisma.$transaction(
+      items.map((item) =>
+        prisma.demand.update({
+          where: { id: item.id },
+          data: {
+            columnId: item.columnId,
+            order: item.order,
+          },
+        })
+      )
+    );
+    return true;
+  } catch (err) {
+    console.error('Erro ao reordenar demandas no banco:', err);
+    return false;
+  }
+}
+
 export async function createDemandColumn(title: string): Promise<DemandColumnData> {
   const count = await prisma.demandColumn.count();
   const slug = `${generateSlug(title)}-${Date.now().toString().slice(-4)}`;

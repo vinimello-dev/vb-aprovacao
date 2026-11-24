@@ -40,6 +40,7 @@ import {
 import { formatDate, parseThumbnailUrl, parseMediaUrl } from '@/lib/utils';
 import { PostReviewModal } from '@/components/post-review-modal';
 import { ImageUploadInput } from '@/components/image-upload-input';
+import { CarouselUploader, CarouselSlide } from '@/components/carousel-uploader';
 import { PostData } from '@/lib/services/post-service';
 
 interface CycleItem {
@@ -127,6 +128,7 @@ export default function ClientHubPage({ params }: PageProps) {
   const [postFormat, setPostFormat] = useState<'VIDEO' | 'CAROUSEL' | 'STATIC'>('VIDEO');
   const [postMediaUrl, setPostMediaUrl] = useState('');
   const [postThumbnailUrl, setPostThumbnailUrl] = useState('');
+  const [postCarouselSlides, setPostCarouselSlides] = useState<CarouselSlide[]>([]);
   const [postCaption, setPostCaption] = useState('');
   const [postDate, setPostDate] = useState(new Date().toISOString().split('T')[0]);
   const [postCycleId, setPostCycleId] = useState('');
@@ -140,6 +142,7 @@ export default function ClientHubPage({ params }: PageProps) {
   const [editPostFormat, setEditPostFormat] = useState<'VIDEO' | 'CAROUSEL' | 'STATIC'>('VIDEO');
   const [editPostMediaUrl, setEditPostMediaUrl] = useState('');
   const [editPostThumbnailUrl, setEditPostThumbnailUrl] = useState('');
+  const [editPostCarouselSlides, setEditPostCarouselSlides] = useState<CarouselSlide[]>([]);
   const [editPostCaption, setEditPostCaption] = useState('');
   const [editPostDate, setEditPostDate] = useState('');
   const [editPostCycleId, setEditPostCycleId] = useState('');
@@ -265,13 +268,38 @@ export default function ClientHubPage({ params }: PageProps) {
   const handleCreatePost = async (e: React.FormEvent) => {
     e.preventDefault();
     setPostError('');
-    if (!postMediaUrl.trim()) {
-      setPostError('Informe o link do vídeo ou imagem.');
-      return;
+
+    if (postFormat === 'CAROUSEL') {
+      if (postCarouselSlides.length === 0) {
+        setPostError('Adicione pelo menos 1 foto ao carrossel.');
+        return;
+      }
+    } else {
+      if (!postMediaUrl.trim()) {
+        setPostError(postFormat === 'STATIC' ? 'Selecione ou informe a foto do post.' : 'Informe o link do vídeo.');
+        return;
+      }
     }
+
     setSubmittingPost(true);
 
     try {
+      const mediaUrlsPayload =
+        postFormat === 'CAROUSEL'
+          ? postCarouselSlides.map((s, idx) => ({
+              url: s.url,
+              mediaType: 'IMAGE',
+              order: idx,
+            }))
+          : [
+              {
+                url: postMediaUrl.trim(),
+                mediaType: postFormat === 'STATIC' ? 'IMAGE' : 'VIDEO',
+                order: 0,
+                thumbnailUrl: postFormat === 'VIDEO' ? postThumbnailUrl.trim() || undefined : undefined,
+              },
+            ];
+
       const res = await fetch('/api/admin/posts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -283,7 +311,7 @@ export default function ClientHubPage({ params }: PageProps) {
           scheduledDate: postDate,
           caption: postCaption,
           thumbnailUrl: postThumbnailUrl.trim() || undefined,
-          mediaUrls: [{ url: postMediaUrl.trim(), mediaType: postFormat === 'STATIC' ? 'IMAGE' : 'VIDEO' }],
+          mediaUrls: mediaUrlsPayload,
         }),
       });
 
@@ -292,6 +320,7 @@ export default function ClientHubPage({ params }: PageProps) {
         setPostTitle('');
         setPostMediaUrl('');
         setPostThumbnailUrl('');
+        setPostCarouselSlides([]);
         setPostCaption('');
         await fetchClientData();
       } else {
@@ -314,6 +343,17 @@ export default function ClientHubPage({ params }: PageProps) {
     );
     setEditPostMediaUrl(post.media && post.media.length > 0 ? post.media[0].url : '');
     setEditPostThumbnailUrl(post.media && post.media.length > 0 ? (post.media[0].thumbnailUrl || '') : '');
+    if (post.format === 'CAROUSEL' && post.media) {
+      setEditPostCarouselSlides(
+        post.media.map((m, idx) => ({
+          id: m.id || `slide-${idx}`,
+          url: m.url,
+          order: typeof m.order === 'number' ? m.order : idx,
+        }))
+      );
+    } else {
+      setEditPostCarouselSlides([]);
+    }
     setEditPostCaption(post.caption || '');
     setEditPostDate(
       post.scheduledDate ? new Date(post.scheduledDate).toISOString().split('T')[0] : ''
@@ -327,10 +367,25 @@ export default function ClientHubPage({ params }: PageProps) {
   const handleSaveEditPost = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingPostId || !editPostTitle.trim()) return;
+
+    if (editPostFormat === 'CAROUSEL' && editPostCarouselSlides.length === 0) {
+      setEditPostError('O carrossel deve conter pelo menos 1 imagem.');
+      return;
+    }
+
     setSavingEditPost(true);
     setEditPostError('');
 
     try {
+      const editMediaUrlsPayload =
+        editPostFormat === 'CAROUSEL'
+          ? editPostCarouselSlides.map((s, idx) => ({
+              url: s.url,
+              mediaType: 'IMAGE',
+              order: idx,
+            }))
+          : undefined;
+
       const res = await fetch('/api/admin/posts', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -343,6 +398,7 @@ export default function ClientHubPage({ params }: PageProps) {
           cycleId: editPostCycleId || null,
           mediaUrl: editPostMediaUrl.trim() || undefined,
           thumbnailUrl: editPostThumbnailUrl.trim() || undefined,
+          mediaUrls: editMediaUrlsPayload,
         }),
       });
 
@@ -1623,8 +1679,13 @@ export default function ClientHubPage({ params }: PageProps) {
                 </div>
               </div>
 
-              {/* Mídia do Post (Foto com Upload Direto ou Vídeo do Google Drive) */}
-              {postFormat === 'STATIC' ? (
+              {/* Mídia do Post (Carrossel com Reordenação, Foto com Upload Direto ou Vídeo do Google Drive) */}
+              {postFormat === 'CAROUSEL' ? (
+                <CarouselUploader
+                  slides={postCarouselSlides}
+                  onChange={setPostCarouselSlides}
+                />
+              ) : postFormat === 'STATIC' ? (
                 <ImageUploadInput
                   value={postMediaUrl}
                   onChange={setPostMediaUrl}
@@ -1815,8 +1876,13 @@ export default function ClientHubPage({ params }: PageProps) {
                 </div>
               </div>
 
-              {/* Mídia do Post na Edição (Foto com Upload Direto ou Vídeo do Google Drive) */}
-              {editPostFormat === 'STATIC' ? (
+              {/* Mídia do Post na Edição (Carrossel com Reordenação, Foto ou Vídeo) */}
+              {editPostFormat === 'CAROUSEL' ? (
+                <CarouselUploader
+                  slides={editPostCarouselSlides}
+                  onChange={setEditPostCarouselSlides}
+                />
+              ) : editPostFormat === 'STATIC' ? (
                 <ImageUploadInput
                   value={editPostMediaUrl}
                   onChange={setEditPostMediaUrl}
