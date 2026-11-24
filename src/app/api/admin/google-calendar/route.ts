@@ -76,6 +76,37 @@ export async function POST(request: Request) {
       );
     }
 
+    // Valida o feed iCal antes de salvar (evita salvar links públicos 404 de agendas privadas)
+    let testEventsCount = 0;
+    if (icalUrl?.trim()) {
+      const now = new Date();
+      const rangeStart = new Date(Date.UTC(now.getFullYear(), now.getMonth() - 1, 1));
+      const rangeEnd = new Date(Date.UTC(now.getFullYear(), now.getMonth() + 2, 0));
+      const tempConn = {
+        id: 'test',
+        name: name || 'Minha Agenda Google',
+        icalUrl: icalUrl.trim(),
+        embedUrl: null,
+        color: color || '#FD3100',
+        isActive: true,
+        createdAt: '',
+        updatedAt: '',
+      };
+      const { events, error } = await fetchIcalEvents(tempConn, rangeStart, rangeEnd);
+      if (error) {
+        const isPublicLink = icalUrl.includes('/public/basic.ics');
+        return NextResponse.json(
+          {
+            error: isPublicLink
+              ? 'Você copiou o "Endereço PÚBLICO", mas sua agenda é privada (HTTP 404). No Google Agenda, copie o campo logo abaixo chamado "Endereço SECRETO no formato iCal" (clique no ícone de copiar ao lado dos pontinhos ••••••).'
+              : error,
+          },
+          { status: 400 }
+        );
+      }
+      testEventsCount = events.length;
+    }
+
     const connection = await saveGoogleCalendarConnection({
       name: name || 'Minha Agenda Google',
       icalUrl: icalUrl || null,
@@ -83,27 +114,11 @@ export async function POST(request: Request) {
       color: color || '#FD3100',
     });
 
-    // Testa imediatamente se o feed iCal é válido quando informado
-    let testEventsCount = 0;
-    let testWarning: string | undefined;
-    if (connection.icalUrl) {
-      const now = new Date();
-      const rangeStart = new Date(Date.UTC(now.getFullYear(), now.getMonth() - 1, 1));
-      const rangeEnd = new Date(Date.UTC(now.getFullYear(), now.getMonth() + 2, 0));
-      const { events, error } = await fetchIcalEvents(connection, rangeStart, rangeEnd);
-      if (error) {
-        testWarning = error;
-      } else {
-        testEventsCount = events.length;
-      }
-    }
-
     return NextResponse.json(
       {
         success: true,
         connection,
         testEventsCount,
-        testWarning,
       },
       { status: 201 }
     );
