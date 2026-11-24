@@ -38,6 +38,7 @@ import {
   DollarSign,
   Wallet,
   MessageSquare,
+  CalendarDays,
 } from 'lucide-react';
 import { generateSlug, generatePin, formatDate, parseMediaUrl, parseThumbnailUrl } from '@/lib/utils';
 import { DemandsBoard } from '@/components/demands-board';
@@ -47,6 +48,7 @@ import { NotificationItem } from '@/lib/services/notification-service';
 import { ClientReviewsHub } from '@/components/client-reviews-hub';
 import { FinancialHub } from '@/components/financial-hub';
 import { ClientChatHub } from '@/components/client-chat-hub';
+import { GoogleCalendarHub } from '@/components/google-calendar-hub';
 import { PostReviewModal } from '@/components/post-review-modal';
 import { playMessageSound } from '@/lib/audio-notification';
 
@@ -77,8 +79,8 @@ export default function AdminDashboardPage() {
   const [isUsingFallback, setIsUsingFallback] = useState(false);
   const [search, setSearch] = useState('');
 
-  // Visualização Ativa: 'demands' (Quadro Trello), 'reviews' (Revisões), 'financial' (Financeiro), 'chat' (Mensagens) ou 'clients' (Gestão de Clientes)
-  const [activeView, setActiveView] = useState<'demands' | 'reviews' | 'financial' | 'chat' | 'clients'>('demands');
+  // Visualização Ativa: 'demands' (Quadro Trello), 'reviews' (Revisões), 'financial' (Financeiro), 'chat' (Mensagens), 'agenda' (Google Agenda) ou 'clients' (Gestão de Clientes)
+  const [activeView, setActiveView] = useState<'demands' | 'reviews' | 'financial' | 'chat' | 'agenda' | 'clients'>('demands');
   const [chatUnreadTotal, setChatUnreadTotal] = useState(0);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const prevChatUnreadRef = useRef<number>(0);
@@ -527,6 +529,19 @@ export default function AdminDashboardPage() {
             </button>
 
             <button
+              onClick={() => setActiveView('agenda')}
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl transition-all font-black shrink-0 ${
+                activeView === 'agenda'
+                  ? 'btn-vb-primary shadow-sm'
+                  : 'text-[#111111] hover:bg-[#EEEDEA]'
+              }`}
+              title="Agenda Integrada e Google Agenda"
+            >
+              <CalendarDays className="w-4 h-4 stroke-[2.5]" />
+              <span className="truncate">Agenda</span>
+            </button>
+
+            <button
               onClick={() => setActiveView('clients')}
               className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl transition-all font-black shrink-0 ${
                 activeView === 'clients'
@@ -754,6 +769,18 @@ export default function AdminDashboardPage() {
             </button>
 
             <button
+              onClick={() => setActiveView('agenda')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all shrink-0 whitespace-nowrap ${
+                activeView === 'agenda'
+                  ? 'btn-vb-primary shadow-sm'
+                  : 'text-[#111111] bg-[#FAF9F7] border border-[#DCD6CC]'
+              }`}
+            >
+              <CalendarDays className="w-3.5 h-3.5 stroke-[2.5]" />
+              <span>Agenda</span>
+            </button>
+
+            <button
               onClick={() => setActiveView('clients')}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all shrink-0 whitespace-nowrap ${
                 activeView === 'clients'
@@ -899,6 +926,26 @@ export default function AdminDashboardPage() {
                         Mensagens
                       </span>
                     )}
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setActiveView('agenda');
+                      setSidebarOpen(false);
+                    }}
+                    className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-black uppercase tracking-wider transition-all text-left ${
+                      activeView === 'agenda'
+                        ? 'btn-vb-primary shadow-md'
+                        : 'text-[#111111] hover:bg-[#FAF9F7]'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0 text-left">
+                      <CalendarDays className="w-4 h-4 stroke-[2.5] shrink-0" />
+                      <span className="block text-left leading-tight">Agenda Google</span>
+                    </div>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full font-black bg-[#FAF9F7] border border-[#DCD6CC] text-[#66635D] shrink-0">
+                      Sync
+                    </span>
                   </button>
 
                   <button
@@ -1124,6 +1171,29 @@ export default function AdminDashboardPage() {
                 </button>
 
                 <button
+                  onClick={() => setActiveView('agenda')}
+                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-black uppercase tracking-wider transition-all text-left ${
+                    activeView === 'agenda'
+                      ? 'btn-vb-primary shadow-md'
+                      : 'text-[#111111] hover:bg-[#FAF9F7]'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5 min-w-0 text-left">
+                    <CalendarDays className="w-4 h-4 stroke-[2.5] shrink-0" />
+                    <span className="block text-left leading-tight">Minha Agenda</span>
+                  </div>
+                  <span
+                    className={`text-[10px] px-2 py-0.5 rounded-full font-black shrink-0 ${
+                      activeView === 'agenda'
+                        ? 'bg-white/20 text-white'
+                        : 'bg-[#FAF9F7] border border-[#DCD6CC] text-[#66635D]'
+                    }`}
+                  >
+                    Google
+                  </span>
+                </button>
+
+                <button
                   onClick={() => setActiveView('clients')}
                   className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-black uppercase tracking-wider transition-all text-left ${
                     activeView === 'clients'
@@ -1284,6 +1354,10 @@ export default function AdminDashboardPage() {
 
           {activeView === 'chat' && (
             <ClientChatHub clients={clients} />
+          )}
+
+          {activeView === 'agenda' && (
+            <GoogleCalendarHub />
           )}
 
           {activeView === 'clients' && (
