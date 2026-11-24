@@ -36,6 +36,7 @@ import {
 } from 'lucide-react';
 import { generateSlug, generatePin, formatDate, parseMediaUrl, parseThumbnailUrl } from '@/lib/utils';
 import { DemandsBoard } from '@/components/demands-board';
+import { ImageUploadInput } from '@/components/image-upload-input';
 
 interface ClientItem {
   id: string;
@@ -1061,59 +1062,53 @@ export default function AdminDashboardPage() {
                 </div>
               </div>
 
-              {/* Link do Arquivo com Suporte a Google Drive */}
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <label className="block text-xs font-black uppercase tracking-wider text-[#111111]">
-                    Link do Vídeo ou Mídia *
-                  </label>
-                  <span className="text-[10px] font-bold text-brand-600 bg-[#FFF0EC] px-2 py-0.5 rounded-md border border-[#FFCEBF]">
-                    Google Drive Suportado ⚡
-                  </span>
-                </div>
-
-                <div className="relative">
-                  <input
-                    type="url"
-                    value={postMediaUrl}
-                    onChange={(e) => setPostMediaUrl(e.target.value)}
-                    placeholder="Cole o link do Google Drive (ou link direto .mp4)..."
-                    required
-                    className="w-full pl-10 pr-4 py-3 bg-[#FAF9F7] border-2 border-[#DCD6CC] focus:border-[#FD3100] rounded-2xl text-[#111111] placeholder-[#A09D96] text-xs font-mono font-medium focus:outline-none"
-                  />
-                  <LinkIcon className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2" style={{ color: '#FD3100' }} />
-                </div>
-                <p className="text-[11px] text-[#66635D] font-medium mt-1">
-                  💡 <strong>Google Drive:</strong> certifique-se de que o arquivo esteja com acesso <em>"Qualquer pessoa com o link pode ver"</em>. O sistema converte automaticamente para streaming direto no player!
-                </p>
-              </div>
-
-              {/* Capa do Vídeo (Thumbnail / Feed Instagram) */}
-              {postFormat === 'VIDEO' && (
-                <div className="bg-[#FAF9F7] p-3.5 rounded-2xl border border-[#DCD6CC]">
-                  <div className="flex items-center justify-between mb-1.5">
+              {/* Mídia do Post (Foto com Upload Direto ou Vídeo do Google Drive) */}
+              {postFormat === 'STATIC' ? (
+                <ImageUploadInput
+                  value={postMediaUrl}
+                  onChange={setPostMediaUrl}
+                  label="Imagem do Post"
+                  sublabel="Envie do computador ou cole link do Drive"
+                  placeholder="Link do Google Drive ou link direto da imagem"
+                />
+              ) : (
+                <div>
+                  <div className="flex items-center justify-between mb-2">
                     <label className="block text-xs font-black uppercase tracking-wider text-[#111111]">
-                      Capa do Vídeo para o Feed (Opcional)
+                      Link do Vídeo (Google Drive ou Direto) *
                     </label>
-                    <span className="text-[10px] font-bold text-[#FD3100]">
-                      Feed Instagram & Reels
+                    <span className="text-[10px] font-bold text-brand-600 bg-[#FFF0EC] px-2 py-0.5 rounded-md border border-[#FFCEBF]">
+                      Google Drive ⚡
                     </span>
                   </div>
 
                   <div className="relative">
                     <input
                       type="url"
-                      value={postThumbnailUrl}
-                      onChange={(e) => setPostThumbnailUrl(e.target.value)}
-                      placeholder="Link da imagem de capa (Google Drive ou link direto)..."
-                      className="w-full pl-10 pr-4 py-2.5 bg-white border border-[#DCD6CC] focus:border-[#FD3100] rounded-xl text-[#111111] placeholder-[#A09D96] text-xs font-mono font-medium focus:outline-none"
+                      value={postMediaUrl}
+                      onChange={(e) => setPostMediaUrl(e.target.value)}
+                      placeholder="Cole o link do Google Drive (ou link direto .mp4)..."
+                      required
+                      className="w-full pl-10 pr-4 py-3 bg-[#FAF9F7] border-2 border-[#DCD6CC] focus:border-[#FD3100] rounded-2xl text-[#111111] placeholder-[#A09D96] text-xs font-mono font-medium focus:outline-none"
                     />
-                    <ImageIcon className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2" style={{ color: '#FD3100' }} />
+                    <LinkIcon className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2" style={{ color: '#FD3100' }} />
                   </div>
-                  <p className="text-[10px] text-[#66635D] font-medium mt-1">
-                    Se deixar em branco para vídeos do Google Drive, a capa oficial é gerada automaticamente pelo Drive!
+                  <p className="text-[11px] text-[#66635D] font-medium mt-1">
+                    💡 <strong>Google Drive:</strong> certifique-se de que o arquivo esteja com acesso <em>"Qualquer pessoa com o link pode ver"</em>. O sistema converte automaticamente para streaming direto no player!
                   </p>
                 </div>
+              )}
+
+              {/* Capa do Vídeo (Thumbnail / Feed Instagram) com Upload Direto */}
+              {postFormat === 'VIDEO' && (
+                <ImageUploadInput
+                  value={postThumbnailUrl}
+                  onChange={setPostThumbnailUrl}
+                  label="Capa do Vídeo para o Feed (Opcional)"
+                  optional
+                  sublabel="Feed Instagram & Reels • Envie do computador ou link"
+                  placeholder="Link da imagem de capa (Google Drive ou link direto)..."
+                />
               )}
 
 
@@ -1388,25 +1383,14 @@ export default function AdminDashboardPage() {
                 </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-black uppercase tracking-wider text-[#111111] mb-2 flex items-center justify-between">
-                  <span>Link do Logo da Empresa</span>
-                  <span className="text-[10px] text-[#66635D] font-normal normal-case">Google Drive ou link direto</span>
-                </label>
-                <div className="flex items-center rounded-2xl bg-[#FAF9F7] border border-[#DCD6CC] px-4 py-3 text-sm focus-within:border-[#FD3100]">
-                  <LinkIcon className="w-4 h-4 mr-2 shrink-0" style={{ color: '#FD3100' }} />
-                  <input
-                    type="url"
-                    value={editLogoUrl}
-                    onChange={(e) => setEditLogoUrl(e.target.value)}
-                    placeholder="https://drive.google.com/file/d/... ou link direto da imagem"
-                    className="w-full bg-transparent text-[#111111] placeholder-[#A09D96] text-xs font-medium focus:outline-none"
-                  />
-                </div>
-                <p className="text-[11px] text-[#66635D] font-medium mt-1">
-                  Cole o link público de visualização do Google Drive ou deixe em branco para remover o logo.
-                </p>
-              </div>
+              <ImageUploadInput
+                value={editLogoUrl}
+                onChange={setEditLogoUrl}
+                label="Logo da Empresa"
+                optional
+                sublabel="Envie do computador ou cole link"
+                placeholder="https://drive.google.com/file/d/... ou link direto da imagem"
+              />
 
               <div className="pt-4 border-t border-[#EEEDEA] flex items-center justify-end gap-3">
                 <button

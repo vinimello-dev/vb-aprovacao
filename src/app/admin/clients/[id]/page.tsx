@@ -39,6 +39,7 @@ import {
 } from 'lucide-react';
 import { formatDate, parseThumbnailUrl, parseMediaUrl } from '@/lib/utils';
 import { PostReviewModal } from '@/components/post-review-modal';
+import { ImageUploadInput } from '@/components/image-upload-input';
 import { PostData } from '@/lib/services/post-service';
 
 interface CycleItem {
@@ -1622,33 +1623,49 @@ export default function ClientHubPage({ params }: PageProps) {
                 </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-black uppercase tracking-wider text-[#111111] mb-1.5">
-                  Link da Mídia (Google Drive ou Direto) *
-                </label>
-                <input
-                  type="url"
+              {/* Mídia do Post (Foto com Upload Direto ou Vídeo do Google Drive) */}
+              {postFormat === 'STATIC' ? (
+                <ImageUploadInput
                   value={postMediaUrl}
-                  onChange={(e) => setPostMediaUrl(e.target.value)}
-                  placeholder="https://drive.google.com/file/d/..."
-                  required
-                  className="w-full px-3 py-2 bg-[#FAF9F7] border border-[#DCD6CC] rounded-xl text-xs font-mono font-medium text-[#111111] focus:outline-none"
+                  onChange={setPostMediaUrl}
+                  label="Imagem do Post"
+                  sublabel="Envie do computador ou cole link do Drive"
+                  placeholder="Link do Google Drive ou link direto da imagem"
                 />
-              </div>
-
-              {postFormat === 'VIDEO' && (
+              ) : (
                 <div>
-                  <label className="block text-xs font-black uppercase tracking-wider text-[#111111] mb-1.5">
-                    Capa do Vídeo (Thumbnail / Feed 1:1) - Opcional
-                  </label>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="block text-xs font-black uppercase tracking-wider text-[#111111]">
+                      Link do Vídeo (Google Drive ou Direto) *
+                    </label>
+                    <span className="text-[10px] font-bold text-[#FD3100] bg-[#FFF0EC] px-2 py-0.5 rounded-md border border-[#FFCEBF]">
+                      Google Drive ⚡
+                    </span>
+                  </div>
                   <input
                     type="url"
-                    value={postThumbnailUrl}
-                    onChange={(e) => setPostThumbnailUrl(e.target.value)}
-                    placeholder="Link do Google Drive ou link direto da imagem"
-                    className="w-full px-3 py-2 bg-[#FAF9F7] border border-[#DCD6CC] rounded-xl text-xs font-mono font-medium text-[#111111] focus:outline-none"
+                    value={postMediaUrl}
+                    onChange={(e) => setPostMediaUrl(e.target.value)}
+                    placeholder="https://drive.google.com/file/d/..."
+                    required
+                    className="w-full px-3 py-2 bg-[#FAF9F7] border border-[#DCD6CC] focus:border-[#FD3100] rounded-xl text-xs font-mono font-medium text-[#111111] focus:outline-none"
                   />
+                  <p className="text-[10px] text-[#66635D] font-medium mt-1">
+                    Cole o link de compartilhamento do Google Drive com acesso público.
+                  </p>
                 </div>
+              )}
+
+              {/* Capa do Vídeo (Upload Direto do Computador ou Link) */}
+              {postFormat === 'VIDEO' && (
+                <ImageUploadInput
+                  value={postThumbnailUrl}
+                  onChange={setPostThumbnailUrl}
+                  label="Capa do Vídeo (Thumbnail / Feed 1:1)"
+                  optional
+                  sublabel="Opcional • Envie imagem ou deixe em branco"
+                  placeholder="Link do Google Drive ou link direto da imagem"
+                />
               )}
 
               <div>
@@ -1798,33 +1815,49 @@ export default function ClientHubPage({ params }: PageProps) {
                 </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-black uppercase tracking-wider text-[#111111] mb-1.5">
-                  Link da Mídia (Google Drive ou Direto) *
-                </label>
-                <input
-                  type="url"
+              {/* Mídia do Post na Edição (Foto com Upload Direto ou Vídeo do Google Drive) */}
+              {editPostFormat === 'STATIC' ? (
+                <ImageUploadInput
                   value={editPostMediaUrl}
-                  onChange={(e) => setEditPostMediaUrl(e.target.value)}
-                  placeholder="https://drive.google.com/file/d/..."
-                  required
-                  className="w-full px-3 py-2 bg-[#FAF9F7] border border-[#DCD6CC] focus:border-[#FD3100] rounded-xl text-xs font-mono font-medium text-[#111111] focus:outline-none"
+                  onChange={setEditPostMediaUrl}
+                  label="Imagem do Post"
+                  sublabel="Envie do computador ou cole link do Drive"
+                  placeholder="Link do Google Drive ou link direto da imagem"
                 />
-              </div>
-
-              {editPostFormat === 'VIDEO' && (
+              ) : (
                 <div>
-                  <label className="block text-xs font-black uppercase tracking-wider text-[#111111] mb-1.5">
-                    Capa do Vídeo (Thumbnail / Feed 1:1) - Opcional
-                  </label>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="block text-xs font-black uppercase tracking-wider text-[#111111]">
+                      Link do Vídeo (Google Drive ou Direto) *
+                    </label>
+                    <span className="text-[10px] font-bold text-[#FD3100] bg-[#FFF0EC] px-2 py-0.5 rounded-md border border-[#FFCEBF]">
+                      Google Drive ⚡
+                    </span>
+                  </div>
                   <input
                     type="url"
-                    value={editPostThumbnailUrl}
-                    onChange={(e) => setEditPostThumbnailUrl(e.target.value)}
-                    placeholder="Link do Google Drive ou link direto da imagem"
+                    value={editPostMediaUrl}
+                    onChange={(e) => setEditPostMediaUrl(e.target.value)}
+                    placeholder="https://drive.google.com/file/d/..."
+                    required
                     className="w-full px-3 py-2 bg-[#FAF9F7] border border-[#DCD6CC] focus:border-[#FD3100] rounded-xl text-xs font-mono font-medium text-[#111111] focus:outline-none"
                   />
+                  <p className="text-[10px] text-[#66635D] font-medium mt-1">
+                    Cole o link de compartilhamento do Google Drive com acesso público.
+                  </p>
                 </div>
+              )}
+
+              {/* Capa do Vídeo na Edição (Upload Direto do Computador ou Link) */}
+              {editPostFormat === 'VIDEO' && (
+                <ImageUploadInput
+                  value={editPostThumbnailUrl}
+                  onChange={setEditPostThumbnailUrl}
+                  label="Capa do Vídeo (Thumbnail / Feed 1:1)"
+                  optional
+                  sublabel="Opcional • Envie imagem ou deixe em branco"
+                  placeholder="Link do Google Drive ou link direto da imagem"
+                />
               )}
 
               <div>
