@@ -40,7 +40,7 @@ export interface PostData {
   comments: CommentData[];
 }
 
-let localPostsStore: PostData[] = [
+export let localPostsStore: PostData[] = [
   // Vídeo Real do Studio Stabilitá enviado pelo cliente
   {
     id: 'post-stabilita-drive',
@@ -282,6 +282,50 @@ export async function updatePostStatus(
         comments: { orderBy: { createdAt: 'asc' } },
       },
     });
+
+    // Se o cliente solicitou ajustes, cria automaticamente um cartão de ALTA prioridade no Quadro de Demandas
+    if (status === 'AJUSTES') {
+      try {
+        let targetCol = await prisma.demandColumn.findFirst({
+          where: { slug: 'revisar' },
+        });
+        if (!targetCol) {
+          targetCol = await prisma.demandColumn.findFirst({
+            orderBy: { order: 'asc' },
+          });
+        }
+
+        if (targetCol) {
+          const demandTitle = `🚨 Ajustes: ${updated.title}`;
+          const existingDemand = await prisma.demand.findFirst({
+            where: {
+              columnId: targetCol.id,
+              title: demandTitle,
+              completed: false,
+            },
+          });
+
+          if (!existingDemand) {
+            const count = await prisma.demand.count({
+              where: { columnId: targetCol.id },
+            });
+            await prisma.demand.create({
+              data: {
+                title: demandTitle,
+                description: `O cliente finalizou a revisão e solicitou alterações neste conteúdo. Verifique os comentários do cliente no post.`,
+                columnId: targetCol.id,
+                order: count,
+                priority: 'ALTA',
+                clientId: updated.clientId,
+              },
+            });
+          }
+        }
+      } catch (demandErr) {
+        console.warn('Erro ao criar demanda automática de ajuste:', demandErr);
+      }
+    }
+
     return updated as unknown as PostData;
   } catch {
     const post = localPostsStore.find((p) => p.id === postId);

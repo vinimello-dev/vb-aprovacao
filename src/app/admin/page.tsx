@@ -33,11 +33,14 @@ import {
   ChevronLeft,
   ChevronRight,
   FolderKanban,
+  Bell,
+  AlertTriangle,
 } from 'lucide-react';
 import { generateSlug, generatePin, formatDate, parseMediaUrl, parseThumbnailUrl } from '@/lib/utils';
 import { DemandsBoard } from '@/components/demands-board';
 import { ImageUploadInput } from '@/components/image-upload-input';
 import { CarouselUploader, CarouselSlide } from '@/components/carousel-uploader';
+import { NotificationItem } from '@/lib/services/notification-service';
 
 interface ClientItem {
   id: string;
@@ -104,6 +107,26 @@ export default function AdminDashboardPage() {
   // Copy Feedback
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
+  // Central de Notificações de Alterações dos Clientes
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const [pendingAdjustmentsCount, setPendingAdjustmentsCount] = useState(0);
+  const [notifOpen, setNotifOpen] = useState(false);
+
+  const fetchNotifications = async () => {
+    try {
+      const res = await fetch('/api/admin/notifications');
+      if (res.ok) {
+        const data = await res.json();
+        if (data.notifications) {
+          setNotifications(data.notifications);
+          setPendingAdjustmentsCount(data.pendingAdjustmentsCount || 0);
+        }
+      }
+    } catch (err) {
+      console.error('Erro ao buscar notificações:', err);
+    }
+  };
+
   const fetchClients = async () => {
     try {
       setLoading(true);
@@ -129,6 +152,11 @@ export default function AdminDashboardPage() {
 
   useEffect(() => {
     fetchClients();
+    fetchNotifications();
+
+    // Atualiza notificações a cada 20 segundos automaticamente
+    const interval = setInterval(fetchNotifications, 20000);
+    return () => clearInterval(interval);
   }, []);
 
   const handleOpenModal = () => {
@@ -425,6 +453,125 @@ export default function AdminDashboardPage() {
           </div>
 
           <div className="flex items-center gap-3">
+            {/* Central de Notificações de Alterações dos Clientes */}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setNotifOpen(!notifOpen)}
+                className={`relative p-2.5 rounded-2xl border transition-all ${
+                  pendingAdjustmentsCount > 0
+                    ? 'bg-[#FFF0EC] border-[#FFCEBF] text-[#FD3100] hover:bg-[#FFE5DE]'
+                    : 'bg-[#FAF9F7] border-[#DCD6CC] text-[#66635D] hover:text-[#111111] hover:bg-[#EEEDEA]'
+                }`}
+                title="Notificações e Alterações dos Clientes"
+              >
+                <Bell className="w-5 h-5" />
+                {pendingAdjustmentsCount > 0 && (
+                  <span className="absolute -top-1 -right-1 flex h-5 w-5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-5 w-5 bg-rose-600 text-white text-[10px] font-black items-center justify-center shadow-md">
+                      {pendingAdjustmentsCount}
+                    </span>
+                  </span>
+                )}
+              </button>
+
+              {/* Popover da Central de Notificações */}
+              {notifOpen && (
+                <div className="absolute right-0 mt-3 w-80 sm:w-96 bg-white border-2 border-[#DCD6CC] rounded-3xl shadow-2xl z-50 overflow-hidden animate-in fade-in duration-150">
+                  <div className="p-4 bg-[#FAF9F7] border-b border-[#EEEDEA] flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="w-7 h-7 rounded-xl bg-[#FFF0EC] text-[#FD3100] flex items-center justify-center text-sm font-black">
+                        🔔
+                      </span>
+                      <div>
+                        <h4 className="text-xs font-black uppercase text-[#111111]">
+                          Notificações de Clientes
+                        </h4>
+                        <p className="text-[10px] text-[#66635D] font-medium">
+                          {pendingAdjustmentsCount > 0
+                            ? `${pendingAdjustmentsCount} alterações aguardando revisão`
+                            : 'Todas as alterações revisadas'}
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setNotifOpen(false)}
+                      className="p-1 text-[#66635D] hover:text-[#111111] rounded-lg"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  <div className="max-h-80 overflow-y-auto p-3 space-y-2.5">
+                    {notifications.length === 0 ? (
+                      <div className="p-8 text-center text-xs text-[#66635D] font-medium">
+                        Nenhuma alteração pendente no momento.
+                      </div>
+                    ) : (
+                      notifications.map((item) => {
+                        const isAdjustment = item.type === 'AJUSTES';
+                        return (
+                          <div
+                            key={item.id}
+                            className={`p-3 rounded-2xl border transition-all ${
+                              isAdjustment
+                                ? 'bg-[#FFF0EC]/50 border-[#FFCEBF] hover:bg-[#FFF0EC]'
+                                : 'bg-white border-[#EEEDEA] hover:bg-[#FAF9F7]'
+                            }`}
+                          >
+                            <div className="flex items-start justify-between gap-2 mb-1">
+                              <span
+                                className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-lg border ${
+                                  isAdjustment
+                                    ? 'bg-rose-100 text-rose-800 border-rose-300'
+                                    : 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                                }`}
+                              >
+                                {isAdjustment ? '🚨 Alterações Finalizadas' : '✅ Conteúdo Aprovado'}
+                              </span>
+                              <span className="text-[9px] text-[#97A0AF] font-bold">
+                                {new Date(item.createdAt).toLocaleDateString('pt-BR', {
+                                  day: '2-digit',
+                                  month: 'short',
+                                  hour: '2-digit',
+                                  minute: '2-digit',
+                                })}
+                              </span>
+                            </div>
+
+                            <p className="text-xs font-black text-[#111111] leading-snug">
+                              🏢 {item.clientName}
+                            </p>
+                            <p className="text-[11px] text-[#66635D] font-bold mt-0.5">
+                              Post: <span className="text-[#111111]">{item.postTitle}</span>
+                            </p>
+
+                            {item.commentPreview && (
+                              <p className="text-[11px] text-[#FD3100] italic font-medium bg-white/90 p-2 rounded-xl mt-1.5 border border-[#FFCEBF]">
+                                {item.commentPreview}
+                              </p>
+                            )}
+
+                            <div className="mt-2.5 flex items-center justify-between">
+                              <Link
+                                href={`/admin/clients/${item.clientId}`}
+                                onClick={() => setNotifOpen(false)}
+                                className="text-[10px] font-black uppercase tracking-wider text-[#FD3100] hover:underline flex items-center gap-1"
+                              >
+                                Abrir Hub do Cliente ➔
+                              </Link>
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
             {isUsingFallback ? (
               <div
                 title="PostgreSQL ainda não conectado localmente. Dados em memória temporária para testes."
@@ -605,6 +752,41 @@ export default function AdminDashboardPage() {
 
         {/* ÁREA DE CONTEÚDO PRINCIPAL */}
         <main className="flex-1 min-w-0">
+          {/* Banner de Notificação: Alterações Solicitadas pelos Clientes */}
+          {pendingAdjustmentsCount > 0 && (
+            <div className="mb-6 p-4 sm:p-5 rounded-3xl bg-gradient-to-r from-[#FFF0EC] via-white to-[#FFF0EC] border-2 border-[#FFCEBF] shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 animate-in fade-in">
+              <div className="flex items-center gap-3.5">
+                <span className="w-11 h-11 rounded-2xl bg-rose-600 text-white flex items-center justify-center text-xl font-black shadow-md shrink-0">
+                  🚨
+                </span>
+                <div>
+                  <h3 className="text-xs sm:text-sm font-black uppercase text-[#111111] tracking-tight flex items-center gap-2">
+                    <span>Alterações Solicitadas pelos Clientes</span>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-rose-600 text-white shadow-sm">
+                      {pendingAdjustmentsCount} aguardando
+                    </span>
+                  </h3>
+                  <p className="text-xs text-[#66635D] font-medium mt-0.5">
+                    Clientes finalizaram a revisão e deixaram comentários de ajustes. As tarefas já foram adicionadas automaticamente com alta prioridade no seu Quadro de Demandas.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveView('demands');
+                  }}
+                  className="btn-vb-primary px-4 py-2.5 rounded-xl text-xs uppercase font-black tracking-wider flex items-center gap-2 shadow-sm"
+                >
+                  <Kanban className="w-3.5 h-3.5" />
+                  <span>Ver Quadro de Demandas</span>
+                </button>
+              </div>
+            </div>
+          )}
+
           {activeView === 'demands' ? (
             <DemandsBoard
               clients={clients}

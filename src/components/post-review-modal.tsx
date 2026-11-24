@@ -44,8 +44,12 @@ export function PostReviewModal({ post, onClose, onPostUpdated }: PostReviewModa
   const [captionAuthorName, setCaptionAuthorName] = useState('Cliente');
   const [savingCaptionComment, setSavingCaptionComment] = useState(false);
 
+  // Feedback de Status
+  const [statusFeedbackMessage, setStatusFeedbackMessage] = useState<string | null>(null);
+
   const handleStatusChange = async (newStatus: 'APROVADO' | 'AJUSTES' | 'PENDENTE') => {
     setUpdatingStatus(true);
+    setStatusFeedbackMessage(null);
     try {
       const res = await fetch(`/api/client/posts/${currentPost.id}/status`, {
         method: 'PATCH',
@@ -56,6 +60,15 @@ export function PostReviewModal({ post, onClose, onPostUpdated }: PostReviewModa
       if (data.post) {
         setCurrentPost(data.post);
         onPostUpdated(data.post);
+        if (newStatus === 'AJUSTES') {
+          setStatusFeedbackMessage(
+            'Alterações e comentários enviados com sucesso para a Agência VB! A equipe já foi notificada no painel de demandas.'
+          );
+        } else if (newStatus === 'APROVADO') {
+          setStatusFeedbackMessage(
+            'Publicação aprovada com sucesso! A equipe da Agência VB foi notificada para prosseguir com o agendamento.'
+          );
+        }
       }
     } catch (err) {
       console.error('Erro ao atualizar status:', err);
@@ -239,6 +252,22 @@ export function PostReviewModal({ post, onClose, onPostUpdated }: PostReviewModa
             </button>
           </div>
         </div>
+
+        {/* Banner de Feedback de Status Enviado */}
+        {statusFeedbackMessage && (
+          <div className="bg-emerald-50 border-b border-emerald-200 px-6 py-2.5 flex items-center justify-between gap-3 text-xs font-bold text-emerald-800 animate-in fade-in">
+            <div className="flex items-center gap-2">
+              <Check className="w-4 h-4 text-emerald-600 stroke-[3] shrink-0" />
+              <span>{statusFeedbackMessage}</span>
+            </div>
+            <button
+              onClick={() => setStatusFeedbackMessage(null)}
+              className="p-1 hover:bg-emerald-100 rounded-lg text-emerald-700"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
 
         {/* Abas: Revisão Interativa vs Legenda */}
         <div className="bg-[#FAF9F7] border-b border-[#DCD6CC] px-6 flex items-center gap-6 text-xs font-black uppercase tracking-wider">
