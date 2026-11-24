@@ -399,8 +399,11 @@ export default function AdminDashboardPage() {
           <div className="flex items-center bg-[#FAF9F7] p-1.5 rounded-2xl border-2 border-[#DCD6CC] shadow-sm text-xs font-black uppercase">
             <button
               onClick={() => setActiveView('demands')}
-              style={activeView === 'demands' ? { backgroundColor: '#FD3100', color: '#FFFFFF' } : { color: '#111111' }}
-              className="flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-xl transition-all font-black"
+              className={`flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-xl transition-all font-black ${
+                activeView === 'demands'
+                  ? 'btn-vb-primary shadow-sm'
+                  : 'text-[#111111] hover:bg-[#EEEDEA]'
+              }`}
               title="Quadro de Demandas estilo Trello"
             >
               <Kanban className="w-4 h-4 stroke-[2.5]" />
@@ -409,8 +412,11 @@ export default function AdminDashboardPage() {
 
             <button
               onClick={() => setActiveView('clients')}
-              style={activeView === 'clients' ? { backgroundColor: '#FD3100', color: '#FFFFFF' } : { color: '#111111' }}
-              className="flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-xl transition-all font-black"
+              className={`flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-xl transition-all font-black ${
+                activeView === 'clients'
+                  ? 'btn-vb-primary shadow-sm'
+                  : 'text-[#111111] hover:bg-[#EEEDEA]'
+              }`}
               title="Clientes Cadastrados e Links de Portais"
             >
               <Users className="w-4 h-4 stroke-[2.5]" />

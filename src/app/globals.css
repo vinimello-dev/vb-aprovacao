@@ -19,16 +19,24 @@ body {
   min-height: 100vh;
 }
 
-/* Classes utilitárias da Marca VB com garantia total de cor (#FD3100) */
+/* Classes utilitárias da Marca VB: Botão Primário com Degradê Diagonal Pêssego Solar a 135° */
 .btn-vb-primary {
-  background-color: #FD3100 !important;
+  background: linear-gradient(135deg, #FD3100 0%, #FF5A36 45%, #FFA58E 100%) !important;
   color: #FFFFFF !important;
   font-weight: 900 !important;
-  border: 1px solid #E02B00 !important;
-  box-shadow: 0 4px 14px rgba(253, 49, 0, 0.35) !important;
+  border: 1px solid #FF7C5E !important;
+  box-shadow: 0 4px 16px rgba(253, 49, 0, 0.32), inset 0 1px 1px rgba(255, 255, 255, 0.4) !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.15) !important;
+  transition: all 0.2s ease-in-out !important;
 }
 .btn-vb-primary:hover {
-  background-color: #E02B00 !important;
+  background: linear-gradient(135deg, #E02B00 0%, #FD3100 50%, #FF9075 100%) !important;
+  box-shadow: 0 6px 20px rgba(253, 49, 0, 0.42), inset 0 1px 1px rgba(255, 255, 255, 0.5) !important;
+  transform: translateY(-1px);
+}
+.btn-vb-primary:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(253, 49, 0, 0.3) !important;
 }
 
 .btn-vb-secondary {
