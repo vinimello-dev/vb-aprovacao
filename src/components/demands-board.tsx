@@ -465,21 +465,21 @@ export function DemandsBoard({ clients, onOpenCreatePostModal }: DemandsBoardPro
   return (
     <div className="w-full flex flex-col space-y-6">
       {/* Barra Superior do Quadro com Filtros */}
-      <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 bg-white p-5 rounded-3xl border-2 border-[#DCD6CC] shadow-sm">
+      <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 bg-white p-4 sm:p-5 rounded-3xl border-2 border-[#DCD6CC] shadow-sm">
         <div className="flex flex-wrap items-center gap-3">
           <div className="flex items-center gap-2">
             <span
               style={{ backgroundColor: '#FD3100', color: '#FFFFFF' }}
-              className="w-9 h-9 rounded-xl flex items-center justify-center font-black text-sm shadow-md"
+              className="w-9 h-9 rounded-xl flex items-center justify-center font-black text-sm shadow-md shrink-0"
             >
               📋
             </span>
             <div>
-              <h2 className="text-xl font-black text-[#111111] uppercase tracking-tight flex items-center gap-2">
+              <h2 className="text-lg sm:text-xl font-black text-[#111111] uppercase tracking-tight flex items-center gap-2">
                 Quadro de Demandas
                 <span
                   style={{ backgroundColor: '#FFF0EC', color: '#FD3100', borderColor: '#FFCEBF' }}
-                  className="px-2.5 py-0.5 text-[11px] font-black rounded-full border"
+                  className="px-2 py-0.5 text-[10px] sm:text-[11px] font-black rounded-full border"
                 >
                   {totalDemandsCount} abertas
                 </span>
@@ -492,9 +492,9 @@ export function DemandsBoard({ clients, onOpenCreatePostModal }: DemandsBoardPro
         </div>
 
         {/* Filtros e Busca */}
-        <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full lg:w-auto">
           {/* Busca por texto */}
-          <div className="relative flex-1 sm:w-64">
+          <div className="relative flex-1 min-w-[150px] sm:w-64">
             <Search className="w-3.5 h-3.5 absolute left-3.5 top-1/2 -translate-y-1/2 text-[#66635D]" />
             <input
               type="text"
@@ -506,12 +506,12 @@ export function DemandsBoard({ clients, onOpenCreatePostModal }: DemandsBoardPro
           </div>
 
           {/* Filtro por Cliente */}
-          <div className="flex items-center gap-1.5 bg-[#FAF9F7] border border-[#DCD6CC] px-3 py-1.5 rounded-xl text-xs font-bold text-[#111111]">
-            <Users className="w-3.5 h-3.5" style={{ color: '#FD3100' }} />
+          <div className="flex items-center gap-1.5 bg-[#FAF9F7] border border-[#DCD6CC] px-2.5 py-1.5 rounded-xl text-xs font-bold text-[#111111] flex-1 sm:flex-none min-w-[140px] max-w-full">
+            <Users className="w-3.5 h-3.5 shrink-0" style={{ color: '#FD3100' }} />
             <select
               value={selectedClientId}
               onChange={(e) => setSelectedClientId(e.target.value)}
-              className="bg-transparent text-xs font-black text-[#111111] focus:outline-none cursor-pointer"
+              className="bg-transparent text-xs font-black text-[#111111] focus:outline-none cursor-pointer w-full truncate"
             >
               <option value="ALL">Todos os Clientes & Planejamento</option>
               <option value="INTERNAL">📌 Só Planejamento Interno (Sem cliente)</option>
@@ -524,12 +524,12 @@ export function DemandsBoard({ clients, onOpenCreatePostModal }: DemandsBoardPro
           </div>
 
           {/* Filtro por Prioridade */}
-          <div className="flex items-center gap-1.5 bg-[#FAF9F7] border border-[#DCD6CC] px-3 py-1.5 rounded-xl text-xs font-bold text-[#111111]">
-            <Flag className="w-3.5 h-3.5 text-rose-600 fill-rose-600" />
+          <div className="flex items-center gap-1.5 bg-[#FAF9F7] border border-[#DCD6CC] px-2.5 py-1.5 rounded-xl text-xs font-bold text-[#111111] flex-1 sm:flex-none min-w-[130px] max-w-full">
+            <Flag className="w-3.5 h-3.5 text-rose-600 fill-rose-600 shrink-0" />
             <select
               value={selectedPriority}
               onChange={(e) => setSelectedPriority(e.target.value)}
-              className="bg-transparent text-xs font-black text-[#111111] focus:outline-none cursor-pointer"
+              className="bg-transparent text-xs font-black text-[#111111] focus:outline-none cursor-pointer w-full truncate"
             >
               <option value="ALL">Todas as Prioridades</option>
               <option value="ALTA">🚩 Alta Prioridade</option>
@@ -541,7 +541,7 @@ export function DemandsBoard({ clients, onOpenCreatePostModal }: DemandsBoardPro
 
           <button
             onClick={fetchBoard}
-            className="p-2 hover:bg-[#EEEDEA] text-[#66635D] hover:text-[#111111] rounded-xl transition-colors"
+            className="p-2 hover:bg-[#EEEDEA] text-[#66635D] hover:text-[#111111] rounded-xl transition-colors shrink-0"
             title="Atualizar quadro"
           >
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
@@ -550,8 +550,8 @@ export function DemandsBoard({ clients, onOpenCreatePostModal }: DemandsBoardPro
       </div>
 
       {/* ÁREA KANBAN (COLUNAS ESTILO TRELLO) */}
-      <div className="overflow-x-auto pb-6">
-        <div className="flex items-start gap-4 min-w-max">
+      <div className="overflow-x-auto pb-6 scroll-smooth snap-x snap-mandatory">
+        <div className="flex items-start gap-3 sm:gap-4 min-w-max px-1">
           {columns.map((column, colIdx) => {
             const visibleDemands = column.demands.filter(filterDemand);
 
@@ -571,7 +571,7 @@ export function DemandsBoard({ clients, onOpenCreatePostModal }: DemandsBoardPro
                   e.preventDefault();
                   handleDropCard(column.id);
                 }}
-                className={`w-72 sm:w-80 rounded-2xl p-3 border shadow-sm flex flex-col max-h-[calc(100vh-250px)] transition-all ${
+                className={`w-[84vw] sm:w-80 shrink-0 snap-center rounded-2xl p-3 border shadow-sm flex flex-col max-h-[calc(100vh-220px)] transition-all ${
                   isColumnDropTarget
                     ? 'bg-[#FFF0EC] border-[#FD3100] ring-2 ring-[#FD3100]/30'
                     : 'bg-[#F1F2F4] border-[#DCD6CC]'

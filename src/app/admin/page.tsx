@@ -388,24 +388,25 @@ export default function AdminDashboardPage() {
 
       {/* Header Superior da Agência */}
       <header className="border-b border-[#DCD6CC] bg-white sticky top-0 z-30 shadow-sm">
-        <div className="max-w-[1700px] mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
-          <div className="flex items-center gap-4">
+        <div className="max-w-[1700px] mx-auto px-3 sm:px-6 lg:px-8 h-16 sm:h-20 flex items-center justify-between gap-2">
+          {/* Esquerda: Menu lateral + Logo */}
+          <div className="flex items-center gap-2 sm:gap-4 shrink-0">
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="p-2 hover:bg-[#FAF9F7] text-[#111111] hover:text-[#FD3100] rounded-2xl border border-[#DCD6CC] transition-colors"
+              className="p-2 hover:bg-[#FAF9F7] text-[#111111] hover:text-[#FD3100] rounded-xl sm:rounded-2xl border border-[#DCD6CC] transition-colors"
               title={sidebarOpen ? 'Recolher menu lateral' : 'Expandir menu lateral'}
             >
-              <Menu className="w-5 h-5" />
+              <Menu className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
 
-            <div className="h-14 flex items-center justify-center">
+            <div className="h-9 sm:h-14 flex items-center justify-center shrink-0">
               <img
                 src="/logo-vb.png?v=4"
                 alt="Logo VB"
-                className="h-14 w-auto object-contain"
+                className="h-8 sm:h-14 w-auto object-contain"
               />
             </div>
-            <div className="hidden sm:block">
+            <div className="hidden md:block">
               <div className="flex items-center gap-2">
                 <span className="font-black text-xl text-[#111111] tracking-tight uppercase">
                   VB <span style={{ color: '#FD3100' }}>APROVAÇÃO</span>
@@ -424,52 +425,52 @@ export default function AdminDashboardPage() {
           </div>
 
           {/* Seletores de Visão: Quadro de Demandas (Trello) vs Clientes */}
-          <div className="flex items-center bg-[#FAF9F7] p-1.5 rounded-2xl border-2 border-[#DCD6CC] shadow-sm text-xs font-black uppercase">
+          <div className="flex items-center bg-[#FAF9F7] p-1 rounded-xl sm:rounded-2xl border-2 border-[#DCD6CC] shadow-sm text-[11px] sm:text-xs font-black uppercase">
             <button
               onClick={() => setActiveView('demands')}
-              className={`flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-xl transition-all font-black ${
+              className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-4 py-1.5 sm:py-2 rounded-lg sm:rounded-xl transition-all font-black ${
                 activeView === 'demands'
                   ? 'btn-vb-primary shadow-sm'
                   : 'text-[#111111] hover:bg-[#EEEDEA]'
               }`}
               title="Quadro de Demandas estilo Trello"
             >
-              <Kanban className="w-4 h-4 stroke-[2.5]" />
-              <span className="hidden sm:inline">Quadro de</span> Demandas
+              <Kanban className="w-3.5 sm:w-4 h-3.5 sm:h-4 stroke-[2.5]" />
+              <span className="truncate">Demandas</span>
             </button>
 
             <button
               onClick={() => setActiveView('clients')}
-              className={`flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-xl transition-all font-black ${
+              className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-4 py-1.5 sm:py-2 rounded-lg sm:rounded-xl transition-all font-black ${
                 activeView === 'clients'
                   ? 'btn-vb-primary shadow-sm'
                   : 'text-[#111111] hover:bg-[#EEEDEA]'
               }`}
               title="Clientes Cadastrados e Links de Portais"
             >
-              <Users className="w-4 h-4 stroke-[2.5]" />
-              <span>Clientes ({clients.length})</span>
+              <Users className="w-3.5 sm:w-4 h-3.5 sm:h-4 stroke-[2.5]" />
+              <span className="truncate">Clientes <span className="hidden sm:inline">({clients.length})</span></span>
             </button>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
             {/* Central de Notificações de Alterações dos Clientes */}
             <div className="relative">
               <button
                 type="button"
                 onClick={() => setNotifOpen(!notifOpen)}
-                className={`relative p-2.5 rounded-2xl border transition-all ${
+                className={`relative p-2 sm:p-2.5 rounded-xl sm:rounded-2xl border transition-all ${
                   pendingAdjustmentsCount > 0
                     ? 'bg-[#FFF0EC] border-[#FFCEBF] text-[#FD3100] hover:bg-[#FFE5DE]'
                     : 'bg-[#FAF9F7] border-[#DCD6CC] text-[#66635D] hover:text-[#111111] hover:bg-[#EEEDEA]'
                 }`}
                 title="Notificações e Alterações dos Clientes"
               >
-                <Bell className="w-5 h-5" />
+                <Bell className="w-4 h-4 sm:w-5 sm:h-5" />
                 {pendingAdjustmentsCount > 0 && (
-                  <span className="absolute -top-1 -right-1 flex h-5 w-5">
+                  <span className="absolute -top-1 -right-1 flex h-4 w-4 sm:h-5 sm:w-5">
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-5 w-5 bg-rose-600 text-white text-[10px] font-black items-center justify-center shadow-md">
+                    <span className="relative inline-flex rounded-full h-4 w-4 sm:h-5 sm:w-5 bg-rose-600 text-white text-[9px] sm:text-[10px] font-black items-center justify-center shadow-md">
                       {pendingAdjustmentsCount}
                     </span>
                   </span>
@@ -478,20 +479,20 @@ export default function AdminDashboardPage() {
 
               {/* Popover da Central de Notificações */}
               {notifOpen && (
-                <div className="absolute right-0 mt-3 w-80 sm:w-96 bg-white border-2 border-[#DCD6CC] rounded-3xl shadow-2xl z-50 overflow-hidden animate-in fade-in duration-150">
-                  <div className="p-4 bg-[#FAF9F7] border-b border-[#EEEDEA] flex items-center justify-between">
+                <div className="absolute right-0 mt-3 w-72 sm:w-96 bg-white border-2 border-[#DCD6CC] rounded-3xl shadow-2xl z-50 overflow-hidden animate-in fade-in duration-150">
+                  <div className="p-3.5 sm:p-4 bg-[#FAF9F7] border-b border-[#EEEDEA] flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <span className="w-7 h-7 rounded-xl bg-[#FFF0EC] text-[#FD3100] flex items-center justify-center text-sm font-black">
                         🔔
                       </span>
                       <div>
                         <h4 className="text-xs font-black uppercase text-[#111111]">
-                          Notificações de Clientes
+                          Notificações
                         </h4>
                         <p className="text-[10px] text-[#66635D] font-medium">
                           {pendingAdjustmentsCount > 0
-                            ? `${pendingAdjustmentsCount} alterações aguardando revisão`
-                            : 'Todas as alterações revisadas'}
+                            ? `${pendingAdjustmentsCount} aguardando revisão`
+                            : 'Todas revisadas'}
                         </p>
                       </div>
                     </div>
@@ -529,7 +530,7 @@ export default function AdminDashboardPage() {
                                     : 'bg-emerald-100 text-emerald-800 border-emerald-300'
                                 }`}
                               >
-                                {isAdjustment ? '🚨 Alterações Finalizadas' : '✅ Conteúdo Aprovado'}
+                                {isAdjustment ? '🚨 Alterações' : '✅ Aprovado'}
                               </span>
                               <span className="text-[9px] text-[#97A0AF] font-bold">
                                 {new Date(item.createdAt).toLocaleDateString('pt-BR', {
@@ -560,7 +561,7 @@ export default function AdminDashboardPage() {
                                 onClick={() => setNotifOpen(false)}
                                 className="text-[10px] font-black uppercase tracking-wider text-[#FD3100] hover:underline flex items-center gap-1"
                               >
-                                Abrir Hub do Cliente ➔
+                                Abrir Hub ➔
                               </Link>
                             </div>
                           </div>
@@ -592,18 +593,169 @@ export default function AdminDashboardPage() {
 
             <button
               onClick={handleLogout}
-              className="btn-vb-secondary flex items-center gap-2 px-3.5 py-2 rounded-2xl text-xs font-bold transition-all shadow-sm"
+              className="btn-vb-secondary flex items-center gap-1.5 p-2 sm:px-3.5 sm:py-2 rounded-xl sm:rounded-2xl text-xs font-bold transition-all shadow-sm"
+              title="Sair da Agência"
             >
-              <LogOut className="w-3.5 h-3.5" style={{ color: '#FD3100' }} />
-              <span className="text-[#111111]">Sair</span>
+              <LogOut className="w-3.5 h-3.5 text-[#FD3100]" />
+              <span className="hidden sm:inline text-[#111111]">Sair</span>
             </button>
           </div>
         </div>
       </header>
 
       {/* Conteúdo Principal com Sidebar Integrada */}
-      <div className="flex-1 flex w-full max-w-[1700px] mx-auto px-4 sm:px-6 lg:px-8 py-6 gap-6">
-        {/* SIDEBAR ESTILO TRELLO (IMAGEM 3) */}
+      <div className="flex-1 flex w-full max-w-[1700px] mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 gap-6">
+        {/* MOBILE DRAWER (Menu Lateral deslizante para Smartphone) */}
+        {sidebarOpen && (
+          <div className="fixed inset-0 z-50 lg:hidden flex animate-in fade-in duration-200">
+            <div
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm"
+              onClick={() => setSidebarOpen(false)}
+            />
+
+            <aside className="relative w-80 max-w-[85vw] bg-white h-full p-5 shadow-2xl flex flex-col justify-between z-10 animate-in slide-in-from-left duration-200 overflow-y-auto">
+              <div className="space-y-6">
+                <div className="flex items-center justify-between pb-4 border-b border-[#EEEDEA]">
+                  <div className="flex items-center gap-3">
+                    <div
+                      style={{ backgroundColor: '#FD3100', color: '#FFFFFF' }}
+                      className="w-10 h-10 rounded-2xl flex items-center justify-center font-black shadow-md shrink-0 text-base"
+                    >
+                      VB
+                    </div>
+                    <div className="min-w-0">
+                      <h4 className="font-black text-sm text-[#111111] truncate uppercase">
+                        Área VB Agência
+                      </h4>
+                      <span className="text-[10px] font-bold text-[#66635D]">
+                        Painel Integrado
+                      </span>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setSidebarOpen(false)}
+                    className="p-1.5 text-[#66635D] hover:text-[#111111] rounded-xl hover:bg-[#FAF9F7]"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+
+                <nav className="space-y-1.5">
+                  <button
+                    onClick={() => {
+                      setActiveView('demands');
+                      setSidebarOpen(false);
+                    }}
+                    className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-black uppercase tracking-wider transition-all ${
+                      activeView === 'demands'
+                        ? 'btn-vb-primary shadow-md'
+                        : 'text-[#111111] hover:bg-[#FAF9F7]'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <Kanban className="w-4 h-4 stroke-[2.5]" />
+                      <span>Quadros</span>
+                    </div>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full font-black bg-[#FAF9F7] border border-[#DCD6CC] text-[#66635D]">
+                      Trello
+                    </span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setActiveView('clients');
+                      setSidebarOpen(false);
+                    }}
+                    className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-black uppercase tracking-wider transition-all ${
+                      activeView === 'clients'
+                        ? 'btn-vb-primary shadow-md'
+                        : 'text-[#111111] hover:bg-[#FAF9F7]'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <Users className="w-4 h-4 stroke-[2.5]" />
+                      <span>Clientes</span>
+                    </div>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full font-black bg-[#FAF9F7] border border-[#DCD6CC] text-[#66635D]">
+                      {clients.length}
+                    </span>
+                  </button>
+                </nav>
+
+                <div className="pt-4 border-t border-[#EEEDEA]">
+                  <div className="flex items-center justify-between mb-2 px-1">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-[#66635D]">
+                      Seus Clientes ({clients.length})
+                    </span>
+                    <button
+                      onClick={() => {
+                        handleOpenModal();
+                        setSidebarOpen(false);
+                      }}
+                      className="p-1 hover:bg-[#FAF9F7] text-[#FD3100] rounded-lg transition-colors"
+                      title="Cadastrar novo cliente"
+                    >
+                      <Plus className="w-3.5 h-3.5 stroke-[3]" />
+                    </button>
+                  </div>
+
+                  <div className="space-y-1 max-h-56 overflow-y-auto pr-1">
+                    {clients.map((c) => (
+                      <div
+                        key={c.id}
+                        className="flex items-center justify-between p-2 rounded-xl hover:bg-[#FAF9F7] transition-all text-xs"
+                      >
+                        <Link
+                          href={`/admin/clients/${c.id}`}
+                          onClick={() => setSidebarOpen(false)}
+                          className="flex items-center gap-2 min-w-0 flex-1 hover:text-[#FD3100] transition-colors"
+                        >
+                          <div className="w-6 h-6 rounded-lg overflow-hidden border border-[#DCD6CC] bg-white flex items-center justify-center shrink-0">
+                            {c.logoUrl ? (
+                              <img src={c.logoUrl} alt="" className="w-full h-full object-cover" />
+                            ) : (
+                              <span className="text-[10px] font-black text-[#FD3100]">
+                                {c.name.slice(0, 2).toUpperCase()}
+                              </span>
+                            )}
+                          </div>
+                          <span className="font-bold truncate">{c.name}</span>
+                        </Link>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-4 border-t border-[#EEEDEA] space-y-2 mt-4">
+                <button
+                  onClick={() => {
+                    handleOpenPostModal();
+                    setSidebarOpen(false);
+                  }}
+                  style={{ backgroundColor: '#111111', color: '#FFFFFF' }}
+                  className="w-full py-2.5 px-3 rounded-2xl text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 shadow-sm"
+                >
+                  <Video className="w-3.5 h-3.5" style={{ color: '#FD3100' }} />
+                  <span>+ Novo Post</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    handleOpenModal();
+                    setSidebarOpen(false);
+                  }}
+                  className="btn-vb-primary w-full py-2.5 px-3 rounded-2xl text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 shadow-sm"
+                >
+                  <Plus className="w-3.5 h-3.5 stroke-[3]" />
+                  <span>+ Novo Cliente</span>
+                </button>
+              </div>
+            </aside>
+          </div>
+        )}
+
+        {/* SIDEBAR ESTILO TRELLO DESKTOP (IMAGEM 3) */}
         {sidebarOpen && (
           <aside className="w-64 sm:w-72 shrink-0 bg-white border-2 border-[#DCD6CC] rounded-3xl p-5 shadow-sm flex flex-col justify-between hidden lg:flex h-[calc(100vh-140px)] sticky top-24">
             <div className="space-y-6 overflow-y-auto pr-1">
@@ -809,25 +961,24 @@ export default function AdminDashboardPage() {
             </p>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="grid grid-cols-2 gap-2 w-full sm:w-auto sm:flex sm:items-center sm:gap-3">
             {/* Botão Novo Post */}
             <button
               onClick={() => handleOpenPostModal()}
               style={{ backgroundColor: '#111111', color: '#FFFFFF' }}
-              className="flex items-center gap-2 px-5 py-3.5 rounded-2xl text-xs uppercase tracking-wider font-black shadow-md hover:bg-black transition-all hover:scale-[1.02] active:scale-[0.98]"
+              className="flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-5 py-3 sm:py-3.5 rounded-2xl text-[11px] sm:text-xs uppercase tracking-wider font-black shadow-md hover:bg-black transition-all hover:scale-[1.02] active:scale-[0.98]"
             >
-              <Video className="w-4 h-4" style={{ color: '#FD3100' }} />
-              <span>+ Novo Post</span>
+              <Video className="w-4 h-4 shrink-0" style={{ color: '#FD3100' }} />
+              <span className="truncate">+ Novo Post</span>
             </button>
 
             {/* Botão Novo Cliente */}
             <button
               onClick={handleOpenModal}
-              style={{ backgroundColor: '#FD3100', color: '#FFFFFF' }}
-              className="btn-vb-primary flex items-center gap-2 px-6 py-3.5 rounded-2xl text-xs uppercase tracking-wider transition-all hover:scale-[1.02] active:scale-[0.98]"
+              className="btn-vb-primary flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-6 py-3 sm:py-3.5 rounded-2xl text-[11px] sm:text-xs uppercase tracking-wider transition-all hover:scale-[1.02] active:scale-[0.98]"
             >
-              <Plus className="w-4 h-4 stroke-[3]" />
-              <span>Novo Cliente</span>
+              <Plus className="w-4 h-4 stroke-[3] shrink-0" />
+              <span className="truncate">+ Novo Cliente</span>
             </button>
           </div>
         </div>
@@ -1110,11 +1261,11 @@ export default function AdminDashboardPage() {
 
       {/* MODAL 1: Criação de Novo Post (Google Drive / Vídeo / Carrossel) */}
       {postModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200 overflow-y-auto">
-          <div className="bg-white border-2 border-[#FFCEBF] rounded-3xl w-full max-w-xl p-6 sm:p-8 shadow-2xl relative overflow-hidden my-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200 overflow-y-auto">
+          <div className="bg-white border-2 border-[#FFCEBF] rounded-3xl w-full max-w-xl p-5 sm:p-8 shadow-2xl relative overflow-hidden my-auto max-h-[92vh] flex flex-col">
             <div className="absolute top-0 left-0 right-0 h-2 bg-[#FD3100]" />
 
-            <div className="flex items-center justify-between pb-4 border-b border-[#EEEDEA]">
+            <div className="flex items-center justify-between pb-4 border-b border-[#EEEDEA] shrink-0">
               <div className="flex items-center gap-3">
                 <div className="w-11 h-11 bg-[#FFF0EC] border border-[#FFCEBF] rounded-2xl flex items-center justify-center shadow-sm" style={{ color: '#FD3100' }}>
                   <Video className="w-6 h-6 stroke-[2.5]" />
@@ -1137,19 +1288,19 @@ export default function AdminDashboardPage() {
             </div>
 
             {postError && (
-              <div className="mt-4 p-3.5 bg-rose-50 border border-rose-200 rounded-2xl text-rose-700 text-xs font-semibold">
+              <div className="mt-4 p-3.5 bg-rose-50 border border-rose-200 rounded-2xl text-rose-700 text-xs font-semibold shrink-0">
                 {postError}
               </div>
             )}
 
             {postSuccess && (
-              <div className="mt-4 p-3.5 bg-emerald-50 border border-emerald-200 rounded-2xl text-emerald-700 text-xs font-semibold flex items-center gap-2">
+              <div className="mt-4 p-3.5 bg-emerald-50 border border-emerald-200 rounded-2xl text-emerald-700 text-xs font-semibold flex items-center gap-2 shrink-0">
                 <Check className="w-4 h-4 stroke-[3]" />
                 <span>{postSuccess}</span>
               </div>
             )}
 
-            <form onSubmit={handleCreatePost} className="mt-6 space-y-4">
+            <form onSubmit={handleCreatePost} className="mt-4 sm:mt-6 space-y-4 overflow-y-auto pr-1">
               {/* Selecionar Cliente */}
               <div>
                 <label className="block text-xs font-black uppercase tracking-wider text-[#111111] mb-2">
@@ -1373,11 +1524,11 @@ export default function AdminDashboardPage() {
 
       {/* MODAL 2: Criação de Novo Cliente */}
       {modalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white border-2 border-[#FFCEBF] rounded-3xl w-full max-w-lg p-6 sm:p-8 shadow-2xl relative overflow-hidden">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200 overflow-y-auto">
+          <div className="bg-white border-2 border-[#FFCEBF] rounded-3xl w-full max-w-lg p-5 sm:p-8 shadow-2xl relative overflow-hidden my-auto max-h-[92vh] flex flex-col">
             <div className="absolute top-0 left-0 right-0 h-2 bg-[#FD3100]" />
 
-            <div className="flex items-center justify-between pb-4 border-b border-[#EEEDEA]">
+            <div className="flex items-center justify-between pb-4 border-b border-[#EEEDEA] shrink-0">
               <div className="flex items-center gap-3">
                 <div className="w-11 h-11 bg-[#FFF0EC] border border-[#FFCEBF] rounded-2xl flex items-center justify-center shadow-sm" style={{ color: '#FD3100' }}>
                   <Users className="w-6 h-6 stroke-[2.5]" />
@@ -1400,12 +1551,12 @@ export default function AdminDashboardPage() {
             </div>
 
             {formError && (
-              <div className="mt-4 p-3.5 bg-rose-50 border border-rose-200 rounded-2xl text-rose-700 text-xs font-semibold">
+              <div className="mt-4 p-3.5 bg-rose-50 border border-rose-200 rounded-2xl text-rose-700 text-xs font-semibold shrink-0">
                 {formError}
               </div>
             )}
 
-            <form onSubmit={handleCreateClient} className="mt-6 space-y-4">
+            <form onSubmit={handleCreateClient} className="mt-4 sm:mt-6 space-y-4 overflow-y-auto pr-1">
               <div>
                 <label className="block text-xs font-black uppercase tracking-wider text-[#111111] mb-2">
                   Nome do Cliente / Empresa *
@@ -1519,11 +1670,11 @@ export default function AdminDashboardPage() {
 
       {/* MODAL 3: Editar Logo do Cliente */}
       {editLogoModalOpen && editingClient && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white border-2 border-[#FFCEBF] rounded-3xl w-full max-w-lg p-6 sm:p-8 shadow-2xl relative overflow-hidden">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200 overflow-y-auto">
+          <div className="bg-white border-2 border-[#FFCEBF] rounded-3xl w-full max-w-lg p-5 sm:p-8 shadow-2xl relative overflow-hidden my-auto max-h-[92vh] flex flex-col">
             <div className="absolute top-0 left-0 right-0 h-2 bg-[#FD3100]" />
 
-            <div className="flex items-center justify-between pb-4 border-b border-[#EEEDEA]">
+            <div className="flex items-center justify-between pb-4 border-b border-[#EEEDEA] shrink-0">
               <div className="flex items-center gap-3">
                 <div className="w-11 h-11 bg-[#FFF0EC] border border-[#FFCEBF] rounded-2xl flex items-center justify-center shadow-sm" style={{ color: '#FD3100' }}>
                   <ImageIcon className="w-6 h-6 stroke-[2.5]" />
@@ -1546,19 +1697,19 @@ export default function AdminDashboardPage() {
             </div>
 
             {editError && (
-              <div className="mt-4 p-3.5 bg-rose-50 border border-rose-200 rounded-2xl text-rose-700 text-xs font-semibold">
+              <div className="mt-4 p-3.5 bg-rose-50 border border-rose-200 rounded-2xl text-rose-700 text-xs font-semibold shrink-0">
                 {editError}
               </div>
             )}
 
             {editSuccess && (
-              <div className="mt-4 p-3.5 bg-emerald-50 border border-emerald-200 rounded-2xl text-emerald-700 text-xs font-semibold flex items-center gap-2">
+              <div className="mt-4 p-3.5 bg-emerald-50 border border-emerald-200 rounded-2xl text-emerald-700 text-xs font-semibold flex items-center gap-2 shrink-0">
                 <Check className="w-4 h-4 stroke-[3]" />
                 <span>{editSuccess}</span>
               </div>
             )}
 
-            <form onSubmit={handleSaveEditLogo} className="mt-6 space-y-5">
+            <form onSubmit={handleSaveEditLogo} className="mt-4 sm:mt-6 space-y-5 overflow-y-auto pr-1">
               {/* Prévia do Logo Atual / Novo */}
               <div className="flex items-center gap-4 bg-[#FAF9F7] p-4 rounded-2xl border border-[#DCD6CC]">
                 <div className="w-16 h-16 rounded-2xl overflow-hidden border-2 border-[#DCD6CC] bg-white flex items-center justify-center shadow-md shrink-0">

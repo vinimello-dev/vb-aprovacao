@@ -664,52 +664,54 @@ export default function ClientHubPage({ params }: PageProps) {
 
       {/* Header Superior com Navegação de Retorno */}
       <header className="border-b border-[#DCD6CC] bg-white sticky top-0 z-30 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
-          <div className="flex items-center gap-4">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-16 sm:h-20 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-1">
             <Link
               href="/admin"
-              className="p-2.5 hover:bg-[#FAF9F7] text-[#111111] hover:text-[#FD3100] rounded-2xl border border-[#DCD6CC] transition-colors flex items-center gap-1.5 text-xs font-black uppercase"
+              className="p-2 sm:p-2.5 hover:bg-[#FAF9F7] text-[#111111] hover:text-[#FD3100] rounded-xl sm:rounded-2xl border border-[#DCD6CC] transition-colors flex items-center gap-1.5 text-xs font-black uppercase shrink-0"
+              title="Voltar ao Painel Geral"
             >
               <ArrowLeft className="w-4 h-4" />
-              <span className="hidden sm:inline">Voltar ao Painel</span>
+              <span className="hidden sm:inline">Voltar</span>
             </Link>
 
-            <div className="h-12 flex items-center justify-center">
-              <img src="/logo-vb.png?v=4" alt="Logo VB" className="h-12 w-auto object-contain" />
+            <div className="h-10 sm:h-12 hidden md:flex items-center justify-center shrink-0">
+              <img src="/logo-vb.png?v=4" alt="Logo VB" className="h-10 sm:h-12 w-auto object-contain" />
             </div>
 
-            <div className="h-6 w-px bg-[#DCD6CC] hidden sm:block" />
+            <div className="h-6 w-px bg-[#DCD6CC] hidden md:block shrink-0" />
 
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl overflow-hidden border-2 border-[#DCD6CC] bg-white flex items-center justify-center shadow-sm shrink-0">
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl overflow-hidden border-2 border-[#DCD6CC] bg-white flex items-center justify-center shadow-sm shrink-0">
                 {client.logoUrl ? (
                   <img src={client.logoUrl} alt={client.name} className="w-full h-full object-cover" />
                 ) : (
-                  <span className="font-black text-sm text-[#FD3100]">
+                  <span className="font-black text-xs sm:text-sm text-[#FD3100]">
                     {client.name.slice(0, 2).toUpperCase()}
                   </span>
                 )}
               </div>
-              <div>
-                <h1 className="font-black text-lg text-[#111111] leading-tight uppercase">
+              <div className="min-w-0 flex-1">
+                <h1 className="font-black text-xs sm:text-lg text-[#111111] leading-tight uppercase truncate max-w-[130px] sm:max-w-xs md:max-w-none">
                   {client.name}
                 </h1>
-                <p className="text-[11px] font-bold text-[#66635D]">
+                <p className="text-[10px] sm:text-[11px] font-bold text-[#66635D] truncate">
                   /c/{client.slug} • PIN: <strong className="font-mono text-[#FD3100]">{client.pin}</strong>
                 </p>
               </div>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
             <a
               href={`/c/${client.slug}`}
               target="_blank"
               rel="noreferrer"
-              className="btn-vb-secondary hidden sm:flex items-center gap-2 px-3.5 py-2 rounded-2xl text-xs font-bold transition-all shadow-sm"
+              className="btn-vb-secondary flex items-center gap-1.5 p-2 sm:px-3.5 sm:py-2 rounded-xl sm:rounded-2xl text-xs font-bold transition-all shadow-sm"
+              title="Abrir Portal do Cliente"
             >
-              <ExternalLink className="w-3.5 h-3.5" style={{ color: '#FD3100' }} />
-              <span>Ver Portal</span>
+              <ExternalLink className="w-3.5 h-3.5 text-[#FD3100]" />
+              <span className="hidden sm:inline">Ver Portal</span>
             </a>
 
             <button
@@ -718,19 +720,19 @@ export default function ClientHubPage({ params }: PageProps) {
                 setPostModalOpen(true);
               }}
               style={{ backgroundColor: '#FD3100', color: '#FFFFFF' }}
-              className="btn-vb-primary flex items-center gap-1.5 px-4 py-2 rounded-2xl text-xs font-black uppercase tracking-wider shadow-md"
+              className="btn-vb-primary flex items-center gap-1 sm:gap-1.5 px-3 sm:px-4 py-2 rounded-xl sm:rounded-2xl text-[11px] sm:text-xs font-black uppercase tracking-wider shadow-md"
             >
               <Plus className="w-3.5 h-3.5 stroke-[3]" />
-              <span>Novo Post</span>
+              <span className="truncate">Novo Post</span>
             </button>
           </div>
         </div>
       </header>
 
       {/* Banner & Abas do Hub do Cliente (Estilo Imagem 2) */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 w-full">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pt-4 sm:pt-8 w-full">
         {/* Cartão de Resumo do Cliente */}
-        <div className="bg-white border-2 border-[#DCD6CC] rounded-3xl p-6 sm:p-8 shadow-sm mb-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+        <div className="bg-white border-2 border-[#DCD6CC] rounded-3xl p-4 sm:p-8 shadow-sm mb-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 sm:gap-6">
           <div className="flex items-center gap-5">
             <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-3xl overflow-hidden border-2 border-[#DCD6CC] bg-white flex items-center justify-center shadow-md shrink-0">
               {client.logoUrl ? (
@@ -1476,11 +1478,11 @@ export default function ClientHubPage({ params }: PageProps) {
 
       {/* MODAL 1: Nova Entrega / Ciclo (Imagem 1) */}
       {cycleModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white border-2 border-[#FFCEBF] rounded-3xl w-full max-w-md p-6 sm:p-8 shadow-2xl relative overflow-hidden">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200 overflow-y-auto">
+          <div className="bg-white border-2 border-[#FFCEBF] rounded-3xl w-full max-w-md p-5 sm:p-8 shadow-2xl relative overflow-hidden my-auto max-h-[92vh] flex flex-col">
             <div className="absolute top-0 left-0 right-0 h-2 bg-[#FD3100]" />
 
-            <div className="flex items-center justify-between pb-4 border-b border-[#EEEDEA]">
+            <div className="flex items-center justify-between pb-4 border-b border-[#EEEDEA] shrink-0">
               <div className="flex items-center gap-2.5">
                 <div className="w-10 h-10 rounded-2xl bg-[#FFF0EC] border border-[#FFCEBF] flex items-center justify-center text-[#FD3100]">
                   <FolderPlus className="w-5 h-5" />
@@ -1502,7 +1504,7 @@ export default function ClientHubPage({ params }: PageProps) {
               </button>
             </div>
 
-            <form onSubmit={handleCreateCycle} className="mt-5 space-y-4">
+            <form onSubmit={handleCreateCycle} className="mt-4 sm:mt-5 space-y-4 overflow-y-auto pr-1">
               <div>
                 <label className="block text-xs font-black uppercase tracking-wider text-[#111111] mb-1.5">
                   Nome da Entrega *
@@ -1572,11 +1574,11 @@ export default function ClientHubPage({ params }: PageProps) {
 
       {/* MODAL 2: Novo Post */}
       {postModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white border-2 border-[#FFCEBF] rounded-3xl w-full max-w-lg p-6 sm:p-8 shadow-2xl relative overflow-hidden">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200 overflow-y-auto">
+          <div className="bg-white border-2 border-[#FFCEBF] rounded-3xl w-full max-w-lg p-5 sm:p-8 shadow-2xl relative overflow-hidden my-auto max-h-[92vh] flex flex-col">
             <div className="absolute top-0 left-0 right-0 h-2 bg-[#FD3100]" />
 
-            <div className="flex items-center justify-between pb-4 border-b border-[#EEEDEA]">
+            <div className="flex items-center justify-between pb-4 border-b border-[#EEEDEA] shrink-0">
               <div className="flex items-center gap-2.5">
                 <div className="w-10 h-10 rounded-2xl bg-[#FFF0EC] border border-[#FFCEBF] flex items-center justify-center text-[#FD3100]">
                   <Video className="w-5 h-5" />
@@ -1601,7 +1603,7 @@ export default function ClientHubPage({ params }: PageProps) {
               </div>
             )}
 
-            <form onSubmit={handleCreatePost} className="mt-4 space-y-4">
+            <form onSubmit={handleCreatePost} className="mt-4 space-y-4 overflow-y-auto pr-1">
               {/* Ciclo de Entrega e Data do Post lado a lado */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
@@ -1766,11 +1768,11 @@ export default function ClientHubPage({ params }: PageProps) {
 
       {/* MODAL: Editar Post */}
       {editPostModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white border-2 border-[#FFCEBF] rounded-3xl w-full max-w-lg p-6 sm:p-8 shadow-2xl relative overflow-hidden">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200 overflow-y-auto">
+          <div className="bg-white border-2 border-[#FFCEBF] rounded-3xl w-full max-w-lg p-5 sm:p-8 shadow-2xl relative overflow-hidden my-auto max-h-[92vh] flex flex-col">
             <div className="absolute top-0 left-0 right-0 h-2 bg-[#FD3100]" />
 
-            <div className="flex items-center justify-between pb-4 border-b border-[#EEEDEA]">
+            <div className="flex items-center justify-between pb-4 border-b border-[#EEEDEA] shrink-0">
               <div className="flex items-center gap-2.5">
                 <div className="w-10 h-10 rounded-2xl bg-[#FFF0EC] border border-[#FFCEBF] flex items-center justify-center text-[#FD3100]">
                   <FileEdit className="w-5 h-5" />
@@ -1798,7 +1800,7 @@ export default function ClientHubPage({ params }: PageProps) {
               </div>
             )}
 
-            <form onSubmit={handleSaveEditPost} className="mt-4 space-y-4">
+            <form onSubmit={handleSaveEditPost} className="mt-4 space-y-4 overflow-y-auto pr-1">
               {/* Ciclo de Entrega e Data do Post lado a lado */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
@@ -1963,11 +1965,11 @@ export default function ClientHubPage({ params }: PageProps) {
 
       {/* MODAL 3: Novo Roteiro de Gravação */}
       {scriptModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white border-2 border-[#FFCEBF] rounded-3xl w-full max-w-lg p-6 sm:p-8 shadow-2xl relative overflow-hidden">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200 overflow-y-auto">
+          <div className="bg-white border-2 border-[#FFCEBF] rounded-3xl w-full max-w-lg p-5 sm:p-8 shadow-2xl relative overflow-hidden my-auto max-h-[92vh] flex flex-col">
             <div className="absolute top-0 left-0 right-0 h-2 bg-[#FD3100]" />
 
-            <div className="flex items-center justify-between pb-4 border-b border-[#EEEDEA]">
+            <div className="flex items-center justify-between pb-4 border-b border-[#EEEDEA] shrink-0">
               <div className="flex items-center gap-2.5">
                 <div className="w-10 h-10 rounded-2xl bg-[#FFF0EC] border border-[#FFCEBF] flex items-center justify-center text-[#FD3100]">
                   <Video className="w-5 h-5" />
@@ -1986,7 +1988,7 @@ export default function ClientHubPage({ params }: PageProps) {
               </button>
             </div>
 
-            <form onSubmit={handleSaveScript} className="mt-4 space-y-4">
+            <form onSubmit={handleSaveScript} className="mt-4 space-y-4 overflow-y-auto pr-1">
               <div>
                 <label className="block text-xs font-black uppercase tracking-wider text-[#111111] mb-1.5">
                   Título do Roteiro / Tema *
@@ -2082,11 +2084,11 @@ export default function ClientHubPage({ params }: PageProps) {
 
       {/* MODAL 4: Novo Documento / Contrato */}
       {docModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white border-2 border-[#FFCEBF] rounded-3xl w-full max-w-md p-6 sm:p-8 shadow-2xl relative overflow-hidden">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200 overflow-y-auto">
+          <div className="bg-white border-2 border-[#FFCEBF] rounded-3xl w-full max-w-md p-5 sm:p-8 shadow-2xl relative overflow-hidden my-auto max-h-[92vh] flex flex-col">
             <div className="absolute top-0 left-0 right-0 h-2 bg-[#FD3100]" />
 
-            <div className="flex items-center justify-between pb-4 border-b border-[#EEEDEA]">
+            <div className="flex items-center justify-between pb-4 border-b border-[#EEEDEA] shrink-0">
               <div className="flex items-center gap-2.5">
                 <div className="w-10 h-10 rounded-2xl bg-[#FFF0EC] border border-[#FFCEBF] flex items-center justify-center text-[#FD3100]">
                   <FileCheck2 className="w-5 h-5" />
@@ -2105,7 +2107,7 @@ export default function ClientHubPage({ params }: PageProps) {
               </button>
             </div>
 
-            <form onSubmit={handleCreateDocument} className="mt-4 space-y-4">
+            <form onSubmit={handleCreateDocument} className="mt-4 space-y-4 overflow-y-auto pr-1">
               <div>
                 <label className="block text-xs font-black uppercase tracking-wider text-[#111111] mb-1.5">
                   Título do Documento *

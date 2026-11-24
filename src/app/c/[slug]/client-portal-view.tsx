@@ -198,127 +198,140 @@ export function ClientPortalView({ client }: ClientPortalViewProps) {
 
       {/* Header do Cliente */}
       <header className="border-b border-[#DCD6CC] bg-white sticky top-0 z-30 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
-          <div className="flex items-center gap-3.5">
-            <div className="h-12 flex items-center justify-center">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-16 sm:h-20 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 sm:gap-3.5 min-w-0 flex-1">
+            {/* Logo VB */}
+            <div className="h-9 sm:h-12 flex items-center justify-center shrink-0">
               <img
                 src="/logo-vb.png?v=4"
                 alt="Logo VB"
-                className="h-12 w-auto object-contain"
+                className="h-8 sm:h-12 w-auto object-contain"
               />
             </div>
-            {client.logoUrl && (
-              <div className="h-11 w-11 rounded-2xl overflow-hidden border border-[#DCD6CC] bg-white flex items-center justify-center shrink-0 shadow-sm">
+
+            {/* Separador */}
+            <div className="h-6 w-px bg-[#DCD6CC] shrink-0" />
+
+            {/* Logo do Cliente */}
+            {client.logoUrl ? (
+              <div className="h-9 w-9 sm:h-11 sm:w-11 rounded-xl sm:rounded-2xl overflow-hidden border border-[#DCD6CC] bg-white flex items-center justify-center shrink-0 shadow-sm">
                 <img
                   src={client.logoUrl}
                   alt={`Logo ${client.name}`}
                   className="w-full h-full object-cover"
                 />
               </div>
+            ) : (
+              <div className="h-9 w-9 sm:h-11 sm:w-11 rounded-xl sm:rounded-2xl bg-[#FFF0EC] text-[#FD3100] border border-[#FFCEBF] font-black text-xs sm:text-sm flex items-center justify-center shrink-0">
+                {client.name.slice(0, 2).toUpperCase()}
+              </div>
             )}
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="font-black text-lg text-[#111111] tracking-tight uppercase">
+
+            {/* Nome da Empresa e Tag */}
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="font-black text-xs sm:text-lg text-[#111111] tracking-tight uppercase truncate max-w-[130px] sm:max-w-[260px] md:max-w-none">
                   {client.name}
                 </span>
                 <span
                   style={{ backgroundColor: '#FFF0EC', color: '#FD3100', borderColor: '#FFCEBF' }}
-                  className="px-2.5 py-0.5 text-[10px] font-black rounded-full border uppercase tracking-wider"
+                  className="hidden md:inline-block px-2 py-0.5 text-[9px] font-black rounded-full border uppercase tracking-wider shrink-0"
                 >
                   Portal do Cliente
                 </span>
               </div>
-              <p className="text-xs font-bold" style={{ color: '#FD3100' }}>
-                Aprovação e Planejamento de Conteúdos
+              <p className="text-[10px] sm:text-xs font-bold text-[#FD3100] truncate">
+                Aprovação de Conteúdo
               </p>
             </div>
           </div>
 
           <button
             onClick={() => setIsAuthenticated(false)}
-            className="btn-vb-secondary flex items-center gap-2 px-3.5 py-2 rounded-2xl text-xs font-bold transition-all shadow-sm"
+            className="btn-vb-secondary flex items-center gap-1.5 p-2 sm:px-3.5 sm:py-2 rounded-xl sm:rounded-2xl text-xs font-bold transition-all shadow-sm shrink-0"
+            title="Sair do Portal"
           >
-            <LogOut className="w-3.5 h-3.5" style={{ color: '#FD3100' }} />
-            <span className="text-[#111111]">Sair</span>
+            <LogOut className="w-3.5 h-3.5 text-[#FD3100]" />
+            <span className="hidden sm:inline text-[#111111]">Sair</span>
           </button>
         </div>
       </header>
 
       {/* Conteúdo Principal */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 flex-1 w-full">
+      <main className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-6 sm:py-10 flex-1 w-full">
         {/* Barra Superior com Modos de Visualização & Filtros */}
-        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 mb-8">
+        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 sm:gap-6 mb-6 sm:mb-8">
           <div>
-            <h1 className="text-3xl font-black text-[#111111] uppercase tracking-tight">
+            <h1 className="text-2xl sm:text-3xl font-black text-[#111111] uppercase tracking-tight">
               Planejamento de <span style={{ color: '#FD3100' }}>Conteúdo</span>
             </h1>
-            <p className="text-sm text-[#66635D] mt-1 font-medium">
+            <p className="text-xs sm:text-sm text-[#66635D] mt-1 font-medium">
               Acompanhe a harmonia do feed, visualize o mês completo e aprove seus posts.
             </p>
           </div>
 
           {/* Seletores de Modo de Visualização */}
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 w-full lg:w-auto">
             {/* Seletor de Modo com Letras Pretas e Laranja no Ativo */}
-            <div className="flex items-center bg-white p-1.5 rounded-2xl border-2 border-[#DCD6CC] shadow-sm text-xs font-black uppercase">
+            <div className="grid grid-cols-3 sm:flex items-center bg-white p-1 rounded-2xl border-2 border-[#DCD6CC] shadow-sm text-[11px] sm:text-xs font-black uppercase w-full sm:w-auto">
               <button
                 onClick={() => setViewMode('instagram')}
                 style={viewMode === 'instagram' ? { backgroundColor: '#FD3100', color: '#FFFFFF' } : { color: '#111111' }}
-                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl transition-all font-black"
+                className="flex items-center justify-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-2 rounded-xl transition-all font-black"
                 title="Ver prévia como Grade do Instagram"
               >
-                <Instagram className="w-4 h-4 stroke-[2.5]" />
-                <span>Feed Instagram</span>
+                <Instagram className="w-3.5 sm:w-4 h-3.5 sm:h-4 stroke-[2.5]" />
+                <span className="truncate">Feed</span>
               </button>
 
               <button
                 onClick={() => setViewMode('calendar')}
                 style={viewMode === 'calendar' ? { backgroundColor: '#FD3100', color: '#FFFFFF' } : { color: '#111111' }}
-                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl transition-all font-black"
+                className="flex items-center justify-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-2 rounded-xl transition-all font-black"
                 title="Ver como Calendário Mensal"
               >
-                <CalendarDays className="w-4 h-4 stroke-[2.5]" />
-                <span>Mês Inteiro</span>
+                <CalendarDays className="w-3.5 sm:w-4 h-3.5 sm:h-4 stroke-[2.5]" />
+                <span className="truncate">Mês</span>
               </button>
 
               <button
                 onClick={() => setViewMode('cards')}
                 style={viewMode === 'cards' ? { backgroundColor: '#FD3100', color: '#FFFFFF' } : { color: '#111111' }}
-                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl transition-all font-black"
+                className="flex items-center justify-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-2 rounded-xl transition-all font-black"
                 title="Ver lista de cards com legenda"
               >
-                <LayoutGrid className="w-4 h-4 stroke-[2.5]" />
-                <span>Cards Detalhados</span>
+                <LayoutGrid className="w-3.5 sm:w-4 h-3.5 sm:h-4 stroke-[2.5]" />
+                <span className="truncate">Cards</span>
               </button>
             </div>
 
             {/* Filtro por Status com Letras Pretas */}
-            <div className="flex items-center bg-white p-1.5 rounded-2xl border-2 border-[#DCD6CC] shadow-sm text-xs font-black uppercase">
+            <div className="grid grid-cols-4 sm:flex items-center bg-white p-1 rounded-2xl border-2 border-[#DCD6CC] shadow-sm text-[10px] sm:text-xs font-black uppercase text-center w-full sm:w-auto">
               <button
                 onClick={() => setStatusFilter('ALL')}
                 style={statusFilter === 'ALL' ? { backgroundColor: '#111111', color: '#FFFFFF' } : { color: '#111111' }}
-                className="px-3 py-2 rounded-xl transition-all font-black"
+                className="px-2 sm:px-3 py-2 rounded-xl transition-all font-black truncate"
               >
                 Todos ({posts.length})
               </button>
               <button
                 onClick={() => setStatusFilter('PENDENTE')}
                 style={statusFilter === 'PENDENTE' ? { backgroundColor: '#B45309', color: '#FFFFFF' } : { color: '#111111' }}
-                className="px-3 py-2 rounded-xl transition-all font-black"
+                className="px-2 sm:px-3 py-2 rounded-xl transition-all font-black truncate"
               >
                 Pendentes
               </button>
               <button
                 onClick={() => setStatusFilter('AJUSTES')}
                 style={statusFilter === 'AJUSTES' ? { backgroundColor: '#FD3100', color: '#FFFFFF' } : { color: '#111111' }}
-                className="px-3 py-2 rounded-xl transition-all font-black"
+                className="px-2 sm:px-3 py-2 rounded-xl transition-all font-black truncate"
               >
                 Ajustes
               </button>
               <button
                 onClick={() => setStatusFilter('APROVADO')}
                 style={statusFilter === 'APROVADO' ? { backgroundColor: '#047857', color: '#FFFFFF' } : { color: '#111111' }}
-                className="px-3 py-2 rounded-xl transition-all font-black"
+                className="px-2 sm:px-3 py-2 rounded-xl transition-all font-black truncate"
               >
                 Aprovados
               </button>

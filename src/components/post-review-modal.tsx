@@ -168,56 +168,65 @@ export function PostReviewModal({ post, onClose, onPostUpdated }: PostReviewModa
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/75 backdrop-blur-md animate-in fade-in duration-200 overflow-y-auto">
       <div className="bg-[#EEEDEA] border-2 border-[#DCD6CC] rounded-3xl w-full max-w-6xl max-h-[94vh] shadow-2xl flex flex-col overflow-hidden my-auto">
         {/* Barra Superior de Ações com Garantia Total de Cores */}
-        <div className="bg-white border-b border-[#DCD6CC] px-6 py-4 flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={onClose}
-              className="btn-vb-secondary p-2.5 rounded-2xl flex items-center gap-1.5 text-xs font-black shadow-sm"
-            >
-              <ArrowLeft className="w-4 h-4 stroke-[3]" style={{ color: '#FD3100' }} />
-              <span className="text-[#111111]">Voltar</span>
-            </button>
+        <div className="bg-white border-b border-[#DCD6CC] px-4 sm:px-6 py-3 sm:py-4 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4 shrink-0">
+          <div className="flex items-center justify-between sm:justify-start gap-3">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <button
+                onClick={onClose}
+                className="btn-vb-secondary p-2 sm:p-2.5 rounded-2xl flex items-center gap-1.5 text-xs font-black shadow-sm shrink-0"
+              >
+                <ArrowLeft className="w-4 h-4 stroke-[3]" style={{ color: '#FD3100' }} />
+                <span className="text-[#111111] hidden sm:inline">Voltar</span>
+              </button>
 
-            <div>
-              <div className="flex items-center gap-2">
-                <h2 className="font-black text-lg text-[#111111] uppercase tracking-tight line-clamp-1">
-                  {currentPost.title}
-                </h2>
+              <div className="min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h2 className="font-black text-base sm:text-lg text-[#111111] uppercase tracking-tight truncate max-w-[160px] sm:max-w-xs md:max-w-none">
+                    {currentPost.title}
+                  </h2>
 
-                {/* Badge de Status Atual */}
-                {currentPost.status === 'APROVADO' && (
-                  <span className="px-2.5 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full text-[11px] font-black uppercase flex items-center gap-1">
-                    <CheckCircle className="w-3 h-3 text-emerald-600 stroke-[3]" />
-                    Aprovado
-                  </span>
-                )}
-                {currentPost.status === 'AJUSTES' && (
-                  <span
-                    style={{ backgroundColor: '#FFF0EC', color: '#FD3100', borderColor: '#FFCEBF' }}
-                    className="px-2.5 py-0.5 border rounded-full text-[11px] font-black uppercase flex items-center gap-1"
-                  >
-                    <AlertTriangle className="w-3 h-3 stroke-[2.5]" />
-                    Em Ajustes
-                  </span>
-                )}
-                {currentPost.status === 'PENDENTE' && (
-                  <span className="px-2.5 py-0.5 bg-amber-50 text-amber-800 border border-amber-200 rounded-full text-[11px] font-black uppercase flex items-center gap-1">
-                    Pendente
+                  {/* Badge de Status Atual */}
+                  {currentPost.status === 'APROVADO' && (
+                    <span className="px-2 sm:px-2.5 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full text-[10px] sm:text-[11px] font-black uppercase flex items-center gap-1">
+                      <CheckCircle className="w-3 h-3 text-emerald-600 stroke-[3]" />
+                      Aprovado
+                    </span>
+                  )}
+                  {currentPost.status === 'AJUSTES' && (
+                    <span
+                      style={{ backgroundColor: '#FFF0EC', color: '#FD3100', borderColor: '#FFCEBF' }}
+                      className="px-2 sm:px-2.5 py-0.5 border rounded-full text-[10px] sm:text-[11px] font-black uppercase flex items-center gap-1"
+                    >
+                      <AlertTriangle className="w-3 h-3 stroke-[2.5]" />
+                      Ajustes
+                    </span>
+                  )}
+                  {currentPost.status === 'PENDENTE' && (
+                    <span className="px-2 sm:px-2.5 py-0.5 bg-amber-50 text-amber-800 border border-amber-200 rounded-full text-[10px] sm:text-[11px] font-black uppercase flex items-center gap-1">
+                      Pendente
+                    </span>
+                  )}
+                </div>
+
+                {currentPost.scheduledDate && (
+                  <span className="text-[11px] sm:text-xs font-bold flex items-center gap-1 mt-0.5" style={{ color: '#FD3100' }}>
+                    <Calendar className="w-3 h-3 shrink-0" />
+                    <span>Agendado para {formatDate(currentPost.scheduledDate)}</span>
                   </span>
                 )}
               </div>
-
-              {currentPost.scheduledDate && (
-                <span className="text-xs font-bold flex items-center gap-1 mt-0.5" style={{ color: '#FD3100' }}>
-                  <Calendar className="w-3 h-3" />
-                  Agendado para {formatDate(currentPost.scheduledDate)}
-                </span>
-              )}
             </div>
+
+            <button
+              onClick={onClose}
+              className="p-1.5 text-[#66635D] hover:text-[#111111] rounded-xl hover:bg-[#FAF9F7] transition-colors sm:hidden shrink-0"
+            >
+              <X className="w-5 h-5" />
+            </button>
           </div>
 
           {/* Botões de Decisão */}
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
             {/* Botão Solicitar Ajustes */}
             <button
               disabled={updatingStatus}
@@ -227,26 +236,26 @@ export function PostReviewModal({ post, onClose, onPostUpdated }: PostReviewModa
                   ? { backgroundColor: '#111111', color: '#FFFFFF', borderColor: '#111111' }
                   : { backgroundColor: '#FFFFFF', color: '#111111', borderColor: '#FD3100' }
               }
-              className="px-4 py-2.5 rounded-2xl text-xs font-black uppercase tracking-wider flex items-center gap-1.5 transition-all border-2 shadow-sm"
+              className="flex-1 sm:flex-none px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl text-[11px] sm:text-xs font-black uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all border-2 shadow-sm"
             >
               <AlertTriangle className="w-3.5 h-3.5 stroke-[2.5]" style={{ color: '#FD3100' }} />
-              <span>Solicitar Ajustes</span>
+              <span className="truncate">Solicitar Ajustes</span>
             </button>
 
-            {/* Botão Principal de Aprovação: Sempre Laranja da VB com Letras Brancas */}
+            {/* Botão Principal de Aprovação */}
             <button
               disabled={updatingStatus}
               onClick={() => handleStatusChange('APROVADO')}
               style={{ backgroundColor: '#FD3100', color: '#FFFFFF' }}
-              className="btn-vb-primary px-6 py-2.5 rounded-2xl text-xs uppercase tracking-wider flex items-center gap-2 transition-all hover:scale-[1.02] active:scale-[0.98]"
+              className="flex-1 sm:flex-none btn-vb-primary px-4 sm:px-6 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl text-[11px] sm:text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all hover:scale-[1.02] active:scale-[0.98]"
             >
               <CheckCircle className="w-4 h-4 stroke-[3]" />
-              <span>Aprovar Conteúdo</span>
+              <span className="truncate">Aprovar Post</span>
             </button>
 
             <button
               onClick={onClose}
-              className="p-2 text-[#66635D] hover:text-[#111111] rounded-xl hover:bg-[#FAF9F7] transition-colors ml-1"
+              className="p-2 text-[#66635D] hover:text-[#111111] rounded-xl hover:bg-[#FAF9F7] transition-colors ml-1 hidden sm:block shrink-0"
             >
               <X className="w-5 h-5" />
             </button>
@@ -255,14 +264,14 @@ export function PostReviewModal({ post, onClose, onPostUpdated }: PostReviewModa
 
         {/* Banner de Feedback de Status Enviado */}
         {statusFeedbackMessage && (
-          <div className="bg-emerald-50 border-b border-emerald-200 px-6 py-2.5 flex items-center justify-between gap-3 text-xs font-bold text-emerald-800 animate-in fade-in">
+          <div className="bg-emerald-50 border-b border-emerald-200 px-4 sm:px-6 py-2 sm:py-2.5 flex items-center justify-between gap-3 text-xs font-bold text-emerald-800 animate-in fade-in shrink-0">
             <div className="flex items-center gap-2">
               <Check className="w-4 h-4 text-emerald-600 stroke-[3] shrink-0" />
               <span>{statusFeedbackMessage}</span>
             </div>
             <button
               onClick={() => setStatusFeedbackMessage(null)}
-              className="p-1 hover:bg-emerald-100 rounded-lg text-emerald-700"
+              className="p-1 hover:bg-emerald-100 rounded-lg text-emerald-700 shrink-0"
             >
               <X className="w-3.5 h-3.5" />
             </button>
@@ -270,20 +279,20 @@ export function PostReviewModal({ post, onClose, onPostUpdated }: PostReviewModa
         )}
 
         {/* Abas: Revisão Interativa vs Legenda */}
-        <div className="bg-[#FAF9F7] border-b border-[#DCD6CC] px-6 flex items-center gap-6 text-xs font-black uppercase tracking-wider">
+        <div className="bg-[#FAF9F7] border-b border-[#DCD6CC] px-4 sm:px-6 flex items-center gap-4 sm:gap-6 text-xs font-black uppercase tracking-wider overflow-x-auto whitespace-nowrap shrink-0">
           <button
             onClick={() => setActiveTab('review')}
             style={activeTab === 'review' ? { borderColor: '#FD3100', color: '#FD3100' } : { color: '#111111' }}
-            className="py-3.5 border-b-2 transition-all flex items-center gap-2 font-black"
+            className="py-3 sm:py-3.5 border-b-2 transition-all flex items-center gap-2 font-black shrink-0"
           >
             <Sparkles className="w-4 h-4" />
-            <span>Mídia & Revisão Interativa</span>
+            <span>Mídia & Revisão</span>
           </button>
 
           <button
             onClick={() => setActiveTab('caption')}
             style={activeTab === 'caption' ? { borderColor: '#FD3100', color: '#FD3100' } : { color: '#111111' }}
-            className="py-3.5 border-b-2 transition-all flex items-center gap-2 font-black"
+            className="py-3 sm:py-3.5 border-b-2 transition-all flex items-center gap-2 font-black shrink-0"
           >
             <FileText className="w-4 h-4" />
             <span>Legenda (Copy) & Edição</span>
@@ -291,7 +300,7 @@ export function PostReviewModal({ post, onClose, onPostUpdated }: PostReviewModa
         </div>
 
         {/* Conteúdo Principal do Modal */}
-        <div className="p-6 overflow-y-auto flex-1">
+        <div className="p-3 sm:p-6 overflow-y-auto flex-1">
           {activeTab === 'review' ? (
             <div>
               {currentPost.format === 'VIDEO' || currentPost.format === 'REELS' ? (
