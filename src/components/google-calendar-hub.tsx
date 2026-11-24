@@ -316,6 +316,31 @@ export function GoogleCalendarHub() {
     }
   };
 
+  const handleDeleteEvent = async (ev: CalendarEventItem) => {
+    const confirmMsg =
+      ev.source === 'google'
+        ? `Remover "${ev.title}" da agenda aqui na plataforma?`
+        : `Excluir permanentemente "${ev.title}"?`;
+
+    if (!window.confirm(confirmMsg)) return;
+
+    // Remoção otimista imediata da tela
+    setEvents((prev) => prev.filter((item) => item.id !== ev.id));
+
+    try {
+      const res = await fetch(
+        `/api/admin/google-calendar?eventId=${encodeURIComponent(ev.id)}&source=${encodeURIComponent(ev.source)}`,
+        { method: 'DELETE' }
+      );
+      if (!res.ok) {
+        await fetchCalendarData(true);
+      }
+    } catch (err) {
+      console.error('Erro ao apagar evento:', err);
+      await fetchCalendarData(true);
+    }
+  };
+
   const handleCreateGoogleEvent = (e: React.FormEvent) => {
     e.preventDefault();
     if (!evTitle.trim()) return;
@@ -743,12 +768,22 @@ export function GoogleCalendarHub() {
                           >
                             {ev.sourceLabel}
                           </span>
-                          <span className="text-[11px] font-black text-[#111111] flex items-center gap-1">
-                            <Clock className="w-3 h-3 text-[#FD3100]" />
-                            {ev.allDay
-                              ? 'Dia inteiro'
-                              : `${startParts.timeLabel} - ${endParts.timeLabel}`}
-                          </span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-[11px] font-black text-[#111111] flex items-center gap-1">
+                              <Clock className="w-3 h-3 text-[#FD3100]" />
+                              {ev.allDay
+                                ? 'Dia inteiro'
+                                : `${startParts.timeLabel} - ${endParts.timeLabel}`}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteEvent(ev)}
+                              title="Apagar evento da agenda"
+                              className="p-1 rounded-lg text-[#888580] hover:text-rose-600 hover:bg-rose-50 transition-colors"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
                         </div>
 
                         <h4 className="text-sm font-black text-[#111111] leading-snug">
@@ -863,17 +898,27 @@ export function GoogleCalendarHub() {
                       </div>
                     </div>
 
-                    {ev.meetLink && (
-                      <a
-                        href={ev.meetLink}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-black uppercase flex items-center gap-1.5 self-start sm:self-center shrink-0"
+                    <div className="flex items-center gap-2 self-start sm:self-center shrink-0">
+                      {ev.meetLink && (
+                        <a
+                          href={ev.meetLink}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-black uppercase flex items-center gap-1.5"
+                        >
+                          <Video className="w-3.5 h-3.5" />
+                          <span>Entrar</span>
+                        </a>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteEvent(ev)}
+                        title="Apagar evento da agenda"
+                        className="p-2 rounded-xl border border-[#E2DED7] text-[#888580] hover:text-rose-600 hover:border-rose-300 hover:bg-rose-50 transition-colors"
                       >
-                        <Video className="w-3.5 h-3.5" />
-                        <span>Entrar</span>
-                      </a>
-                    )}
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
                 );
               })}

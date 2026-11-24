@@ -45,6 +45,12 @@ async function ensureCalendarTable() {
         updated_at TIMESTAMPTZ DEFAULT NOW()
       );
     `);
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS hidden_calendar_events (
+        event_id TEXT PRIMARY KEY,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      );
+    `);
     isCalendarTableInitialized = true;
   } catch (err) {
     console.error('Erro ao inicializar tabela google_calendar_connections:', err);
@@ -133,6 +139,61 @@ export async function deleteGoogleCalendarConnection(id: string): Promise<boolea
     return true;
   } catch (err) {
     console.error('Erro ao remover conexão do Google Agenda:', err);
+    return false;
+  }
+}
+
+export async function getHiddenCalendarEventIds(): Promise<Set<string>> {
+  await ensureCalendarTable();
+  try {
+    const rows = await prisma.$queryRawUnsafe<Array<{ event_id: string }>>(
+      `SELECT event_id FROM hidden_calendar_events`
+    );
+    return new Set(rows.map((r) => r.event_id));
+  } catch (err) {
+    console.error('Erro ao buscar eventos ocultos:', err);
+    return new Set();
+  }
+}
+
+export async function hideCalendarEvent(eventId: string): Promise<boolean> {
+  await ensureCalendarTable();
+  try {
+    await prisma.$executeRawUnsafe(
+      `INSERT INTO hidden_calendar_events (event_id) VALUES ($1) ON CONFLICT (event_id) DO NOTHING`,
+      eventId
+    );
+    return true;
+  } catch (err) {
+    console.error('Erro ao ocultar evento:', err);
+    return false;
+  }
+}
+
+export async function deleteAgencyEventById(
+  eventId: string,
+  source: 'google' | 'post' | 'demand' | 'recording'
+): Promise<boolean> {
+  try {
+    if (source === 'post') {
+      const realId = eventId.replace(/^post_/, '');
+      await prisma.post.delete({ where: { id: realId } });
+      return true;
+    }
+    if (source === 'demand') {
+      const realId = eventId.replace(/^demand_/, '');
+      await prisma.demand.delete({ where: { id: realId } });
+      return true;
+    }
+    if (source === 'recording') {
+      const realId = eventId.replace(/^rec_/, '');
+      await prisma.recordingScript.delete({ where: { id: realId } });
+      return true;
+    }
+    // Evento do Google Agenda: oculta da agenda da plataforma
+    return await hideCalendarEvent(eventId);
+  } catch (err) {
+    console.error('Erro ao excluir evento da agenda:', err);
     return false;
   }
 }

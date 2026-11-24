@@ -6,6 +6,8 @@ import {
   deleteGoogleCalendarConnection,
   fetchIcalEvents,
   getAgencyUnifiedEvents,
+  getHiddenCalendarEventIds,
+  deleteAgencyEventById,
   CalendarEventItem,
 } from '@/lib/services/google-calendar-service';
 
@@ -40,10 +42,11 @@ export async function GET(request: Request) {
     }
 
     const agencyEvents = await getAgencyUnifiedEvents(rangeStart, rangeEnd);
+    const hiddenIds = await getHiddenCalendarEventIds();
 
-    const allEvents = [...googleEvents, ...agencyEvents].sort(
-      (a, b) => new Date(a.start).getTime() - new Date(b.start).getTime()
-    );
+    const allEvents = [...googleEvents, ...agencyEvents]
+      .filter((ev) => !hiddenIds.has(ev.id))
+      .sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime());
 
     return NextResponse.json({
       connections,
@@ -140,9 +143,19 @@ export async function DELETE(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
+    const eventId = searchParams.get('eventId');
+    const source = searchParams.get('source') as 'google' | 'post' | 'demand' | 'recording' | null;
+
+    if (eventId && source) {
+      const ok = await deleteAgencyEventById(eventId, source);
+      if (!ok) {
+        return NextResponse.json({ error: 'Não foi possível remover o evento.' }, { status: 500 });
+      }
+      return NextResponse.json({ success: true });
+    }
 
     if (!id) {
-      return NextResponse.json({ error: 'ID da conexão não informado.' }, { status: 400 });
+      return NextResponse.json({ error: 'ID não informado.' }, { status: 400 });
     }
 
     await deleteGoogleCalendarConnection(id);
