@@ -19,7 +19,7 @@ import {
 import { PostData, CommentData } from '@/lib/services/post-service';
 import { VideoPlayerReview } from './video-player-review';
 import { CarouselReview } from './carousel-review';
-import { formatDate } from '@/lib/utils';
+import { formatDate, getScheduledDateInput } from '@/lib/utils';
 
 interface PostReviewModalProps {
   post: PostData;
@@ -46,6 +46,59 @@ export function PostReviewModal({ post, onClose, onPostUpdated }: PostReviewModa
 
   // Feedback de Status
   const [statusFeedbackMessage, setStatusFeedbackMessage] = useState<string | null>(null);
+
+  // Alteração de Data Agendada do Post
+  const [isEditingDate, setIsEditingDate] = useState(false);
+  const [scheduledDateValue, setScheduledDateValue] = useState(
+    getScheduledDateInput(post.scheduledDate)
+  );
+  const [savingDate, setSavingDate] = useState(false);
+  const [dateSavedSuccess, setDateSavedSuccess] = useState(false);
+
+  const handleSaveDate = async (newDateStr: string) => {
+    if (!newDateStr) return;
+    setSavingDate(true);
+    try {
+      const res = await fetch('/api/client/posts', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          postId: currentPost.id,
+          scheduledDate: newDateStr,
+        }),
+      });
+      let updatedPost = null;
+      if (res.ok) {
+        const data = await res.json();
+        updatedPost = data.post;
+      } else {
+        const adminRes = await fetch('/api/admin/posts', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: currentPost.id,
+            scheduledDate: newDateStr,
+          }),
+        });
+        if (adminRes.ok) {
+          const adminData = await adminRes.json();
+          updatedPost = adminData.post;
+        }
+      }
+
+      if (updatedPost) {
+        setCurrentPost(updatedPost);
+        onPostUpdated(updatedPost);
+        setDateSavedSuccess(true);
+        setIsEditingDate(false);
+        setTimeout(() => setDateSavedSuccess(false), 3000);
+      }
+    } catch (err) {
+      console.error('Erro ao atualizar data do post:', err);
+    } finally {
+      setSavingDate(false);
+    }
+  };
 
   const handleStatusChange = async (newStatus: 'APROVADO' | 'AJUSTES' | 'PENDENTE') => {
     setUpdatingStatus(true);
@@ -208,12 +261,58 @@ export function PostReviewModal({ post, onClose, onPostUpdated }: PostReviewModa
                 )}
               </div>
 
-              {currentPost.scheduledDate && (
-                <span className="text-[11px] sm:text-xs font-bold flex items-center gap-1 mt-0.5 text-[#66635D] truncate">
-                  <Calendar className="w-3 h-3 shrink-0" style={{ color: '#FD3100' }} />
-                  <span>Agendado para {formatDate(currentPost.scheduledDate)}</span>
-                </span>
-              )}
+              {/* Data Agendada com Opção de Mudar o Dia */}
+              <div className="flex flex-wrap items-center gap-2 mt-0.5">
+                {currentPost.scheduledDate && (
+                  <span className="text-[11px] sm:text-xs font-bold flex items-center gap-1 text-[#66635D]">
+                    <Calendar className="w-3 h-3 shrink-0" style={{ color: '#FD3100' }} />
+                    <span>Agendado para {formatDate(currentPost.scheduledDate)}</span>
+                  </span>
+                )}
+
+                {isEditingDate ? (
+                  <div className="flex items-center gap-1.5 bg-white border border-[#FD3100] rounded-xl px-2 py-0.5 shadow-sm">
+                    <input
+                      type="date"
+                      value={scheduledDateValue}
+                      onChange={(e) => setScheduledDateValue(e.target.value)}
+                      className="text-[11px] font-bold text-[#111111] bg-transparent outline-none cursor-pointer"
+                    />
+                    <button
+                      type="button"
+                      disabled={savingDate}
+                      onClick={() => handleSaveDate(scheduledDateValue)}
+                      className="px-2 py-0.5 bg-[#FD3100] text-white rounded-lg text-[9px] font-black uppercase hover:bg-[#e02b00] disabled:opacity-50"
+                    >
+                      {savingDate ? 'Salvando...' : 'Salvar'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setIsEditingDate(false)}
+                      className="text-[#66635D] hover:text-[#111111] text-[10px] p-0.5 font-bold"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setScheduledDateValue(getScheduledDateInput(currentPost.scheduledDate));
+                      setIsEditingDate(true);
+                    }}
+                    className="text-[10px] font-black text-[#FD3100] hover:underline uppercase px-2 py-0.5 bg-[#FFF0EC] rounded-lg border border-[#FFCEBF] transition-all hover:scale-105"
+                  >
+                    Mudar Dia
+                  </button>
+                )}
+
+                {dateSavedSuccess && (
+                  <span className="text-[10px] font-black text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-lg border border-emerald-200 animate-in fade-in">
+                    ✓ Data atualizada!
+                  </span>
+                )}
+              </div>
             </div>
           </div>
 

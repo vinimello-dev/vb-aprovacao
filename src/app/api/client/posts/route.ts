@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getClientBySlug } from '@/lib/services/client-service';
-import { getPostsByClientId } from '@/lib/services/post-service';
+import { getPostsByClientId, updatePost } from '@/lib/services/post-service';
+import { parseDateInput } from '@/lib/utils';
 
 export async function GET(request: Request) {
   try {
@@ -21,5 +22,32 @@ export async function GET(request: Request) {
   } catch (error) {
     console.error('Erro ao buscar posts do cliente:', error);
     return NextResponse.json({ error: 'Erro ao carregar os posts.' }, { status: 500 });
+  }
+}
+
+export async function PATCH(request: Request) {
+  try {
+    const body = await request.json();
+    const { postId, scheduledDate } = body;
+
+    if (!postId || !scheduledDate) {
+      return NextResponse.json(
+        { error: 'ID do post e data de agendamento são obrigatórios.' },
+        { status: 400 }
+      );
+    }
+
+    const updated = await updatePost(postId, {
+      scheduledDate: parseDateInput(scheduledDate),
+    });
+
+    if (!updated) {
+      return NextResponse.json({ error: 'Publicação não encontrada.' }, { status: 404 });
+    }
+
+    return NextResponse.json({ success: true, post: updated });
+  } catch (error) {
+    console.error('Erro ao reagendar post no portal do cliente:', error);
+    return NextResponse.json({ error: 'Erro ao reagendar publicação.' }, { status: 500 });
   }
 }

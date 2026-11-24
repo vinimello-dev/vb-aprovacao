@@ -12,6 +12,8 @@ import {
   Clock,
   LogOut,
   ArrowRight,
+  ChevronLeft,
+  ChevronRight,
   LayoutGrid,
   CalendarDays,
   Instagram,
@@ -50,6 +52,82 @@ export function ClientPortalView({ client }: ClientPortalViewProps) {
 
   // Modo de Visualização: Instagram Feed, Calendário Mensal, Cards ou Chat com a Agência
   const [viewMode, setViewMode] = useState<'instagram' | 'calendar' | 'cards' | 'chat'>('instagram');
+
+  // Drag & Drop no Calendário Mensal
+  const [draggedPostId, setDraggedPostId] = useState<string | null>(null);
+  const [dragOverDay, setDragOverDay] = useState<number | null>(null);
+  const [rescheduleToast, setRescheduleToast] = useState<{ title: string; day: number } | null>(null);
+
+  const handleMovePostToDay = async (post: PostData, targetDay: number) => {
+    if (targetDay < 1 || targetDay > 31) return;
+    const currentDay = getScheduledDay(post.scheduledDate);
+    if (currentDay === targetDay) return;
+
+    let year = new Date().getFullYear();
+    let month = new Date().getMonth() + 1;
+
+    if (post.scheduledDate) {
+      const rawDate = post.scheduledDate as unknown;
+      if (typeof rawDate === 'string') {
+        const m = rawDate.match(/^(\d{4})-(\d{2})/);
+        if (m) {
+          year = parseInt(m[1], 10);
+          month = parseInt(m[2], 10);
+        }
+      } else if (post.scheduledDate instanceof Date) {
+        if (post.scheduledDate.getUTCHours() === 0 && post.scheduledDate.getUTCMinutes() === 0) {
+          year = post.scheduledDate.getUTCFullYear();
+          month = post.scheduledDate.getUTCMonth() + 1;
+        } else {
+          year = post.scheduledDate.getFullYear();
+          month = post.scheduledDate.getMonth() + 1;
+        }
+      }
+    }
+
+    const mm = String(month).padStart(2, '0');
+    const dd = String(targetDay).padStart(2, '0');
+    const newDateStr = `${year}-${mm}-${dd}`;
+    const newDateObj = new Date(`${newDateStr}T12:00:00.000Z`);
+
+    // Atualização otimista imediata no estado local
+    setPosts((prev) =>
+      prev.map((p) => (p.id === post.id ? { ...p, scheduledDate: newDateObj } : p))
+    );
+
+    setRescheduleToast({
+      title: post.title,
+      day: targetDay,
+    });
+    setTimeout(() => {
+      setRescheduleToast(null);
+    }, 3500);
+
+    try {
+      const res = await fetch('/api/client/posts', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          postId: post.id,
+          scheduledDate: newDateStr,
+        }),
+      });
+
+      if (!res.ok) {
+        // Tenta endpoint admin caso seja o administrador visualizando o portal do cliente
+        await fetch('/api/admin/posts', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: post.id,
+            scheduledDate: newDateStr,
+          }),
+        });
+      }
+    } catch (err) {
+      console.error('Erro ao mover publicação para outro dia:', err);
+    }
+  };
 
   // Chat com a Agência
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
@@ -626,7 +704,7 @@ export function ClientPortalView({ client }: ClientPortalViewProps) {
               <div>Sáb</div>
             </div>
 
-            {/* Grade dos Dias do Mês */}
+            {/* Grade dos Dias do Mês com Drag & Drop e Troca Rápida de Dia */}
             <div className="grid grid-cols-7 gap-2 pt-3">
               {Array.from({ length: 31 }).map((_, dayIndex) => {
                 const dayNumber = dayIndex + 1;
@@ -634,47 +712,139 @@ export function ClientPortalView({ client }: ClientPortalViewProps) {
                   if (!p.scheduledDate) return false;
                   return getScheduledDay(p.scheduledDate) === dayNumber;
                 });
+                const isDragOver = dragOverDay === dayNumber;
 
                 return (
                   <div
                     key={dayNumber}
-                    className={`min-h-[110px] sm:min-h-[130px] p-2 rounded-2xl border-2 transition-all flex flex-col justify-between ${
-                      dayPosts.length > 0
-                        ? 'border-[#FD3100] bg-[#FFF0EC] shadow-sm'
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      e.dataTransfer.dropEffect = 'move';
+                      if (dragOverDay !== dayNumber) {
+                        setDragOverDay(dayNumber);
+                      }
+                    }}
+                    onDragLeave={() => {
+                      if (dragOverDay === dayNumber) {
+                        setDragOverDay(null);
+                      }
+                    }}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      setDragOverDay(null);
+                      const droppedPostId = e.dataTransfer.getData('text/plain') || draggedPostId;
+                      if (!droppedPostId) return;
+                      const post = posts.find((p) => p.id === droppedPostId);
+                      if (post) {
+                        handleMovePostToDay(post, dayNumber);
+                      }
+                      setDraggedPostId(null);
+                    }}
+                    className={`min-h-[115px] sm:min-h-[135px] p-2 rounded-2xl border-2 transition-all flex flex-col justify-between ${
+                      isDragOver
+                        ? 'border-[#FD3100] border-dashed bg-[#FFF0EC] scale-[1.03] ring-2 ring-[#FD3100]/40 shadow-md'
+                        : dayPosts.length > 0
+                        ? 'border-[#FD3100] bg-[#FFF0EC]/70 shadow-sm'
                         : 'border-[#E4E0D7] bg-[#FAF9F7]/60'
                     }`}
                   >
-                    <span className="font-mono font-black text-xs text-[#111111]">
-                      {dayNumber}
-                    </span>
+                    <div className="flex items-center justify-between">
+                      <span
+                        className={`font-mono font-black text-xs ${
+                          isDragOver ? 'text-[#FD3100]' : 'text-[#111111]'
+                        }`}
+                      >
+                        {dayNumber}
+                      </span>
+                      {isDragOver && (
+                        <span className="text-[8px] font-black uppercase text-[#FD3100] tracking-tighter">
+                          Soltar aqui
+                        </span>
+                      )}
+                    </div>
 
                     <div className="space-y-1.5 mt-1">
-                      {dayPosts.map((post) => (
-                        <div
-                          key={post.id}
-                          onClick={() => setSelectedPost(post)}
-                          className="p-1.5 bg-white border border-[#DCD6CC] hover:border-[#FD3100] rounded-xl cursor-pointer shadow-sm transition-all hover:scale-[1.02] group"
-                        >
-                          <div className="flex items-center justify-between text-[9px] mb-0.5">
-                            <span className="font-black uppercase" style={{ color: '#FD3100' }}>
-                              {post.format === 'VIDEO' ? 'Vídeo' : 'Carrossel'}
-                            </span>
-                            <span
-                              style={
-                                post.status === 'APROVADO'
-                                  ? { backgroundColor: '#047857' }
-                                  : post.status === 'AJUSTES'
-                                  ? { backgroundColor: '#FD3100' }
-                                  : { backgroundColor: '#B45309' }
-                              }
-                              className="w-2 h-2 rounded-full"
-                            />
+                      {dayPosts.map((post) => {
+                        const isBeingDragged = draggedPostId === post.id;
+                        return (
+                          <div
+                            key={post.id}
+                            draggable={true}
+                            onDragStart={(e) => {
+                              setDraggedPostId(post.id);
+                              e.dataTransfer.setData('text/plain', post.id);
+                              e.dataTransfer.effectAllowed = 'move';
+                            }}
+                            onDragEnd={() => {
+                              setDraggedPostId(null);
+                              setDragOverDay(null);
+                            }}
+                            onClick={() => setSelectedPost(post)}
+                            className={`p-1.5 bg-white border border-[#DCD6CC] hover:border-[#FD3100] rounded-xl cursor-grab active:cursor-grabbing shadow-sm transition-all group ${
+                              isBeingDragged ? 'opacity-35 scale-95 ring-2 ring-[#FD3100]' : 'hover:scale-[1.02]'
+                            }`}
+                            title="Clique para ver ou arraste para outro dia"
+                          >
+                            <div className="flex items-center justify-between text-[9px] mb-0.5">
+                              <span className="font-black uppercase" style={{ color: '#FD3100' }}>
+                                {post.format === 'VIDEO' ? 'Vídeo' : 'Carrossel'}
+                              </span>
+                              <span
+                                style={
+                                  post.status === 'APROVADO'
+                                    ? { backgroundColor: '#047857' }
+                                    : post.status === 'AJUSTES'
+                                    ? { backgroundColor: '#FD3100' }
+                                    : { backgroundColor: '#B45309' }
+                                }
+                                className="w-2 h-2 rounded-full"
+                              />
+                            </div>
+                            <p className="text-[10px] font-black text-[#111111] line-clamp-1 group-hover:text-[#FD3100]">
+                              {post.title}
+                            </p>
+
+                            {/* Controles de Mudança Rápida de Dia (como nas demandas) */}
+                            <div
+                              onClick={(e) => e.stopPropagation()}
+                              className="mt-1 pt-1 border-t border-[#EEEDEA] flex items-center justify-between text-[9px] text-[#66635D]"
+                            >
+                              <button
+                                type="button"
+                                disabled={dayNumber <= 1}
+                                onClick={() => handleMovePostToDay(post, dayNumber - 1)}
+                                title="Voltar 1 dia"
+                                className="p-0.5 rounded hover:bg-[#FFF0EC] hover:text-[#FD3100] disabled:opacity-25 transition-colors"
+                              >
+                                <ChevronLeft className="w-3 h-3" />
+                              </button>
+
+                              <select
+                                value={dayNumber}
+                                onChange={(e) => handleMovePostToDay(post, Number(e.target.value))}
+                                title="Mudar dia da publicação"
+                                className="text-[9px] font-black bg-[#FAF9F7] text-[#111111] border border-[#DCD6CC] rounded px-1 py-0.5 outline-none cursor-pointer hover:border-[#FD3100]"
+                              >
+                                {Array.from({ length: 31 }, (_, i) => i + 1).map((d) => (
+                                  <option key={d} value={d}>
+                                    Dia {d}
+                                  </option>
+                                ))}
+                              </select>
+
+                              <button
+                                type="button"
+                                disabled={dayNumber >= 31}
+                                onClick={() => handleMovePostToDay(post, dayNumber + 1)}
+                                title="Avançar 1 dia"
+                                className="p-0.5 rounded hover:bg-[#FFF0EC] hover:text-[#FD3100] disabled:opacity-25 transition-colors"
+                              >
+                                <ChevronRight className="w-3 h-3" />
+                              </button>
+                            </div>
                           </div>
-                          <p className="text-[10px] font-black text-[#111111] line-clamp-1 group-hover:text-[#FD3100]">
-                            {post.title}
-                          </p>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
 
                     <div />
@@ -937,6 +1107,21 @@ export function ClientPortalView({ client }: ClientPortalViewProps) {
           </div>
         )}
       </main>
+
+      {/* Toast de Reprogramação de Post */}
+      {rescheduleToast && (
+        <div className="fixed bottom-24 right-6 z-50 bg-[#111111] text-white px-4 py-3 rounded-2xl shadow-2xl border-2 border-[#FD3100] flex items-center gap-3 animate-in fade-in slide-in-from-bottom-3 duration-300">
+          <div className="w-8 h-8 rounded-xl bg-[#FD3100] flex items-center justify-center shrink-0">
+            <CalendarIcon className="w-4 h-4 text-white" />
+          </div>
+          <div>
+            <p className="text-xs font-black text-white">Publicação Reprogramada!</p>
+            <p className="text-[11px] text-[#A9A6A0]">
+              &quot;{rescheduleToast.title}&quot; jogado para o <strong className="text-[#FD3100]">Dia {rescheduleToast.day}</strong>
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Botão Flutuante de Chat na parte inferior direita */}
       {viewMode !== 'chat' && (
