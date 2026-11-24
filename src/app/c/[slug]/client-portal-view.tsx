@@ -1,6 +1,6 @@
 ﻿'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   KeyRound,
   Calendar as CalendarIcon,
@@ -15,10 +15,14 @@ import {
   LayoutGrid,
   CalendarDays,
   Instagram,
+  Send,
+  Phone,
+  User,
 } from 'lucide-react';
 import { PostData } from '@/lib/services/post-service';
 import { PostReviewModal } from '@/components/post-review-modal';
 import { formatDate } from '@/lib/utils';
+import { ChatMessage } from '@/lib/services/chat-service';
 
 interface ClientPortalViewProps {
   client: {
@@ -43,8 +47,92 @@ export function ClientPortalView({ client }: ClientPortalViewProps) {
   const [selectedPost, setSelectedPost] = useState<PostData | null>(null);
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'PENDENTE' | 'AJUSTES' | 'APROVADO'>('ALL');
 
-  // Modo de Visualização: Instagram Feed, Calendário Mensal, ou Cards
-  const [viewMode, setViewMode] = useState<'instagram' | 'calendar' | 'cards'>('instagram');
+  // Modo de Visualização: Instagram Feed, Calendário Mensal, Cards ou Chat com a Agência
+  const [viewMode, setViewMode] = useState<'instagram' | 'calendar' | 'cards' | 'chat'>('instagram');
+
+  // Chat com a Agência
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [chatInput, setChatInput] = useState('');
+  const [chatSending, setChatSending] = useState(false);
+  const [clientUnreadChat, setClientUnreadChat] = useState(0);
+  const chatBottomRef = useRef<HTMLDivElement>(null);
+
+  const fetchChatMessages = async (isSilent = false) => {
+    try {
+      const res = await fetch(`/api/chat?clientId=${client.id || client.slug}&reader=CLIENT`);
+      if (res.ok) {
+        const data = await res.json();
+        setChatMessages(data.messages || []);
+        if (viewMode === 'chat') {
+          setClientUnreadChat(0);
+        } else {
+          setClientUnreadChat(data.unreadForClient || 0);
+        }
+      }
+    } catch (err) {
+      console.error('Erro ao buscar chat do cliente:', err);
+    }
+  };
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchChatMessages();
+      const interval = setInterval(() => {
+        fetchChatMessages(true);
+      }, 5000);
+      return () => clearInterval(interval);
+    }
+  }, [isAuthenticated, viewMode]);
+
+  useEffect(() => {
+    if (viewMode === 'chat') {
+      chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [chatMessages, viewMode]);
+
+  const handleSendClientMessage = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    const text = chatInput.trim();
+    if (!text || chatSending) return;
+
+    setChatSending(true);
+    setChatInput('');
+
+    const tempMsg: ChatMessage = {
+      id: 'temp-' + Date.now(),
+      clientId: client.id || client.slug,
+      sender: 'CLIENT',
+      senderName: client.name,
+      content: text,
+      createdAt: new Date().toISOString(),
+      readByAgency: false,
+      readByClient: true,
+    };
+    setChatMessages((prev) => [...prev, tempMsg]);
+
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          clientId: client.id || client.slug,
+          sender: 'CLIENT',
+          senderName: client.name,
+          content: text,
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setChatMessages((prev) =>
+          prev.map((m) => (m.id === tempMsg.id ? data.message : m))
+        );
+      }
+    } catch (err) {
+      console.error('Erro ao enviar mensagem no portal do cliente:', err);
+    } finally {
+      setChatSending(false);
+    }
+  };
 
   const fetchClientPosts = async () => {
     setLoadingPosts(true);
@@ -182,8 +270,9 @@ export function ClientPortalView({ client }: ClientPortalViewProps) {
               </button>
             </form>
 
-            <div className="mt-8 pt-5 border-t border-[#EEEDEA] text-center text-[11px] text-[#66635D] font-medium">
-              PIN cadastrado para este cliente: <strong className="font-mono font-black" style={{ color: '#FD3100' }}>{client.pin}</strong>
+            <div className="mt-8 pt-5 border-t border-[#EEEDEA] text-center text-[11px] text-[#66635D] font-medium flex items-center justify-center gap-1.5">
+              <KeyRound className="w-3.5 h-3.5" style={{ color: '#FD3100' }} />
+              <span>O PIN de segurança foi enviado para o seu WhatsApp pela VB Agência</span>
             </div>
           </div>
         </div>
@@ -273,7 +362,7 @@ export function ClientPortalView({ client }: ClientPortalViewProps) {
           {/* Seletores de Modo de Visualização */}
           <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 w-full lg:w-auto">
             {/* Seletor de Modo com Letras Pretas e Laranja no Ativo */}
-            <div className="grid grid-cols-3 sm:flex items-center bg-white p-1 rounded-2xl border-2 border-[#DCD6CC] shadow-sm text-[11px] sm:text-xs font-black uppercase w-full sm:w-auto">
+            <div className="grid grid-cols-2 sm:grid-cols-4 sm:flex items-center bg-white p-1 rounded-2xl border-2 border-[#DCD6CC] shadow-sm text-[11px] sm:text-xs font-black uppercase w-full sm:w-auto">
               <button
                 onClick={() => setViewMode('instagram')}
                 style={viewMode === 'instagram' ? { backgroundColor: '#FD3100', color: '#FFFFFF' } : { color: '#111111' }}
@@ -302,6 +391,19 @@ export function ClientPortalView({ client }: ClientPortalViewProps) {
               >
                 <LayoutGrid className="w-3.5 sm:w-4 h-3.5 sm:h-4 stroke-[2.5]" />
                 <span className="truncate">Cards</span>
+              </button>
+
+              <button
+                onClick={() => setViewMode('chat')}
+                style={viewMode === 'chat' ? { backgroundColor: '#FD3100', color: '#FFFFFF' } : { color: '#111111' }}
+                className="flex items-center justify-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-2 rounded-xl transition-all font-black relative"
+                title="Tirar dúvidas ou conversar com a agência"
+              >
+                <MessageSquare className="w-3.5 sm:w-4 h-3.5 sm:h-4 stroke-[2.5]" />
+                <span className="truncate">Chat</span>
+                {clientUnreadChat > 0 && (
+                  <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse ml-0.5" />
+                )}
               </button>
             </div>
 
@@ -674,7 +776,157 @@ export function ClientPortalView({ client }: ClientPortalViewProps) {
             ))}
           </div>
         )}
+
+        {/* 4. VISÃO DE CHAT COM A VB AGÊNCIA */}
+        {viewMode === 'chat' && (
+          <div className="max-w-4xl mx-auto bg-white border-2 border-[#DCD6CC] rounded-3xl shadow-lg overflow-hidden flex flex-col h-[650px]">
+            {/* Header do Chat */}
+            <div className="p-4 sm:p-5 border-b border-[#EEEDEA] bg-gradient-to-r from-[#FAF9F7] to-white flex items-center justify-between gap-3 shrink-0">
+              <div className="flex items-center gap-3 min-w-0">
+                <div
+                  style={{ backgroundColor: '#FD3100', color: '#FFFFFF' }}
+                  className="w-10 h-10 rounded-2xl flex items-center justify-center font-black shadow-md shrink-0 text-sm"
+                >
+                  VB
+                </div>
+                <div className="min-w-0">
+                  <h3 className="text-sm sm:text-base font-black text-[#111111] uppercase truncate">
+                    VB Agência Audiovisual
+                  </h3>
+                  <p className="text-[11px] text-emerald-600 font-bold flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                    <span>Online • Atendimento e Alinhamento de Posts</span>
+                  </p>
+                </div>
+              </div>
+
+              <a
+                href="https://api.whatsapp.com/send"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-3 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-xl text-xs font-black flex items-center gap-1.5 transition-colors shadow-sm shrink-0"
+              >
+                <Phone className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Chamar no WhatsApp</span>
+              </a>
+            </div>
+
+            {/* Lista de Mensagens */}
+            <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 bg-[#FAF9F7]/40">
+              {chatMessages.length === 0 ? (
+                <div className="h-full flex flex-col items-center justify-center text-center p-6 text-[#97A0AF]">
+                  <div className="w-12 h-12 rounded-2xl bg-white border border-[#DCD6CC] flex items-center justify-center mb-3 shadow-sm text-[#FD3100]">
+                    <MessageSquare className="w-6 h-6" />
+                  </div>
+                  <h4 className="text-xs font-black text-[#111111] uppercase mb-1">
+                    Canal Direto com a VB Agência
+                  </h4>
+                  <p className="text-[11px] max-w-sm">
+                    Envie suas dúvidas, comentários ou alinhamentos de postagens abaixo. A equipe da agência responderá prontamente!
+                  </p>
+                </div>
+              ) : (
+                chatMessages.map((msg) => {
+                  const isMe = msg.sender === 'CLIENT';
+                  return (
+                    <div
+                      key={msg.id}
+                      className={`flex items-end gap-2 ${isMe ? 'justify-end' : 'justify-start'}`}
+                    >
+                      {!isMe && (
+                        <div
+                          style={{ backgroundColor: '#FD3100', color: '#FFFFFF' }}
+                          className="w-7 h-7 rounded-xl font-black text-[10px] flex items-center justify-center shrink-0 shadow-sm uppercase"
+                        >
+                          VB
+                        </div>
+                      )}
+
+                      <div
+                        className={`max-w-[85%] sm:max-w-md rounded-2xl px-4 py-2.5 text-xs shadow-sm ${
+                          isMe
+                            ? 'btn-vb-primary text-white rounded-br-sm'
+                            : 'bg-white text-[#111111] border border-[#DCD6CC] rounded-bl-sm font-medium'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-4 mb-1">
+                          <span
+                            className={`text-[10px] font-black uppercase tracking-wider ${
+                              isMe ? 'text-white/80' : 'text-[#FD3100]'
+                            }`}
+                          >
+                            {isMe ? 'Você' : 'VB Agência'}
+                          </span>
+                          <span
+                            className={`text-[9px] font-bold ${
+                              isMe ? 'text-white/70' : 'text-[#97A0AF]'
+                            }`}
+                          >
+                            {new Date(msg.createdAt).toLocaleTimeString('pt-BR', {
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })}
+                          </span>
+                        </div>
+                        <p className="whitespace-pre-wrap leading-relaxed text-[12px]">{msg.content}</p>
+                      </div>
+
+                      {isMe && (
+                        <div
+                          style={{ backgroundColor: '#FFF0EC', color: '#FD3100' }}
+                          className="w-7 h-7 rounded-xl border border-[#FFCEBF] text-[10px] font-black flex items-center justify-center uppercase shrink-0 shadow-sm"
+                        >
+                          <User className="w-3.5 h-3.5" />
+                        </div>
+                      )}
+                    </div>
+                  );
+                })
+              )}
+              <div ref={chatBottomRef} />
+            </div>
+
+            {/* Formulário de Envio */}
+            <div className="p-3 sm:p-4 bg-white border-t border-[#EEEDEA]">
+              <form onSubmit={handleSendClientMessage} className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={chatInput}
+                  onChange={(e) => setChatInput(e.target.value)}
+                  placeholder="Digite sua dúvida ou mensagem para a VB Agência..."
+                  className="flex-1 px-4 py-3 bg-[#FAF9F7] border border-[#DCD6CC] focus:border-[#FD3100] rounded-2xl text-xs font-bold text-[#111111] placeholder:text-[#97A0AF] focus:outline-none shadow-sm"
+                  disabled={chatSending}
+                />
+                <button
+                  type="submit"
+                  disabled={!chatInput.trim() || chatSending}
+                  className="btn-vb-primary px-5 py-3 rounded-2xl text-xs font-black uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all shadow-md disabled:opacity-40 shrink-0"
+                >
+                  <Send className="w-4 h-4" />
+                  <span className="hidden sm:inline">Enviar</span>
+                </button>
+              </form>
+            </div>
+          </div>
+        )}
       </main>
+
+      {/* Botão Flutuante de Chat na parte inferior direita */}
+      {viewMode !== 'chat' && (
+        <button
+          onClick={() => setViewMode('chat')}
+          className="fixed bottom-6 right-6 z-40 btn-vb-primary px-4 py-3 rounded-2xl shadow-2xl flex items-center gap-2 text-xs font-black uppercase tracking-wider hover:scale-105 active:scale-95 transition-all"
+          title="Falar diretamente com a agência"
+        >
+          <MessageSquare className="w-4 h-4 stroke-[2.5]" />
+          <span>Falar com a VB</span>
+          {clientUnreadChat > 0 && (
+            <span className="px-1.5 py-0.2 rounded-full bg-white text-[#FD3100] text-[10px] font-black animate-bounce">
+              {clientUnreadChat}
+            </span>
+          )}
+        </button>
+      )}
 
       {/* Modal de Revisão Interativa de Vídeo ou Carrossel */}
       {selectedPost && (

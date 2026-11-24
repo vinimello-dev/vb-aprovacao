@@ -20,7 +20,7 @@ export default async function ClientPortalPage({ params }: ClientPortalProps) {
         id: client.id,
         name: client.name,
         slug: client.slug,
-        pin: client.pin,
+        pin: '', // Ocultado por segurança - a validação é feita via /api/client/auth
         logoUrl: client.logoUrl || null,
       }}
     />

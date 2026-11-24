@@ -37,6 +37,7 @@ import {
   AlertTriangle,
   DollarSign,
   Wallet,
+  MessageSquare,
 } from 'lucide-react';
 import { generateSlug, generatePin, formatDate, parseMediaUrl, parseThumbnailUrl } from '@/lib/utils';
 import { DemandsBoard } from '@/components/demands-board';
@@ -45,6 +46,7 @@ import { CarouselUploader, CarouselSlide } from '@/components/carousel-uploader'
 import { NotificationItem } from '@/lib/services/notification-service';
 import { ClientReviewsHub } from '@/components/client-reviews-hub';
 import { FinancialHub } from '@/components/financial-hub';
+import { ClientChatHub } from '@/components/client-chat-hub';
 import { PostReviewModal } from '@/components/post-review-modal';
 
 interface ClientItem {
@@ -53,6 +55,7 @@ interface ClientItem {
   slug: string;
   pin: string;
   logoUrl?: string | null;
+  phone?: string | null;
   createdAt: string;
   cycles?: Array<{
     id: string;
@@ -73,8 +76,9 @@ export default function AdminDashboardPage() {
   const [isUsingFallback, setIsUsingFallback] = useState(false);
   const [search, setSearch] = useState('');
 
-  // Visualização Ativa: 'demands' (Quadro Trello), 'reviews' (Revisões), 'financial' (Financeiro) ou 'clients' (Gestão de Clientes)
-  const [activeView, setActiveView] = useState<'demands' | 'reviews' | 'financial' | 'clients'>('demands');
+  // Visualização Ativa: 'demands' (Quadro Trello), 'reviews' (Revisões), 'financial' (Financeiro), 'chat' (Mensagens) ou 'clients' (Gestão de Clientes)
+  const [activeView, setActiveView] = useState<'demands' | 'reviews' | 'financial' | 'chat' | 'clients'>('demands');
+  const [chatUnreadTotal, setChatUnreadTotal] = useState(0);
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
   // Modal de Revisão Interativa de Post (ao clicar para fazer revisão)
@@ -158,12 +162,28 @@ export default function AdminDashboardPage() {
     }
   };
 
+  const fetchChatUnread = async () => {
+    try {
+      const res = await fetch('/api/chat');
+      if (res.ok) {
+        const data = await res.json();
+        setChatUnreadTotal(data.total || 0);
+      }
+    } catch (err) {
+      console.error('Erro ao buscar chat unread:', err);
+    }
+  };
+
   useEffect(() => {
     fetchClients();
     fetchNotifications();
+    fetchChatUnread();
 
-    // Atualiza notificações a cada 20 segundos automaticamente
-    const interval = setInterval(fetchNotifications, 20000);
+    // Atualiza notificações e chat a cada 10 segundos automaticamente
+    const interval = setInterval(() => {
+      fetchNotifications();
+      fetchChatUnread();
+    }, 10000);
     return () => clearInterval(interval);
   }, []);
 
@@ -479,6 +499,24 @@ export default function AdminDashboardPage() {
             </button>
 
             <button
+              onClick={() => setActiveView('chat')}
+              className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg sm:rounded-xl transition-all font-black ${
+                activeView === 'chat'
+                  ? 'btn-vb-primary shadow-sm'
+                  : 'text-[#111111] hover:bg-[#EEEDEA]'
+              }`}
+              title="Chat e Atendimento com Clientes"
+            >
+              <MessageSquare className="w-3.5 sm:w-4 h-3.5 sm:h-4 stroke-[2.5]" />
+              <span className="truncate">Chat</span>
+              {chatUnreadTotal > 0 && (
+                <span className="ml-0.5 px-1.5 py-0.2 rounded-full text-[9px] sm:text-[10px] font-black bg-rose-600 text-white shadow-sm">
+                  {chatUnreadTotal}
+                </span>
+              )}
+            </button>
+
+            <button
               onClick={() => setActiveView('clients')}
               className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg sm:rounded-xl transition-all font-black ${
                 activeView === 'clients'
@@ -748,6 +786,32 @@ export default function AdminDashboardPage() {
 
                   <button
                     onClick={() => {
+                      setActiveView('chat');
+                      setSidebarOpen(false);
+                    }}
+                    className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-black uppercase tracking-wider transition-all text-left ${
+                      activeView === 'chat'
+                        ? 'btn-vb-primary shadow-md'
+                        : 'text-[#111111] hover:bg-[#FAF9F7]'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0 text-left">
+                      <MessageSquare className="w-4 h-4 stroke-[2.5] shrink-0" />
+                      <span className="block text-left leading-tight">Chat Clientes</span>
+                    </div>
+                    {chatUnreadTotal > 0 ? (
+                      <span className="text-[10px] px-2 py-0.5 rounded-full font-black bg-rose-600 text-white shadow-sm shrink-0">
+                        {chatUnreadTotal}
+                      </span>
+                    ) : (
+                      <span className="text-[10px] px-2 py-0.5 rounded-full font-black bg-[#FAF9F7] border border-[#DCD6CC] text-[#66635D] shrink-0">
+                        Mensagens
+                      </span>
+                    )}
+                  </button>
+
+                  <button
+                    onClick={() => {
                       setActiveView('clients');
                       setSidebarOpen(false);
                     }}
@@ -940,6 +1004,35 @@ export default function AdminDashboardPage() {
                 </button>
 
                 <button
+                  onClick={() => setActiveView('chat')}
+                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-black uppercase tracking-wider transition-all text-left ${
+                    activeView === 'chat'
+                      ? 'btn-vb-primary shadow-md'
+                      : 'text-[#111111] hover:bg-[#FAF9F7]'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5 min-w-0 text-left">
+                    <MessageSquare className="w-4 h-4 stroke-[2.5] shrink-0" />
+                    <span className="block text-left leading-tight">Chat com Clientes</span>
+                  </div>
+                  {chatUnreadTotal > 0 ? (
+                    <span className="text-[10px] px-2 py-0.5 rounded-full font-black bg-rose-600 text-white shadow-sm shrink-0">
+                      {chatUnreadTotal}
+                    </span>
+                  ) : (
+                    <span
+                      className={`text-[10px] px-2 py-0.5 rounded-full font-black shrink-0 ${
+                        activeView === 'chat'
+                          ? 'bg-white/20 text-white'
+                          : 'bg-[#FAF9F7] border border-[#DCD6CC] text-[#66635D]'
+                      }`}
+                    >
+                      Online
+                    </span>
+                  )}
+                </button>
+
+                <button
                   onClick={() => setActiveView('clients')}
                   className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-black uppercase tracking-wider transition-all text-left ${
                     activeView === 'clients'
@@ -1093,6 +1186,10 @@ export default function AdminDashboardPage() {
 
           {activeView === 'financial' && (
             <FinancialHub clients={clients} />
+          )}
+
+          {activeView === 'chat' && (
+            <ClientChatHub clients={clients} />
           )}
 
           {activeView === 'clients' && (
