@@ -35,6 +35,8 @@ import {
   FolderKanban,
   Bell,
   AlertTriangle,
+  DollarSign,
+  Wallet,
 } from 'lucide-react';
 import { generateSlug, generatePin, formatDate, parseMediaUrl, parseThumbnailUrl } from '@/lib/utils';
 import { DemandsBoard } from '@/components/demands-board';
@@ -42,6 +44,7 @@ import { ImageUploadInput } from '@/components/image-upload-input';
 import { CarouselUploader, CarouselSlide } from '@/components/carousel-uploader';
 import { NotificationItem } from '@/lib/services/notification-service';
 import { ClientReviewsHub } from '@/components/client-reviews-hub';
+import { FinancialHub } from '@/components/financial-hub';
 import { PostReviewModal } from '@/components/post-review-modal';
 
 interface ClientItem {
@@ -70,8 +73,8 @@ export default function AdminDashboardPage() {
   const [isUsingFallback, setIsUsingFallback] = useState(false);
   const [search, setSearch] = useState('');
 
-  // Visualização Ativa: 'demands' (Quadro estilo Trello), 'reviews' (Central de Revisões dos Clientes) ou 'clients' (Gestão de Clientes)
-  const [activeView, setActiveView] = useState<'demands' | 'reviews' | 'clients'>('demands');
+  // Visualização Ativa: 'demands' (Quadro Trello), 'reviews' (Revisões), 'financial' (Financeiro) ou 'clients' (Gestão de Clientes)
+  const [activeView, setActiveView] = useState<'demands' | 'reviews' | 'financial' | 'clients'>('demands');
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
   // Modal de Revisão Interativa de Post (ao clicar para fazer revisão)
@@ -446,7 +449,7 @@ export default function AdminDashboardPage() {
 
             <button
               onClick={() => setActiveView('reviews')}
-              className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3.5 py-1.5 sm:py-2 rounded-lg sm:rounded-xl transition-all font-black ${
+              className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg sm:rounded-xl transition-all font-black ${
                 activeView === 'reviews'
                   ? 'btn-vb-primary shadow-sm'
                   : 'text-[#111111] hover:bg-[#EEEDEA]'
@@ -463,8 +466,21 @@ export default function AdminDashboardPage() {
             </button>
 
             <button
+              onClick={() => setActiveView('financial')}
+              className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg sm:rounded-xl transition-all font-black ${
+                activeView === 'financial'
+                  ? 'btn-vb-primary shadow-sm'
+                  : 'text-[#111111] hover:bg-[#EEEDEA]'
+              }`}
+              title="Controle Financeiro, Recebimentos e Contas a Pagar"
+            >
+              <DollarSign className="w-3.5 sm:w-4 h-3.5 sm:h-4 stroke-[2.5]" />
+              <span className="truncate">Financeiro</span>
+            </button>
+
+            <button
               onClick={() => setActiveView('clients')}
-              className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3.5 py-1.5 sm:py-2 rounded-lg sm:rounded-xl transition-all font-black ${
+              className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg sm:rounded-xl transition-all font-black ${
                 activeView === 'clients'
                   ? 'btn-vb-primary shadow-sm'
                   : 'text-[#111111] hover:bg-[#EEEDEA]'
@@ -712,6 +728,26 @@ export default function AdminDashboardPage() {
 
                   <button
                     onClick={() => {
+                      setActiveView('financial');
+                      setSidebarOpen(false);
+                    }}
+                    className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-black uppercase tracking-wider transition-all ${
+                      activeView === 'financial'
+                        ? 'btn-vb-primary shadow-md'
+                        : 'text-[#111111] hover:bg-[#FAF9F7]'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <DollarSign className="w-4 h-4 stroke-[2.5]" />
+                      <span>Financeiro</span>
+                    </div>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full font-black bg-[#FAF9F7] border border-[#DCD6CC] text-[#66635D]">
+                      Planilha
+                    </span>
+                  </button>
+
+                  <button
+                    onClick={() => {
                       setActiveView('clients');
                       setSidebarOpen(false);
                     }}
@@ -881,6 +917,29 @@ export default function AdminDashboardPage() {
                 </button>
 
                 <button
+                  onClick={() => setActiveView('financial')}
+                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-black uppercase tracking-wider transition-all ${
+                    activeView === 'financial'
+                      ? 'btn-vb-primary shadow-md'
+                      : 'text-[#111111] hover:bg-[#FAF9F7]'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <DollarSign className="w-4 h-4 stroke-[2.5]" />
+                    <span>Controle Financeiro</span>
+                  </div>
+                  <span
+                    className={`text-[10px] px-2 py-0.5 rounded-full font-black ${
+                      activeView === 'financial'
+                        ? 'bg-white/20 text-white'
+                        : 'bg-[#FAF9F7] border border-[#DCD6CC] text-[#66635D]'
+                    }`}
+                  >
+                    Caixa
+                  </span>
+                </button>
+
+                <button
                   onClick={() => setActiveView('clients')}
                   className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-black uppercase tracking-wider transition-all ${
                     activeView === 'clients'
@@ -1030,6 +1089,10 @@ export default function AdminDashboardPage() {
               onSelectPostForReview={(post) => setReviewModalPost(post)}
               onRefreshNotifications={fetchNotifications}
             />
+          )}
+
+          {activeView === 'financial' && (
+            <FinancialHub clients={clients} />
           )}
 
           {activeView === 'clients' && (
