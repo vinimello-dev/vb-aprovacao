@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { isAuthenticatedAdmin } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { parseDateInput } from '@/lib/utils';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -28,7 +29,7 @@ export async function POST(request: Request, { params }: RouteParams) {
       data: {
         clientId: id,
         title: title.trim(),
-        recordingDate: recordingDate ? new Date(recordingDate) : null,
+        recordingDate: parseDateInput(recordingDate),
         hook: hook?.trim() || null,
         content: content.trim(),
         status: status || 'A_GRAVAR',
@@ -60,7 +61,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
 
     const updateData: any = {};
     if (title !== undefined) updateData.title = title.trim();
-    if (recordingDate !== undefined) updateData.recordingDate = recordingDate ? new Date(recordingDate) : null;
+    if (recordingDate !== undefined) updateData.recordingDate = parseDateInput(recordingDate);
     if (hook !== undefined) updateData.hook = hook?.trim() || null;
     if (content !== undefined) updateData.content = content.trim();
     if (status !== undefined) updateData.status = status;

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { isAuthenticatedAdmin } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { parseDateInput } from '@/lib/utils';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -27,7 +28,7 @@ export async function POST(request: Request, { params }: RouteParams) {
         name: name.trim(),
         month: month ? Number(month) : null,
         year: year ? Number(year) : null,
-        targetDate: targetDate ? new Date(targetDate) : null,
+        targetDate: parseDateInput(targetDate),
       },
       include: {
         posts: true,

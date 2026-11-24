@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { isAuthenticatedAdmin } from '@/lib/auth';
 import { createPost, updatePost, deletePost, getAllPosts } from '@/lib/services/post-service';
-import { parseMediaUrl, parseThumbnailUrl, getAutoThumbnail } from '@/lib/utils';
+import { parseMediaUrl, parseThumbnailUrl, getAutoThumbnail, parseDateInput } from '@/lib/utils';
 
 export async function GET(request: Request) {
   const isAuth = await isAuthenticatedAdmin();
@@ -64,7 +64,7 @@ export async function POST(request: Request) {
       title,
       caption,
       format: format || 'VIDEO',
-      scheduledDate: scheduledDate ? new Date(scheduledDate) : new Date(),
+      scheduledDate: parseDateInput(scheduledDate) || new Date(),
       mediaUrls: parsedMedia,
     });
 
@@ -101,7 +101,7 @@ export async function PATCH(request: Request) {
     const post = await updatePost(id, {
       title,
       caption,
-      scheduledDate: scheduledDate ? new Date(scheduledDate) : null,
+      scheduledDate: parseDateInput(scheduledDate),
       format,
       cycleId,
       mediaUrl: mediaUrl ? parseMediaUrl(mediaUrl) : undefined,

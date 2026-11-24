@@ -21,7 +21,7 @@ import {
 } from 'lucide-react';
 import { PostData } from '@/lib/services/post-service';
 import { PostReviewModal } from '@/components/post-review-modal';
-import { formatDate } from '@/lib/utils';
+import { formatDate, getScheduledDay } from '@/lib/utils';
 import { ChatMessage } from '@/lib/services/chat-service';
 import { playMessageSound } from '@/lib/audio-notification';
 
@@ -632,8 +632,7 @@ export function ClientPortalView({ client }: ClientPortalViewProps) {
                 const dayNumber = dayIndex + 1;
                 const dayPosts = filteredPosts.filter((p) => {
                   if (!p.scheduledDate) return false;
-                  const d = new Date(p.scheduledDate);
-                  return d.getDate() === dayNumber;
+                  return getScheduledDay(p.scheduledDate) === dayNumber;
                 });
 
                 return (

@@ -25,6 +25,7 @@ import {
   GripVertical,
 } from 'lucide-react';
 import { DemandColumnData, DemandData } from '@/lib/services/demand-service';
+import { formatDate, getScheduledDateInput } from '@/lib/utils';
 
 export const PRIORITY_CONFIG: Record<
   string,
@@ -354,9 +355,7 @@ export function DemandsBoard({ clients, onOpenCreatePostModal }: DemandsBoardPro
     setEditTitle(demand.title);
     setEditDescription(demand.description || '');
     setEditClientId(demand.clientId || '');
-    setEditDueDate(
-      demand.dueDate ? new Date(demand.dueDate).toISOString().split('T')[0] : ''
-    );
+    setEditDueDate(getScheduledDateInput(demand.dueDate));
     setEditPriority(demand.priority || 'NORMAL');
     setEditColumnId(demand.columnId);
   };
@@ -751,13 +750,7 @@ export function DemandsBoard({ clients, onOpenCreatePostModal }: DemandsBoardPro
                                 }`}
                               >
                                 <Clock className="w-2.5 h-2.5" />
-                                {new Date(demand.dueDate).toLocaleDateString(
-                                  'pt-BR',
-                                  {
-                                    day: '2-digit',
-                                    month: 'short',
-                                  }
-                                )}
+                                {formatDate(demand.dueDate)}
                               </span>
                             ) : (
                               <span />

@@ -14,12 +14,108 @@ export function generatePin(): string {
   return Math.floor(1000 + Math.random() * 9000).toString();
 }
 
-export function formatDate(date: Date | string): string {
+export function formatDate(date: Date | string | null | undefined): string {
+  if (!date) return '';
+
+  // Se for string no formato ISO ou YYYY-MM-DD
+  if (typeof date === 'string') {
+    const match = date.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (match) {
+      const year = parseInt(match[1], 10);
+      const month = parseInt(match[2], 10) - 1;
+      const day = parseInt(match[3], 10);
+      return new Intl.DateTimeFormat('pt-BR', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+      }).format(new Date(year, month, day, 12, 0, 0));
+    }
+  }
+
+  if (date instanceof Date) {
+    // Se for meia-noite UTC (00:00:00Z), usa componentes UTC ao meio-dia para evitar retrocesso de 1 dia no fuso do Brasil
+    if (date.getUTCHours() === 0 && date.getUTCMinutes() === 0) {
+      return new Intl.DateTimeFormat('pt-BR', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+      }).format(new Date(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), 12, 0, 0));
+    }
+    return new Intl.DateTimeFormat('pt-BR', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    }).format(date);
+  }
+
   return new Intl.DateTimeFormat('pt-BR', {
     day: '2-digit',
     month: 'short',
     year: 'numeric',
   }).format(new Date(date));
+}
+
+/**
+ * Extrai o dia do mês (1-31) de uma data agendada sem interferência de fuso horário
+ */
+export function getScheduledDay(date: Date | string | null | undefined): number | null {
+  if (!date) return null;
+  if (typeof date === 'string') {
+    const match = date.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (match) {
+      return parseInt(match[3], 10);
+    }
+  }
+  if (date instanceof Date) {
+    if (date.getUTCHours() === 0 && date.getUTCMinutes() === 0) {
+      return date.getUTCDate();
+    }
+    return date.getDate();
+  }
+  const d = new Date(date);
+  return d.getUTCDate();
+}
+
+/**
+ * Converte qualquer valor de data para string YYYY-MM-DD para uso em <input type="date"> sem desvio de fuso
+ */
+export function getScheduledDateInput(date: Date | string | null | undefined): string {
+  if (!date) return '';
+  if (typeof date === 'string') {
+    const match = date.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (match) {
+      return `${match[1]}-${match[2]}-${match[3]}`;
+    }
+  }
+  if (date instanceof Date) {
+    if (date.getUTCHours() === 0 && date.getUTCMinutes() === 0) {
+      const y = date.getUTCFullYear();
+      const m = String(date.getUTCMonth() + 1).padStart(2, '0');
+      const d = String(date.getUTCDate()).padStart(2, '0');
+      return `${y}-${m}-${d}`;
+    }
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  }
+  return '';
+}
+
+/**
+ * Converte string de data recebida do formulário (YYYY-MM-DD) para Date em 12:00:00Z (meio-dia UTC),
+ * garantindo imunidade total a fusos horários ocidentais e orientais.
+ */
+export function parseDateInput(val: string | Date | null | undefined): Date | null {
+  if (!val) return null;
+  if (val instanceof Date) return val;
+  if (typeof val === 'string') {
+    const match = val.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (match) {
+      return new Date(`${match[1]}-${match[2]}-${match[3]}T12:00:00.000Z`);
+    }
+  }
+  return new Date(val);
 }
 
 /**

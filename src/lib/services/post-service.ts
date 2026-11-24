@@ -1,4 +1,5 @@
 import { prisma } from '../prisma';
+import { parseDateInput } from '../utils';
 
 export interface PostMediaData {
   id: string;
@@ -459,7 +460,7 @@ export async function updatePost(
   if (data.title !== undefined) updateData.title = data.title.trim();
   if (data.caption !== undefined) updateData.caption = data.caption ? data.caption.trim() : null;
   if (data.scheduledDate !== undefined) {
-    updateData.scheduledDate = data.scheduledDate ? new Date(data.scheduledDate) : null;
+    updateData.scheduledDate = data.scheduledDate ? parseDateInput(data.scheduledDate) : null;
   }
   if (data.format !== undefined) updateData.format = data.format;
   if (data.cycleId !== undefined) updateData.cycleId = data.cycleId || null;
@@ -515,7 +516,7 @@ export async function updatePost(
       if (data.title !== undefined) post.title = data.title;
       if (data.caption !== undefined) post.caption = data.caption;
       if (data.scheduledDate !== undefined) {
-        post.scheduledDate = data.scheduledDate ? new Date(data.scheduledDate) : null;
+        post.scheduledDate = data.scheduledDate ? parseDateInput(data.scheduledDate) : null;
       }
       if (data.format !== undefined) post.format = data.format;
       if (data.cycleId !== undefined) post.cycleId = data.cycleId;

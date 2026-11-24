@@ -1,5 +1,5 @@
 import { prisma } from '../prisma';
-import { generateSlug } from '../utils';
+import { generateSlug, parseDateInput } from '../utils';
 
 export interface DemandClientInfo {
   id: string;
@@ -111,7 +111,7 @@ export async function createDemand(data: {
       description: data.description?.trim() || null,
       columnId: data.columnId,
       order: count,
-      dueDate: data.dueDate ? new Date(data.dueDate) : null,
+      dueDate: data.dueDate ? parseDateInput(data.dueDate) : null,
       clientId: data.clientId || null,
       priority: data.priority || 'NORMAL',
     },
@@ -143,7 +143,7 @@ export async function updateDemand(
   if (data.title !== undefined) updateData.title = data.title.trim();
   if (data.description !== undefined) updateData.description = data.description?.trim() || null;
   if (data.columnId !== undefined) updateData.columnId = data.columnId;
-  if (data.dueDate !== undefined) updateData.dueDate = data.dueDate ? new Date(data.dueDate) : null;
+  if (data.dueDate !== undefined) updateData.dueDate = data.dueDate ? parseDateInput(data.dueDate) : null;
   if (data.completed !== undefined) updateData.completed = data.completed;
   if (data.clientId !== undefined) updateData.clientId = data.clientId || null;
   if (data.priority !== undefined) updateData.priority = data.priority;

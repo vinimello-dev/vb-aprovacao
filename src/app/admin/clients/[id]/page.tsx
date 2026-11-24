@@ -37,7 +37,7 @@ import {
   AlertCircle,
   Eye,
 } from 'lucide-react';
-import { formatDate, parseThumbnailUrl, parseMediaUrl } from '@/lib/utils';
+import { formatDate, parseThumbnailUrl, parseMediaUrl, getScheduledDateInput } from '@/lib/utils';
 import { PostReviewModal } from '@/components/post-review-modal';
 import { ImageUploadInput } from '@/components/image-upload-input';
 import { CarouselUploader, CarouselSlide } from '@/components/carousel-uploader';
@@ -355,9 +355,7 @@ export default function ClientHubPage({ params }: PageProps) {
       setEditPostCarouselSlides([]);
     }
     setEditPostCaption(post.caption || '');
-    setEditPostDate(
-      post.scheduledDate ? new Date(post.scheduledDate).toISOString().split('T')[0] : ''
-    );
+    setEditPostDate(getScheduledDateInput(post.scheduledDate));
     setEditPostCycleId(post.cycleId || '');
     setEditPostError('');
     setEditPostModalOpen(true);
@@ -484,7 +482,7 @@ export default function ClientHubPage({ params }: PageProps) {
   const handleOpenEditScript = (script: ScriptItem) => {
     setScriptEditingId(script.id);
     setScriptTitle(script.title);
-    setScriptDate(script.recordingDate ? new Date(script.recordingDate).toISOString().split('T')[0] : '');
+    setScriptDate(getScheduledDateInput(script.recordingDate));
     setScriptHook(script.hook || '');
     setScriptContent(script.content);
     setScriptStatus(script.status);
