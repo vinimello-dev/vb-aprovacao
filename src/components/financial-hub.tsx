@@ -208,18 +208,25 @@ export function FinancialHub({ clients }: FinancialHubProps) {
   // Alternar Status (Pago / Pendente)
   const handleToggleStatus = async (item: FinancialEntryItem) => {
     const nextStatus = item.status === 'PAID' ? 'PENDING' : 'PAID';
+    // Atualização otimista imediata para evitar atraso visual
+    setEntries((prev) =>
+      prev.map((e) => (e.id === item.id ? { ...e, status: nextStatus } : e))
+    );
+
     try {
       await fetch('/api/admin/financial', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           id: item.id,
+          description: item.description,
           status: nextStatus,
         }),
       });
       fetchData();
     } catch (err) {
       console.error('Erro ao alterar status:', err);
+      fetchData();
     }
   };
 
@@ -600,8 +607,12 @@ export function FinancialHub({ clients }: FinancialHubProps) {
                               />
                             ) : (
                               <div className="flex items-center gap-2">
-                                <span className="font-bold text-[#111111] text-xs">
-                                  {item.description}
+                                <span
+                                  onClick={() => startEditing(item)}
+                                  className="font-bold text-[#111111] text-xs cursor-pointer hover:text-[#FD3100] transition-colors"
+                                  title="Clique para editar o nome da empresa"
+                                >
+                                  {item.description || 'Empresa sem nome (clique para editar)'}
                                 </span>
                                 {!isPaid && (
                                   <span className="text-[9px] px-1.5 py-0.2 rounded-md font-black bg-amber-100 text-amber-800">
@@ -807,8 +818,12 @@ export function FinancialHub({ clients }: FinancialHubProps) {
                               />
                             ) : (
                               <div className="flex items-center gap-2">
-                                <span className="font-bold text-[#111111] text-xs">
-                                  {item.description}
+                                <span
+                                  onClick={() => startEditing(item)}
+                                  className="font-bold text-[#111111] text-xs cursor-pointer hover:text-[#FD3100] transition-colors"
+                                  title="Clique para editar o nome da conta"
+                                >
+                                  {item.description || 'Conta sem nome (clique para editar)'}
                                 </span>
                                 {!isPaid && (
                                   <span className="text-[9px] px-1.5 py-0.2 rounded-md font-black bg-amber-100 text-amber-800">

@@ -85,12 +85,19 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: 'ID do registro é obrigatório.' }, { status: 400 });
     }
 
-    const updated = await updateFinancialEntry(id, {
-      description,
-      amount: amount !== undefined ? Number(amount) : undefined,
-      status,
-      category,
-    });
+    const updateData: {
+      description?: string;
+      amount?: number;
+      status?: 'PAID' | 'PENDING';
+      category?: string;
+    } = {};
+
+    if (description !== undefined && description !== null) updateData.description = description;
+    if (amount !== undefined && amount !== null) updateData.amount = Number(amount);
+    if (status !== undefined && status !== null) updateData.status = status;
+    if (category !== undefined && category !== null) updateData.category = category;
+
+    const updated = await updateFinancialEntry(id, updateData);
 
     if (!updated) {
       return NextResponse.json({ error: 'Registro não encontrado.' }, { status: 404 });

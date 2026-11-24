@@ -406,10 +406,22 @@ export async function updateFinancialEntry(
   const idx = localFinancialStore.findIndex((e) => e.id === id);
   if (idx === -1) return null;
 
+  const current = localFinancialStore[idx];
   localFinancialStore[idx] = {
-    ...localFinancialStore[idx],
-    ...data,
-    amount: data.amount !== undefined ? Number(data.amount) : localFinancialStore[idx].amount,
+    ...current,
+    description:
+      data.description !== undefined && data.description !== null && data.description.trim() !== ''
+        ? data.description.trim()
+        : current.description,
+    amount:
+      data.amount !== undefined && data.amount !== null && !isNaN(Number(data.amount))
+        ? Number(data.amount)
+        : current.amount,
+    status: data.status !== undefined ? data.status : current.status,
+    category: data.category !== undefined ? data.category : current.category,
+    clientId: data.clientId !== undefined ? data.clientId : current.clientId,
+    month: data.month !== undefined ? Number(data.month) : current.month,
+    year: data.year !== undefined ? Number(data.year) : current.year,
     updatedAt: new Date().toISOString(),
   };
 
