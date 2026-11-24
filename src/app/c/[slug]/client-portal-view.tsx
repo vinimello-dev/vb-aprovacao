@@ -20,12 +20,36 @@ import {
   Send,
   Phone,
   User,
+  Video,
+  Edit3,
+  Save,
+  Copy,
+  Check,
+  Plus,
+  Trash2,
 } from 'lucide-react';
 import { PostData } from '@/lib/services/post-service';
 import { PostReviewModal } from '@/components/post-review-modal';
 import { formatDate, getScheduledDay } from '@/lib/utils';
 import { ChatMessage } from '@/lib/services/chat-service';
 import { playMessageSound } from '@/lib/audio-notification';
+import {
+  ScriptScene,
+  createEmptyScene,
+  parseScriptScenes,
+  serializeScriptScenes,
+  formatScriptAsPlainText,
+} from '@/lib/script-utils';
+
+interface ClientScriptItem {
+  id: string;
+  title: string;
+  recordingDate?: string | null;
+  hook?: string | null;
+  content: string;
+  status: string;
+  scenesCount: number;
+}
 
 interface ClientPortalViewProps {
   client: {
@@ -50,8 +74,17 @@ export function ClientPortalView({ client }: ClientPortalViewProps) {
   const [selectedPost, setSelectedPost] = useState<PostData | null>(null);
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'PENDENTE' | 'AJUSTES' | 'APROVADO'>('ALL');
 
-  // Modo de Visualização: Instagram Feed, Calendário Mensal, Cards ou Chat com a Agência
-  const [viewMode, setViewMode] = useState<'instagram' | 'calendar' | 'cards' | 'chat'>('instagram');
+  // Modo de Visualização: Instagram Feed, Calendário Mensal, Cards, Roteiros ou Chat com a Agência
+  const [viewMode, setViewMode] = useState<'instagram' | 'calendar' | 'cards' | 'scripts' | 'chat'>('instagram');
+
+  // Roteiros de Gravação do Cliente (Visualização e Edição por Cenas)
+  const [scripts, setScripts] = useState<ClientScriptItem[]>([]);
+  const [editingScriptId, setEditingScriptId] = useState<string | null>(null);
+  const [editScriptHook, setEditScriptHook] = useState('');
+  const [editScriptScenes, setEditScriptScenes] = useState<ScriptScene[]>([]);
+  const [savingScript, setSavingScript] = useState(false);
+  const [savedScriptId, setSavedScriptId] = useState<string | null>(null);
+  const [copiedScriptId, setCopiedScriptId] = useState<string | null>(null);
 
   // Drag & Drop no Calendário Mensal
   const [draggedPostId, setDraggedPostId] = useState<string | null>(null);
@@ -243,15 +276,55 @@ export function ClientPortalView({ client }: ClientPortalViewProps) {
   const fetchClientPosts = async () => {
     setLoadingPosts(true);
     try {
-      const res = await fetch(`/api/client/posts?slug=${client.slug}`);
-      const data = await res.json();
+      const [postsRes, scriptsRes] = await Promise.all([
+        fetch(`/api/client/posts?slug=${client.slug}`),
+        fetch(`/api/client/scripts?slug=${client.slug}`),
+      ]);
+      const data = await postsRes.json();
       if (data.posts) {
         setPosts(data.posts);
+      }
+      if (scriptsRes.ok) {
+        const scriptsData = await scriptsRes.json();
+        if (scriptsData.scripts) {
+          setScripts(scriptsData.scripts);
+        }
       }
     } catch (err) {
       console.error('Erro ao buscar posts:', err);
     } finally {
       setLoadingPosts(false);
+    }
+  };
+
+  const handleSaveClientScript = async (scriptId: string) => {
+    setSavingScript(true);
+    try {
+      const serialized = serializeScriptScenes(editScriptScenes);
+      const res = await fetch('/api/client/scripts', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          slug: client.slug,
+          scriptId,
+          hook: editScriptHook.trim() || null,
+          content: serialized,
+          scenesCount: editScriptScenes.length,
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.script) {
+          setScripts((prev) => prev.map((s) => (s.id === scriptId ? data.script : s)));
+        }
+        setEditingScriptId(null);
+        setSavedScriptId(scriptId);
+        setTimeout(() => setSavedScriptId(null), 3000);
+      }
+    } catch (err) {
+      console.error('Erro ao salvar roteiro:', err);
+    } finally {
+      setSavingScript(false);
     }
   };
 
@@ -468,7 +541,7 @@ export function ClientPortalView({ client }: ClientPortalViewProps) {
           {/* Seletores de Modo de Visualização */}
           <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 w-full lg:w-auto">
             {/* Seletor de Modo com Letras Pretas e Laranja no Ativo */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 sm:flex items-center bg-white p-1 rounded-2xl border-2 border-[#DCD6CC] shadow-sm text-[11px] sm:text-xs font-black uppercase w-full sm:w-auto">
+            <div className="grid grid-cols-3 sm:flex items-center bg-white p-1 rounded-2xl border-2 border-[#DCD6CC] shadow-sm text-[11px] sm:text-xs font-black uppercase w-full sm:w-auto gap-0.5">
               <button
                 onClick={() => setViewMode('instagram')}
                 style={viewMode === 'instagram' ? { backgroundColor: '#FD3100', color: '#FFFFFF' } : { color: '#111111' }}
@@ -497,6 +570,21 @@ export function ClientPortalView({ client }: ClientPortalViewProps) {
               >
                 <LayoutGrid className="w-3.5 sm:w-4 h-3.5 sm:h-4 stroke-[2.5]" />
                 <span className="truncate">Cards</span>
+              </button>
+
+              <button
+                onClick={() => setViewMode('scripts')}
+                style={viewMode === 'scripts' ? { backgroundColor: '#FD3100', color: '#FFFFFF' } : { color: '#111111' }}
+                className="flex items-center justify-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-2 rounded-xl transition-all font-black"
+                title="Visualizar e editar roteiros de gravação por cenas"
+              >
+                <Video className="w-3.5 sm:w-4 h-3.5 sm:h-4 stroke-[2.5]" />
+                <span className="truncate">Roteiros</span>
+                {scripts.length > 0 && (
+                  <span className="ml-0.5 px-1.5 py-0.2 rounded-full text-[9px] font-black bg-white/90 text-[#111111] border border-[#DCD6CC]">
+                    {scripts.length}
+                  </span>
+                )}
               </button>
 
               <button
@@ -974,7 +1062,304 @@ export function ClientPortalView({ client }: ClientPortalViewProps) {
           </div>
         )}
 
-        {/* 4. VISÃO DE CHAT COM A VB AGÊNCIA */}
+        {/* 4. VISÃO ROTEIROS DE GRAVAÇÃO (COM EDIÇÃO DE CENAS E FALAS PELO CLIENTE) */}
+        {viewMode === 'scripts' && (
+          <div className="space-y-6">
+            <div className="bg-white border-2 border-[#DCD6CC] rounded-3xl p-5 sm:p-6 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-11 h-11 rounded-2xl bg-[#FFF0EC] border border-[#FFCEBF] flex items-center justify-center text-[#FD3100] shrink-0">
+                  <Video className="w-5 h-5" />
+                </div>
+                <div>
+                  <h2 className="font-black text-lg sm:text-xl text-[#111111] uppercase tracking-tight">
+                    Roteiros de Gravação
+                  </h2>
+                  <p className="text-xs text-[#66635D] font-medium">
+                    Revise as falas e direções de cada cena. Se quiser ajustar alguma fala com o seu jeito, clique em <strong>Editar Roteiro</strong>!
+                  </p>
+                </div>
+              </div>
+              <span className="px-3.5 py-1.5 rounded-full bg-[#FFF0EC] text-[#FD3100] border border-[#FFCEBF] text-xs font-black uppercase self-start sm:self-auto">
+                {scripts.length} {scripts.length === 1 ? 'roteiro' : 'roteiros'}
+              </span>
+            </div>
+
+            {scripts.length === 0 ? (
+              <div className="bg-white border-2 border-dashed border-[#FFCEBF] rounded-3xl p-12 text-center">
+                <Video className="w-10 h-10 text-[#FD3100] mx-auto mb-2 opacity-70" />
+                <p className="text-base font-black text-[#111111]">
+                  Nenhum roteiro cadastrado ainda
+                </p>
+                <p className="text-xs text-[#66635D] mt-1">
+                  Assim que a Agência VB preparar seus roteiros de captação, eles aparecerão aqui cena por cena.
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {scripts.map((script) => {
+                  const isEditing = editingScriptId === script.id;
+                  const scenes = isEditing ? editScriptScenes : parseScriptScenes(script.content);
+
+                  return (
+                    <div
+                      key={script.id}
+                      className="bg-white border-2 border-[#DCD6CC] rounded-3xl p-5 sm:p-6 shadow-sm flex flex-col justify-between space-y-4"
+                    >
+                      <div className="space-y-4">
+                        {/* Cabeçalho do Card */}
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <div className="flex flex-wrap items-center gap-2 mb-1">
+                              <span
+                                className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase border ${
+                                  script.status === 'FINALIZADO'
+                                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                    : script.status === 'GRAVADO'
+                                    ? 'bg-blue-50 text-blue-700 border-blue-200'
+                                    : script.status === 'EM_EDICAO'
+                                    ? 'bg-purple-50 text-purple-700 border-purple-200'
+                                    : 'bg-amber-50 text-amber-800 border-amber-200'
+                                }`}
+                              >
+                                {script.status === 'A_GRAVAR'
+                                  ? 'A Gravar'
+                                  : script.status === 'GRAVADO'
+                                  ? 'Gravado'
+                                  : script.status === 'EM_EDICAO'
+                                  ? 'Em Edição'
+                                  : 'Finalizado'}
+                              </span>
+                              <span className="text-[11px] font-bold text-[#66635D]">
+                                {scenes.length} {scenes.length === 1 ? 'cena' : 'cenas'}
+                              </span>
+                              {savedScriptId === script.id && (
+                                <span className="text-[10px] font-black text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                                  ✓ Roteiro salvo!
+                                </span>
+                              )}
+                            </div>
+                            <h3 className="text-lg font-black text-[#111111] leading-snug">
+                              {script.title}
+                            </h3>
+                            {script.recordingDate && (
+                              <p className="text-xs font-bold text-[#FD3100] flex items-center gap-1 mt-1">
+                                <CalendarIcon className="w-3.5 h-3.5" />
+                                Captação: {formatDate(script.recordingDate)}
+                              </p>
+                            )}
+                          </div>
+
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            {!isEditing && (
+                              <>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    navigator.clipboard.writeText(
+                                      formatScriptAsPlainText(script.title, script.hook, scenes)
+                                    );
+                                    setCopiedScriptId(script.id);
+                                    setTimeout(() => setCopiedScriptId(null), 2000);
+                                  }}
+                                  className="px-2.5 py-1.5 rounded-xl border border-[#DCD6CC] bg-[#FAF9F7] hover:border-[#FD3100] text-[10px] font-black uppercase text-[#111111] flex items-center gap-1"
+                                  title="Copiar roteiro completo"
+                                >
+                                  {copiedScriptId === script.id ? (
+                                    <>
+                                      <Check className="w-3.5 h-3.5 text-emerald-600" />
+                                      <span>Copiado</span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Copy className="w-3.5 h-3.5 text-[#FD3100]" />
+                                      <span>Copiar</span>
+                                    </>
+                                  )}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setEditingScriptId(script.id);
+                                    setEditScriptHook(script.hook || '');
+                                    setEditScriptScenes(parseScriptScenes(script.content));
+                                  }}
+                                  className="px-3 py-1.5 rounded-xl bg-[#FFF0EC] border border-[#FFCEBF] hover:bg-[#FD3100] hover:text-white text-[#FD3100] text-[10px] font-black uppercase flex items-center gap-1 transition-all"
+                                >
+                                  <Edit3 className="w-3.5 h-3.5" />
+                                  <span>Editar Roteiro</span>
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Gancho / Hook */}
+                        {isEditing ? (
+                          <div className="bg-[#FFF0EC] border border-[#FFCEBF] rounded-2xl p-3">
+                            <label className="block text-[10px] font-black uppercase text-[#FD3100] mb-1">
+                              🎯 Gancho Inicial (Primeiros 3 segundos)
+                            </label>
+                            <input
+                              type="text"
+                              value={editScriptHook}
+                              onChange={(e) => setEditScriptHook(e.target.value)}
+                              placeholder="Frase inicial de impacto..."
+                              className="w-full px-3 py-2 rounded-xl bg-white border border-[#FFCEBF] focus:border-[#FD3100] text-xs font-bold text-[#111111] outline-none"
+                            />
+                          </div>
+                        ) : (
+                          script.hook && (
+                            <div className="bg-[#FFF0EC] border border-[#FFCEBF] rounded-2xl p-3">
+                              <p className="text-[10px] font-black uppercase text-[#FD3100] mb-0.5">
+                                🎯 Gancho Inicial (Primeiros 3 segundos)
+                              </p>
+                              <p className="text-xs font-bold text-[#111111] italic">
+                                &quot;{script.hook}&quot;
+                              </p>
+                            </div>
+                          )
+                        )}
+
+                        {/* Lista de Cenas */}
+                        <div className="space-y-2.5">
+                          {scenes.map((scene, idx) => (
+                            <div
+                              key={scene.id}
+                              className="p-3.5 rounded-2xl border border-[#DCD6CC] bg-[#FAF9F7] space-y-2"
+                            >
+                              <div className="flex items-center justify-between gap-2">
+                                <span className="px-2.5 py-0.5 rounded-lg bg-[#111111] text-white text-[10px] font-black uppercase">
+                                  Cena {idx + 1}
+                                </span>
+                                {isEditing && editScriptScenes.length > 1 ? (
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      setEditScriptScenes((prev) =>
+                                        prev
+                                          .filter((_, i) => i !== idx)
+                                          .map((item, n) => ({ ...item, sceneNumber: n + 1 }))
+                                      )
+                                    }
+                                    className="p-1 rounded-lg text-[#66635D] hover:text-rose-600 hover:bg-rose-50"
+                                    title="Remover cena"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                ) : (
+                                  scene.notes && (
+                                    <span className="text-[10px] font-bold text-[#FD3100]">
+                                      {scene.notes}
+                                    </span>
+                                  )
+                                )}
+                              </div>
+
+                              {isEditing ? (
+                                <>
+                                  <div>
+                                    <label className="block text-[10px] font-black uppercase text-[#66635D] mb-1">
+                                      🎥 Direção / O que aparece na cena
+                                    </label>
+                                    <input
+                                      type="text"
+                                      value={scene.direction}
+                                      onChange={(e) => {
+                                        const val = e.target.value;
+                                        setEditScriptScenes((prev) =>
+                                          prev.map((item, i) =>
+                                            i === idx ? { ...item, direction: val } : item
+                                          )
+                                        );
+                                      }}
+                                      placeholder="O que fazer ou mostrar nesta cena..."
+                                      className="w-full px-3 py-1.5 rounded-xl bg-white border border-[#DCD6CC] focus:border-[#FD3100] text-xs text-[#111111] outline-none"
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="block text-[10px] font-black uppercase text-[#66635D] mb-1">
+                                      🗣️ Fala da Cena {idx + 1}
+                                    </label>
+                                    <textarea
+                                      rows={2}
+                                      value={scene.speech}
+                                      onChange={(e) => {
+                                        const val = e.target.value;
+                                        setEditScriptScenes((prev) =>
+                                          prev.map((item, i) =>
+                                            i === idx ? { ...item, speech: val } : item
+                                          )
+                                        );
+                                      }}
+                                      placeholder="Ajuste sua fala aqui..."
+                                      className="w-full px-3 py-1.5 rounded-xl bg-white border border-[#DCD6CC] focus:border-[#FD3100] text-xs font-medium text-[#111111] outline-none resize-none"
+                                    />
+                                  </div>
+                                </>
+                              ) : (
+                                <>
+                                  {scene.direction && (
+                                    <p className="text-xs font-bold text-[#66635D]">
+                                      🎥 {scene.direction}
+                                    </p>
+                                  )}
+                                  {scene.speech && (
+                                    <p className="text-xs sm:text-sm font-semibold text-[#111111] whitespace-pre-line leading-relaxed">
+                                      🗣️ &quot;{scene.speech}&quot;
+                                    </p>
+                                  )}
+                                </>
+                              )}
+                            </div>
+                          ))}
+
+                          {isEditing && (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setEditScriptScenes((prev) => [
+                                  ...prev,
+                                  createEmptyScene(prev.length + 1),
+                                ])
+                              }
+                              className="w-full py-2 rounded-2xl border-2 border-dashed border-[#FFCEBF] text-[#FD3100] hover:bg-[#FFF0EC] text-xs font-black uppercase flex items-center justify-center gap-1 transition-all"
+                            >
+                              <Plus className="w-3.5 h-3.5 stroke-[3]" />
+                              <span>Adicionar Cena</span>
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                      {isEditing && (
+                        <div className="pt-3 border-t border-[#EEEDEA] flex items-center justify-end gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setEditingScriptId(null)}
+                            className="px-4 py-2 rounded-xl border border-[#DCD6CC] text-xs font-black uppercase text-[#66635D] hover:text-[#111111]"
+                          >
+                            Cancelar
+                          </button>
+                          <button
+                            type="button"
+                            disabled={savingScript}
+                            onClick={() => handleSaveClientScript(script.id)}
+                            className="btn-vb-primary px-5 py-2 rounded-xl text-xs font-black uppercase flex items-center gap-1.5 shadow-sm disabled:opacity-50"
+                          >
+                            <Save className="w-3.5 h-3.5" />
+                            <span>{savingScript ? 'Salvando...' : 'Salvar Roteiro'}</span>
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* 5. VISÃO DE CHAT COM A VB AGÊNCIA */}
         {viewMode === 'chat' && (
           <div className="max-w-4xl mx-auto bg-white border-2 border-[#DCD6CC] rounded-3xl shadow-lg overflow-hidden flex flex-col h-[650px]">
             {/* Header do Chat */}

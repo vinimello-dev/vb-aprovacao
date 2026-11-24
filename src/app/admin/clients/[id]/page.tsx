@@ -41,6 +41,14 @@ import {
 import { formatDate, parseThumbnailUrl, parseMediaUrl, getScheduledDateInput } from '@/lib/utils';
 import { PostReviewModal } from '@/components/post-review-modal';
 import { AdminClientCalendar } from '@/components/admin-client-calendar';
+import {
+  ScriptScene,
+  SCRIPT_TEMPLATES,
+  createEmptyScene,
+  parseScriptScenes,
+  serializeScriptScenes,
+  formatScriptAsPlainText,
+} from '@/lib/script-utils';
 import { ImageUploadInput } from '@/components/image-upload-input';
 import { CarouselUploader, CarouselSlide } from '@/components/carousel-uploader';
 import { PostData } from '@/lib/services/post-service';
@@ -158,6 +166,7 @@ export default function ClientHubPage({ params }: PageProps) {
   const [scriptDate, setScriptDate] = useState('');
   const [scriptHook, setScriptHook] = useState('');
   const [scriptContent, setScriptContent] = useState('');
+  const [scriptSceneList, setScriptSceneList] = useState<ScriptScene[]>([createEmptyScene(1)]);
   const [scriptStatus, setScriptStatus] = useState<'A_GRAVAR' | 'GRAVADO' | 'EM_EDICAO' | 'FINALIZADO'>('A_GRAVAR');
   const [scriptScenes, setScriptScenes] = useState(1);
   const [submittingScript, setSubmittingScript] = useState(false);
@@ -433,8 +442,12 @@ export default function ClientHubPage({ params }: PageProps) {
   // 3. Salvar Roteiro de Gravação
   const handleSaveScript = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!scriptTitle.trim() || !scriptContent.trim()) return;
+    const hasSceneContent = scriptSceneList.some((s) => s.speech.trim() || s.direction.trim());
+    if (!scriptTitle.trim() || !hasSceneContent) return;
     setSubmittingScript(true);
+
+    const serializedContent = serializeScriptScenes(scriptSceneList);
+    const totalScenes = scriptSceneList.length;
 
     try {
       const endpoint = `/api/admin/clients/${id}/scripts`;
@@ -445,17 +458,17 @@ export default function ClientHubPage({ params }: PageProps) {
             title: scriptTitle.trim(),
             recordingDate: scriptDate || null,
             hook: scriptHook.trim() || null,
-            content: scriptContent.trim(),
+            content: serializedContent,
             status: scriptStatus,
-            scenesCount: scriptScenes,
+            scenesCount: totalScenes,
           }
         : {
             title: scriptTitle.trim(),
             recordingDate: scriptDate || null,
             hook: scriptHook.trim() || null,
-            content: scriptContent.trim(),
+            content: serializedContent,
             status: scriptStatus,
-            scenesCount: scriptScenes,
+            scenesCount: totalScenes,
           };
 
       const res = await fetch(endpoint, {
@@ -471,6 +484,7 @@ export default function ClientHubPage({ params }: PageProps) {
         setScriptDate('');
         setScriptHook('');
         setScriptContent('');
+        setScriptSceneList([createEmptyScene(1)]);
         setScriptScenes(1);
         await fetchClientData();
       }
@@ -487,8 +501,10 @@ export default function ClientHubPage({ params }: PageProps) {
     setScriptDate(getScheduledDateInput(script.recordingDate));
     setScriptHook(script.hook || '');
     setScriptContent(script.content);
+    const parsedScenes = parseScriptScenes(script.content);
+    setScriptSceneList(parsedScenes);
     setScriptStatus(script.status);
-    setScriptScenes(script.scenesCount || 1);
+    setScriptScenes(parsedScenes.length);
     setScriptModalOpen(true);
   };
 
@@ -1171,8 +1187,9 @@ export default function ClientHubPage({ params }: PageProps) {
                   setScriptDate('');
                   setScriptHook('');
                   setScriptContent('');
+                  setScriptSceneList([createEmptyScene(1), createEmptyScene(2)]);
                   setScriptStatus('A_GRAVAR');
-                  setScriptScenes(1);
+                  setScriptScenes(2);
                   setScriptModalOpen(true);
                 }}
                 style={{ backgroundColor: '#FD3100', color: '#FFFFFF' }}
@@ -1225,6 +1242,26 @@ export default function ClientHubPage({ params }: PageProps) {
 
                         <div className="flex items-center gap-1">
                           <button
+                            onClick={() =>
+                              copyToClipboard(
+                                formatScriptAsPlainText(
+                                  script.title,
+                                  script.hook,
+                                  parseScriptScenes(script.content)
+                                ),
+                                `script-${script.id}`
+                              )
+                            }
+                            className="p-1.5 hover:bg-[#FAF9F7] text-[#66635D] hover:text-[#FD3100] rounded-xl"
+                            title="Copiar roteiro formatado"
+                          >
+                            {copiedKey === `script-${script.id}` ? (
+                              <Check className="w-4 h-4 text-emerald-600" />
+                            ) : (
+                              <Copy className="w-4 h-4" />
+                            )}
+                          </button>
+                          <button
                             onClick={() => handleOpenEditScript(script)}
                             className="p-1.5 hover:bg-[#FAF9F7] text-[#66635D] hover:text-[#FD3100] rounded-xl"
                             title="Editar roteiro"
@@ -1248,14 +1285,40 @@ export default function ClientHubPage({ params }: PageProps) {
                             🎯 Gancho Inicial (Primeiros 3 segundos)
                           </p>
                           <p className="text-xs font-bold text-[#111111] italic">
-                            "{script.hook}"
+                            &quot;{script.hook}&quot;
                           </p>
                         </div>
                       )}
 
-                      {/* Conteúdo / Falas */}
-                      <div className="bg-[#FAF9F7] border border-[#DCD6CC] rounded-2xl p-3.5 text-xs text-[#111111] font-medium whitespace-pre-line leading-relaxed max-h-48 overflow-y-auto">
-                        {script.content}
+                      {/* Cenas Estruturadas */}
+                      <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+                        {parseScriptScenes(script.content).map((scene) => (
+                          <div
+                            key={scene.id}
+                            className="bg-[#FAF9F7] border border-[#DCD6CC] rounded-2xl p-3 space-y-1"
+                          >
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="px-2 py-0.5 rounded-lg bg-[#111111] text-white text-[9px] font-black uppercase">
+                                Cena {scene.sceneNumber}
+                              </span>
+                              {scene.notes && (
+                                <span className="text-[10px] font-bold text-[#FD3100] truncate">
+                                  {scene.notes}
+                                </span>
+                              )}
+                            </div>
+                            {scene.direction && (
+                              <p className="text-[11px] font-bold text-[#66635D]">
+                                🎥 {scene.direction}
+                              </p>
+                            )}
+                            {scene.speech && (
+                              <p className="text-xs font-semibold text-[#111111] whitespace-pre-line leading-relaxed">
+                                🗣️ &quot;{scene.speech}&quot;
+                              </p>
+                            )}
+                          </div>
+                        ))}
                       </div>
                     </div>
 
@@ -2005,10 +2068,10 @@ export default function ClientHubPage({ params }: PageProps) {
         </div>
       )}
 
-      {/* MODAL 3: Novo Roteiro de Gravação */}
+      {/* MODAL 3: Novo / Editar Roteiro de Gravação Detalhado por Cenas */}
       {scriptModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200 overflow-y-auto">
-          <div className="bg-white border-2 border-[#FFCEBF] rounded-3xl w-full max-w-lg p-5 sm:p-8 shadow-2xl relative overflow-hidden my-auto max-h-[92vh] flex flex-col">
+          <div className="bg-white border-2 border-[#FFCEBF] rounded-3xl w-full max-w-2xl p-5 sm:p-8 shadow-2xl relative overflow-hidden my-auto max-h-[92vh] flex flex-col">
             <div className="absolute top-0 left-0 right-0 h-2 bg-[#FD3100]" />
 
             <div className="flex items-center justify-between pb-4 border-b border-[#EEEDEA] shrink-0">
@@ -2021,7 +2084,7 @@ export default function ClientHubPage({ params }: PageProps) {
                     {scriptEditingId ? 'Editar Roteiro' : 'Novo Roteiro de Gravação'}
                   </h3>
                   <p className="text-xs text-[#66635D] font-medium">
-                    Estruture a fala e cenas para a captação
+                    Estruture Cena 1, Cena 2, direções e falas para o cliente gravar e editar
                   </p>
                 </div>
               </div>
@@ -2031,6 +2094,39 @@ export default function ClientHubPage({ params }: PageProps) {
             </div>
 
             <form onSubmit={handleSaveScript} className="mt-4 space-y-4 overflow-y-auto pr-1">
+              {/* Modelos Prontos (1 Clique) */}
+              <div className="bg-[#FAF9F7] border border-[#E2DED7] rounded-2xl p-3">
+                <p className="text-[10px] font-black uppercase tracking-wider text-[#FD3100] mb-2 flex items-center gap-1">
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>Modelos Prontos (preenche as cenas com 1 clique):</span>
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {SCRIPT_TEMPLATES.map((tpl) => (
+                    <button
+                      key={tpl.id}
+                      type="button"
+                      onClick={() => {
+                        if (!scriptTitle.trim()) setScriptTitle(tpl.label);
+                        setScriptHook(tpl.hook);
+                        setScriptSceneList(
+                          tpl.scenes.map((sc, idx) => ({
+                            id: `tpl_${tpl.id}_${idx}_${Date.now()}`,
+                            sceneNumber: idx + 1,
+                            direction: sc.direction,
+                            speech: sc.speech,
+                            notes: sc.notes || '',
+                          }))
+                        );
+                      }}
+                      className="px-2.5 py-1.5 rounded-xl bg-white border border-[#DCD6CC] hover:border-[#FD3100] text-[10px] font-black text-[#111111] transition-all flex items-center gap-1.5"
+                    >
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#FD3100]" />
+                      <span>{tpl.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               <div>
                 <label className="block text-xs font-black uppercase tracking-wider text-[#111111] mb-1.5">
                   Título do Roteiro / Tema *
@@ -2088,18 +2184,111 @@ export default function ClientHubPage({ params }: PageProps) {
                 />
               </div>
 
-              <div>
-                <label className="block text-xs font-black uppercase tracking-wider text-[#111111] mb-1.5">
-                  Roteiro Completo (Falas e Orientações de Cena) *
-                </label>
-                <textarea
-                  value={scriptContent}
-                  onChange={(e) => setScriptContent(e.target.value)}
-                  placeholder="Cena 1: Olhando para a câmera dizendo...\nCena 2: Mostrando o produto em uso..."
-                  rows={6}
-                  required
-                  className="w-full px-3 py-2 bg-[#FAF9F7] border border-[#DCD6CC] rounded-xl text-xs font-medium text-[#111111] focus:outline-none resize-none"
-                />
+              {/* Editor Dinâmico de Cenas (Cena 1, Cena 2...) */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-black uppercase tracking-wider text-[#111111]">
+                    Cenas & Falas ({scriptSceneList.length}) *
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setScriptSceneList((prev) => [
+                        ...prev,
+                        createEmptyScene(prev.length + 1),
+                      ])
+                    }
+                    className="px-3 py-1 rounded-xl bg-[#FFF0EC] border border-[#FFCEBF] text-[#FD3100] text-[10px] font-black uppercase hover:bg-[#FD3100] hover:text-white transition-all flex items-center gap-1"
+                  >
+                    <Plus className="w-3 h-3 stroke-[3]" />
+                    <span>Adicionar Cena</span>
+                  </button>
+                </div>
+
+                <div className="space-y-3">
+                  {scriptSceneList.map((scene, idx) => (
+                    <div
+                      key={scene.id}
+                      className="p-3.5 rounded-2xl border-2 border-[#E2DED7] bg-[#FAF9F7] space-y-2.5"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="px-2.5 py-0.5 rounded-lg bg-[#111111] text-white text-[10px] font-black uppercase">
+                          Cena {idx + 1}
+                        </span>
+                        {scriptSceneList.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setScriptSceneList((prev) =>
+                                prev
+                                  .filter((_, i) => i !== idx)
+                                  .map((item, newIdx) => ({ ...item, sceneNumber: newIdx + 1 }))
+                              )
+                            }
+                            className="p-1 rounded-lg text-[#66635D] hover:text-rose-600 hover:bg-rose-50"
+                            title="Remover cena"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+
+                      <div>
+                        <label className="block text-[10px] font-black uppercase text-[#66635D] mb-1">
+                          🎥 Direção / O que acontece na cena
+                        </label>
+                        <input
+                          type="text"
+                          value={scene.direction}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setScriptSceneList((prev) =>
+                              prev.map((item, i) => (i === idx ? { ...item, direction: val } : item))
+                            );
+                          }}
+                          placeholder="Ex: Olhando para a câmera em plano médio / Mostrando atendimento..."
+                          className="w-full px-3 py-1.5 bg-white border border-[#DCD6CC] focus:border-[#FD3100] rounded-xl text-xs font-medium text-[#111111] outline-none"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[10px] font-black uppercase text-[#66635D] mb-1">
+                          🗣️ Fala da Cena {idx + 1} *
+                        </label>
+                        <textarea
+                          rows={2}
+                          value={scene.speech}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setScriptSceneList((prev) =>
+                              prev.map((item, i) => (i === idx ? { ...item, speech: val } : item))
+                            );
+                          }}
+                          placeholder="Escreva exatamente o que será falado nesta cena..."
+                          className="w-full px-3 py-1.5 bg-white border border-[#DCD6CC] focus:border-[#FD3100] rounded-xl text-xs font-medium text-[#111111] outline-none resize-none"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[10px] font-black uppercase text-[#66635D] mb-1">
+                          📝 Texto na tela / Duração (opcional)
+                        </label>
+                        <input
+                          type="text"
+                          value={scene.notes || ''}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setScriptSceneList((prev) =>
+                              prev.map((item, i) => (i === idx ? { ...item, notes: val } : item))
+                            );
+                          }}
+                          placeholder="Ex: 0-5s • Texto grande na tela"
+                          className="w-full px-3 py-1.5 bg-white border border-[#DCD6CC] focus:border-[#FD3100] rounded-xl text-[11px] text-[#66635D] outline-none"
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
 
               <div className="pt-3 border-t border-[#EEEDEA] flex items-center justify-end gap-2">
