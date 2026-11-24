@@ -61,10 +61,10 @@ export default function AdminLoginPage() {
               Painel Administrativo
             </span>
             <h1 className="text-2xl font-black tracking-tight text-[#111111] uppercase">
-              VB Aprovação
+              VB <span style={{ color: '#FD3100' }}>HUB</span>
             </h1>
             <p className="text-agency-muted text-xs mt-1">
-              Plataforma de Aprovação de Conteúdos da Agência
+              Central de Conteúdos, Roteiros e Aprovações
             </p>
           </div>
 

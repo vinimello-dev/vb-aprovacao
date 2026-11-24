@@ -2,8 +2,8 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'VB Aprovação | Plataforma de Conteúdo',
-  description: 'Painel da Agência e Portal de Aprovação de Conteúdo',
+  title: 'VB HUB | Central de Conteúdos & Aprovações',
+  description: 'VB HUB — Central de Conteúdos, Roteiros e Aprovações',
   icons: {
     icon: [
       { url: '/logo-vb.png', sizes: 'any' },

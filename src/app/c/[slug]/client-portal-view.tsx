@@ -393,7 +393,7 @@ export function ClientPortalView({ client }: ClientPortalViewProps) {
               style={{ backgroundColor: '#FFF0EC', color: '#FD3100', borderColor: '#FFCEBF' }}
               className="px-3 py-1 rounded-full text-[11px] font-black tracking-wide uppercase border inline-block mb-2 shadow-sm"
             >
-              Portal do Cliente
+              VB HUB • Portal do Cliente
             </span>
 
             <h1 className="text-2xl font-black text-[#111111] uppercase tracking-tight">
@@ -505,11 +505,11 @@ export function ClientPortalView({ client }: ClientPortalViewProps) {
                   style={{ backgroundColor: '#FFF0EC', color: '#FD3100', borderColor: '#FFCEBF' }}
                   className="hidden md:inline-block px-2 py-0.5 text-[9px] font-black rounded-full border uppercase tracking-wider shrink-0"
                 >
-                  Portal do Cliente
+                  VB HUB • Portal do Cliente
                 </span>
               </div>
               <p className="text-[10px] sm:text-xs font-bold text-[#FD3100] truncate">
-                Aprovação de Conteúdo
+                Central de Conteúdos &amp; Aprovações
               </p>
             </div>
           </div>

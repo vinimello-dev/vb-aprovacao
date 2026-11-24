@@ -409,7 +409,7 @@ export default function AdminDashboardPage() {
   };
 
   const copyWhatsAppMessage = (clientName: string, portalUrl: string, pin: string, id: string) => {
-    const msg = `Olá, ${clientName}! ✨\n\nO seu novo conteúdo e planejamento já estão disponíveis para revisão e aprovação na plataforma da VB!\n\n👉 Link de Acesso: ${portalUrl}\n🔑 Seu PIN de Segurança: ${pin}\n\nVocê pode assistir aos vídeos, conferir a grade do feed, ler a legenda e deixar seus comentários no segundo exato de cada post!`;
+    const msg = `Olá, ${clientName}! ✨\n\nO seu novo conteúdo, roteiros e planejamento já estão disponíveis no *VB HUB*!\n\n👉 Link de Acesso: ${portalUrl}\n🔑 Seu PIN de Segurança: ${pin}\n\nVocê pode assistir aos vídeos, conferir a grade do feed, editar roteiros, ler as legendas e aprovar tudo por lá!`;
     navigator.clipboard.writeText(msg);
     setCopiedId(`wa-${id}`);
     setTimeout(() => setCopiedId(null), 3000);
@@ -449,7 +449,7 @@ export default function AdminDashboardPage() {
             <div className="hidden md:block">
               <div className="flex items-center gap-2">
                 <span className="font-black text-xl text-[#111111] tracking-tight uppercase">
-                  VB <span style={{ color: '#FD3100' }}>APROVAÇÃO</span>
+                  VB <span style={{ color: '#FD3100' }}>HUB</span>
                 </span>
                 <span
                   style={{ backgroundColor: '#FD3100', color: '#FFFFFF' }}
@@ -459,7 +459,7 @@ export default function AdminDashboardPage() {
                 </span>
               </div>
               <p style={{ color: '#FD3100' }} className="text-xs font-bold tracking-wide">
-                Gestão e Aprovação de Conteúdos Audiovisuais
+                Central de Conteúdos, Roteiros e Aprovações
               </p>
             </div>
           </div>
