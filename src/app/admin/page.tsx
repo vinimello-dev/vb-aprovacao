@@ -685,17 +685,17 @@ export default function AdminDashboardPage() {
                       setActiveView('demands');
                       setSidebarOpen(false);
                     }}
-                    className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-black uppercase tracking-wider transition-all ${
+                    className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-black uppercase tracking-wider transition-all text-left ${
                       activeView === 'demands'
                         ? 'btn-vb-primary shadow-md'
                         : 'text-[#111111] hover:bg-[#FAF9F7]'
                     }`}
                   >
-                    <div className="flex items-center gap-2.5">
-                      <Kanban className="w-4 h-4 stroke-[2.5]" />
-                      <span>Quadros</span>
+                    <div className="flex items-center gap-2.5 min-w-0 text-left">
+                      <Kanban className="w-4 h-4 stroke-[2.5] shrink-0" />
+                      <span className="block text-left leading-tight">Quadros</span>
                     </div>
-                    <span className="text-[10px] px-2 py-0.5 rounded-full font-black bg-[#FAF9F7] border border-[#DCD6CC] text-[#66635D]">
+                    <span className="text-[10px] px-2 py-0.5 rounded-full font-black bg-[#FAF9F7] border border-[#DCD6CC] text-[#66635D] shrink-0">
                       Trello
                     </span>
                   </button>
@@ -705,22 +705,22 @@ export default function AdminDashboardPage() {
                       setActiveView('reviews');
                       setSidebarOpen(false);
                     }}
-                    className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-black uppercase tracking-wider transition-all ${
+                    className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-black uppercase tracking-wider transition-all text-left ${
                       activeView === 'reviews'
                         ? 'btn-vb-primary shadow-md'
                         : 'text-[#111111] hover:bg-[#FAF9F7]'
                     }`}
                   >
-                    <div className="flex items-center gap-2.5">
-                      <FileEdit className="w-4 h-4 stroke-[2.5]" />
-                      <span>Revisões Clientes</span>
+                    <div className="flex items-center gap-2.5 min-w-0 text-left">
+                      <FileEdit className="w-4 h-4 stroke-[2.5] shrink-0" />
+                      <span className="block text-left leading-tight">Revisões Clientes</span>
                     </div>
                     {pendingAdjustmentsCount > 0 ? (
-                      <span className="text-[10px] px-2 py-0.5 rounded-full font-black bg-rose-600 text-white shadow-sm">
+                      <span className="text-[10px] px-2 py-0.5 rounded-full font-black bg-rose-600 text-white shadow-sm shrink-0">
                         {pendingAdjustmentsCount}
                       </span>
                     ) : (
-                      <span className="text-[10px] px-2 py-0.5 rounded-full font-black bg-[#FAF9F7] border border-[#DCD6CC] text-[#66635D]">
+                      <span className="text-[10px] px-2 py-0.5 rounded-full font-black bg-[#FAF9F7] border border-[#DCD6CC] text-[#66635D] shrink-0">
                         Ajustes
                       </span>
                     )}
@@ -731,17 +731,17 @@ export default function AdminDashboardPage() {
                       setActiveView('financial');
                       setSidebarOpen(false);
                     }}
-                    className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-black uppercase tracking-wider transition-all ${
+                    className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-black uppercase tracking-wider transition-all text-left ${
                       activeView === 'financial'
                         ? 'btn-vb-primary shadow-md'
                         : 'text-[#111111] hover:bg-[#FAF9F7]'
                     }`}
                   >
-                    <div className="flex items-center gap-2.5">
-                      <DollarSign className="w-4 h-4 stroke-[2.5]" />
-                      <span>Financeiro</span>
+                    <div className="flex items-center gap-2.5 min-w-0 text-left">
+                      <DollarSign className="w-4 h-4 stroke-[2.5] shrink-0" />
+                      <span className="block text-left leading-tight">Financeiro</span>
                     </div>
-                    <span className="text-[10px] px-2 py-0.5 rounded-full font-black bg-[#FAF9F7] border border-[#DCD6CC] text-[#66635D]">
+                    <span className="text-[10px] px-2 py-0.5 rounded-full font-black bg-[#FAF9F7] border border-[#DCD6CC] text-[#66635D] shrink-0">
                       Planilha
                     </span>
                   </button>
@@ -751,17 +751,17 @@ export default function AdminDashboardPage() {
                       setActiveView('clients');
                       setSidebarOpen(false);
                     }}
-                    className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-black uppercase tracking-wider transition-all ${
+                    className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-black uppercase tracking-wider transition-all text-left ${
                       activeView === 'clients'
                         ? 'btn-vb-primary shadow-md'
                         : 'text-[#111111] hover:bg-[#FAF9F7]'
                     }`}
                   >
-                    <div className="flex items-center gap-2.5">
-                      <Users className="w-4 h-4 stroke-[2.5]" />
-                      <span>Clientes</span>
+                    <div className="flex items-center gap-2.5 min-w-0 text-left">
+                      <Users className="w-4 h-4 stroke-[2.5] shrink-0" />
+                      <span className="block text-left leading-tight">Clientes</span>
                     </div>
-                    <span className="text-[10px] px-2 py-0.5 rounded-full font-black bg-[#FAF9F7] border border-[#DCD6CC] text-[#66635D]">
+                    <span className="text-[10px] px-2 py-0.5 rounded-full font-black bg-[#FAF9F7] border border-[#DCD6CC] text-[#66635D] shrink-0">
                       {clients.length}
                     </span>
                   </button>
@@ -866,18 +866,18 @@ export default function AdminDashboardPage() {
               <nav className="space-y-1.5">
                 <button
                   onClick={() => setActiveView('demands')}
-                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-black uppercase tracking-wider transition-all ${
+                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-black uppercase tracking-wider transition-all text-left ${
                     activeView === 'demands'
                       ? 'btn-vb-primary shadow-md'
                       : 'text-[#111111] hover:bg-[#FAF9F7]'
                   }`}
                 >
-                  <div className="flex items-center gap-2.5">
-                    <Kanban className="w-4 h-4 stroke-[2.5]" />
-                    <span>Quadros</span>
+                  <div className="flex items-center gap-2.5 min-w-0 text-left">
+                    <Kanban className="w-4 h-4 stroke-[2.5] shrink-0" />
+                    <span className="block text-left leading-tight">Quadros</span>
                   </div>
                   <span
-                    className={`text-[10px] px-2 py-0.5 rounded-full font-black ${
+                    className={`text-[10px] px-2 py-0.5 rounded-full font-black shrink-0 ${
                       activeView === 'demands'
                         ? 'bg-white/20 text-white'
                         : 'bg-[#FAF9F7] border border-[#DCD6CC] text-[#66635D]'
@@ -889,23 +889,23 @@ export default function AdminDashboardPage() {
 
                 <button
                   onClick={() => setActiveView('reviews')}
-                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-black uppercase tracking-wider transition-all ${
+                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-black uppercase tracking-wider transition-all text-left ${
                     activeView === 'reviews'
                       ? 'btn-vb-primary shadow-md'
                       : 'text-[#111111] hover:bg-[#FAF9F7]'
                   }`}
                 >
-                  <div className="flex items-center gap-2.5">
-                    <FileEdit className="w-4 h-4 stroke-[2.5]" />
-                    <span>Revisões dos Clientes</span>
+                  <div className="flex items-center gap-2.5 min-w-0 text-left">
+                    <FileEdit className="w-4 h-4 stroke-[2.5] shrink-0" />
+                    <span className="block text-left leading-tight">Revisões dos Clientes</span>
                   </div>
                   {pendingAdjustmentsCount > 0 ? (
-                    <span className="text-[10px] px-2 py-0.5 rounded-full font-black bg-rose-600 text-white shadow-sm">
+                    <span className="text-[10px] px-2 py-0.5 rounded-full font-black bg-rose-600 text-white shadow-sm shrink-0">
                       {pendingAdjustmentsCount}
                     </span>
                   ) : (
                     <span
-                      className={`text-[10px] px-2 py-0.5 rounded-full font-black ${
+                      className={`text-[10px] px-2 py-0.5 rounded-full font-black shrink-0 ${
                         activeView === 'reviews'
                           ? 'bg-white/20 text-white'
                           : 'bg-[#FAF9F7] border border-[#DCD6CC] text-[#66635D]'
@@ -918,18 +918,18 @@ export default function AdminDashboardPage() {
 
                 <button
                   onClick={() => setActiveView('financial')}
-                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-black uppercase tracking-wider transition-all ${
+                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-black uppercase tracking-wider transition-all text-left ${
                     activeView === 'financial'
                       ? 'btn-vb-primary shadow-md'
                       : 'text-[#111111] hover:bg-[#FAF9F7]'
                   }`}
                 >
-                  <div className="flex items-center gap-2.5">
-                    <DollarSign className="w-4 h-4 stroke-[2.5]" />
-                    <span>Controle Financeiro</span>
+                  <div className="flex items-center gap-2.5 min-w-0 text-left">
+                    <DollarSign className="w-4 h-4 stroke-[2.5] shrink-0" />
+                    <span className="block text-left leading-tight">Controle Financeiro</span>
                   </div>
                   <span
-                    className={`text-[10px] px-2 py-0.5 rounded-full font-black ${
+                    className={`text-[10px] px-2 py-0.5 rounded-full font-black shrink-0 ${
                       activeView === 'financial'
                         ? 'bg-white/20 text-white'
                         : 'bg-[#FAF9F7] border border-[#DCD6CC] text-[#66635D]'
@@ -941,18 +941,18 @@ export default function AdminDashboardPage() {
 
                 <button
                   onClick={() => setActiveView('clients')}
-                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-black uppercase tracking-wider transition-all ${
+                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-black uppercase tracking-wider transition-all text-left ${
                     activeView === 'clients'
                       ? 'btn-vb-primary shadow-md'
                       : 'text-[#111111] hover:bg-[#FAF9F7]'
                   }`}
                 >
-                  <div className="flex items-center gap-2.5">
-                    <Users className="w-4 h-4 stroke-[2.5]" />
-                    <span>Clientes</span>
+                  <div className="flex items-center gap-2.5 min-w-0 text-left">
+                    <Users className="w-4 h-4 stroke-[2.5] shrink-0" />
+                    <span className="block text-left leading-tight">Clientes</span>
                   </div>
                   <span
-                    className={`text-[10px] px-2 py-0.5 rounded-full font-black ${
+                    className={`text-[10px] px-2 py-0.5 rounded-full font-black shrink-0 ${
                       activeView === 'clients'
                         ? 'bg-white/20 text-white'
                         : 'bg-[#FAF9F7] border border-[#DCD6CC] text-[#66635D]'
