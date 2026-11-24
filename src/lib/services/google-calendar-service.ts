@@ -443,6 +443,10 @@ function expandSimpleRecurrence(
   return results;
 }
 
+function toNoonUtcIso(d: Date): string {
+  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 12, 0, 0)).toISOString();
+}
+
 export async function getAgencyUnifiedEvents(rangeStart: Date, rangeEnd: Date): Promise<CalendarEventItem[]> {
   const unified: CalendarEventItem[] = [];
 
@@ -464,12 +468,13 @@ export async function getAgencyUnifiedEvents(rangeStart: Date, rangeEnd: Date): 
 
     for (const p of posts) {
       if (!p.scheduledDate) continue;
+      const iso = toNoonUtcIso(p.scheduledDate);
       unified.push({
         id: `post_${p.id}`,
         title: `Post: ${p.title}`,
         description: `Cliente: ${p.client?.name || 'Cliente'} • Formato: ${p.format} • Status: ${p.status}`,
-        start: p.scheduledDate.toISOString(),
-        end: p.scheduledDate.toISOString(),
+        start: iso,
+        end: iso,
         allDay: true,
         source: 'post',
         sourceLabel: 'Post Agendado',
@@ -497,12 +502,13 @@ export async function getAgencyUnifiedEvents(rangeStart: Date, rangeEnd: Date): 
 
     for (const d of demands) {
       if (!d.dueDate) continue;
+      const iso = toNoonUtcIso(d.dueDate);
       unified.push({
         id: `demand_${d.id}`,
         title: `Prazo: ${d.title}`,
         description: d.description || (d.client?.name ? `Cliente: ${d.client.name}` : 'Demanda interna da agência'),
-        start: d.dueDate.toISOString(),
-        end: d.dueDate.toISOString(),
+        start: iso,
+        end: iso,
         allDay: true,
         source: 'demand',
         sourceLabel: 'Prazo Demanda',
@@ -529,12 +535,13 @@ export async function getAgencyUnifiedEvents(rangeStart: Date, rangeEnd: Date): 
 
     for (const s of scripts) {
       if (!s.recordingDate) continue;
+      const iso = toNoonUtcIso(s.recordingDate);
       unified.push({
         id: `rec_${s.id}`,
         title: `Captação: ${s.title}`,
         description: `Cliente: ${s.client?.name || 'Cliente'} • Status: ${s.status}`,
-        start: s.recordingDate.toISOString(),
-        end: s.recordingDate.toISOString(),
+        start: iso,
+        end: iso,
         allDay: true,
         source: 'recording',
         sourceLabel: 'Captação',

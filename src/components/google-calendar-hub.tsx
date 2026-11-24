@@ -52,7 +52,10 @@ const COLOR_OPTIONS = [
   { label: 'Preto', value: '#111111' },
 ];
 
-function getBrazilDateParts(isoString: string): {
+function getBrazilDateParts(
+  isoString: string,
+  allDay = false
+): {
   year: number;
   month: number; // 1-12
   day: number; // 1-31
@@ -60,6 +63,22 @@ function getBrazilDateParts(isoString: string): {
   dateKey: string; // YYYY-MM-DD
 } {
   const date = new Date(isoString);
+
+  // Para eventos de dia inteiro (posts, demandas, captações ou all-day do Google),
+  // preserva o dia calendário UTC exato sem deslocar para o dia anterior no fuso -03:00
+  if (allDay || (date.getUTCHours() === 0 && date.getUTCMinutes() === 0)) {
+    const year = date.getUTCFullYear();
+    const month = date.getUTCMonth() + 1;
+    const day = date.getUTCDate();
+    return {
+      year,
+      month,
+      day,
+      timeLabel: '00:00',
+      dateKey: `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`,
+    };
+  }
+
   const parts = new Intl.DateTimeFormat('en-CA', {
     timeZone: 'America/Sao_Paulo',
     year: 'numeric',
@@ -171,7 +190,7 @@ export function GoogleCalendarHub() {
   const eventsByDateKey = useMemo(() => {
     const map: Record<string, CalendarEventItem[]> = {};
     for (const ev of filteredEvents) {
-      const { dateKey } = getBrazilDateParts(ev.start);
+      const { dateKey } = getBrazilDateParts(ev.start, ev.allDay);
       if (!map[dateKey]) map[dateKey] = [];
       map[dateKey].push(ev);
     }
@@ -647,7 +666,7 @@ export function GoogleCalendarHub() {
 
                       <div className="space-y-1 mt-1 w-full overflow-hidden">
                         {dayEvents.slice(0, 3).map((ev) => {
-                          const { timeLabel } = getBrazilDateParts(ev.start);
+                          const { timeLabel } = getBrazilDateParts(ev.start, ev.allDay);
                           return (
                             <div
                               key={ev.id}
@@ -709,8 +728,8 @@ export function GoogleCalendarHub() {
                   </div>
                 ) : (
                   selectedDayEvents.map((ev) => {
-                    const startParts = getBrazilDateParts(ev.start);
-                    const endParts = getBrazilDateParts(ev.end);
+                    const startParts = getBrazilDateParts(ev.start, ev.allDay);
+                    const endParts = getBrazilDateParts(ev.end, ev.allDay);
 
                     return (
                       <div
@@ -800,8 +819,8 @@ export function GoogleCalendarHub() {
           ) : (
             <div className="space-y-3">
               {upcomingEvents.map((ev) => {
-                const startParts = getBrazilDateParts(ev.start);
-                const endParts = getBrazilDateParts(ev.end);
+                const startParts = getBrazilDateParts(ev.start, ev.allDay);
+                const endParts = getBrazilDateParts(ev.end, ev.allDay);
                 return (
                   <div
                     key={ev.id}
