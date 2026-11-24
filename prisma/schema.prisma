@@ -31,6 +31,7 @@ model Client {
   updatedAt DateTime @updatedAt
 
   posts     Post[]
+  demands   Demand[]
 
   @@map("clients")
 }
@@ -88,4 +89,37 @@ model Comment {
   updatedAt        DateTime @updatedAt
 
   @@map("comments")
+}
+
+model DemandColumn {
+  id        String   @id @default(cuid())
+  title     String
+  slug      String   @unique
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  demands   Demand[]
+
+  @@map("demand_columns")
+}
+
+model Demand {
+  id          String        @id @default(cuid())
+  title       String
+  description String?       @db.Text
+  columnId    String
+  column      DemandColumn  @relation(fields: [columnId], references: [id], onDelete: Cascade)
+  order       Int           @default(0)
+  dueDate     DateTime?
+  completed   Boolean       @default(false)
+  priority    String        @default("NORMAL") // "BAIXA", "NORMAL", "ALTA", "URGENTE"
+
+  clientId    String?
+  client      Client?       @relation(fields: [clientId], references: [id], onDelete: SetNull)
+
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@map("demands")
 }

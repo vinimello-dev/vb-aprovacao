@@ -26,8 +26,15 @@ import {
   Link as LinkIcon,
   Send,
   MessageCircle,
+  Kanban,
+  LayoutDashboard,
+  Menu,
+  ChevronLeft,
+  ChevronRight,
+  FolderKanban,
 } from 'lucide-react';
 import { generateSlug, generatePin, formatDate, parseMediaUrl, parseThumbnailUrl } from '@/lib/utils';
+import { DemandsBoard } from '@/components/demands-board';
 
 interface ClientItem {
   id: string;
@@ -47,6 +54,10 @@ export default function AdminDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [isUsingFallback, setIsUsingFallback] = useState(false);
   const [search, setSearch] = useState('');
+
+  // Visualização Ativa: 'demands' (Quadro estilo Trello) ou 'clients' (Gestão de Clientes)
+  const [activeView, setActiveView] = useState<'demands' | 'clients'>('demands');
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
   // Modal Novo Cliente State
   const [modalOpen, setModalOpen] = useState(false);
@@ -314,8 +325,16 @@ export default function AdminDashboardPage() {
 
       {/* Header Superior da Agência */}
       <header className="border-b border-[#DCD6CC] bg-white sticky top-0 z-30 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+        <div className="max-w-[1700px] mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
           <div className="flex items-center gap-4">
+            <button
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              className="p-2 hover:bg-[#FAF9F7] text-[#111111] hover:text-[#FD3100] rounded-2xl border border-[#DCD6CC] transition-colors"
+              title={sidebarOpen ? 'Recolher menu lateral' : 'Expandir menu lateral'}
+            >
+              <Menu className="w-5 h-5" />
+            </button>
+
             <div className="h-14 flex items-center justify-center">
               <img
                 src="/logo-vb.png?v=4"
@@ -323,7 +342,7 @@ export default function AdminDashboardPage() {
                 className="h-14 w-auto object-contain"
               />
             </div>
-            <div>
+            <div className="hidden sm:block">
               <div className="flex items-center gap-2">
                 <span className="font-black text-xl text-[#111111] tracking-tight uppercase">
                   VB <span style={{ color: '#FD3100' }}>APROVAÇÃO</span>
@@ -341,11 +360,34 @@ export default function AdminDashboardPage() {
             </div>
           </div>
 
+          {/* Seletores de Visão: Quadro de Demandas (Trello) vs Clientes */}
+          <div className="flex items-center bg-[#FAF9F7] p-1.5 rounded-2xl border-2 border-[#DCD6CC] shadow-sm text-xs font-black uppercase">
+            <button
+              onClick={() => setActiveView('demands')}
+              style={activeView === 'demands' ? { backgroundColor: '#FD3100', color: '#FFFFFF' } : { color: '#111111' }}
+              className="flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-xl transition-all font-black"
+              title="Quadro de Demandas estilo Trello"
+            >
+              <Kanban className="w-4 h-4 stroke-[2.5]" />
+              <span className="hidden sm:inline">Quadro de</span> Demandas
+            </button>
+
+            <button
+              onClick={() => setActiveView('clients')}
+              style={activeView === 'clients' ? { backgroundColor: '#FD3100', color: '#FFFFFF' } : { color: '#111111' }}
+              className="flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-xl transition-all font-black"
+              title="Clientes Cadastrados e Links de Portais"
+            >
+              <Users className="w-4 h-4 stroke-[2.5]" />
+              <span>Clientes ({clients.length})</span>
+            </button>
+          </div>
+
           <div className="flex items-center gap-3">
             {isUsingFallback ? (
               <div
                 title="PostgreSQL ainda não conectado localmente. Dados em memória temporária para testes."
-                className="hidden md:flex items-center gap-1.5 px-3 py-1 bg-amber-50 border border-amber-200 rounded-full text-xs font-bold text-amber-800"
+                className="hidden xl:flex items-center gap-1.5 px-3 py-1 bg-amber-50 border border-amber-200 rounded-full text-xs font-bold text-amber-800"
               >
                 <Database className="w-3.5 h-3.5 text-amber-600" />
                 <span>Modo Local / Teste</span>
@@ -353,7 +395,7 @@ export default function AdminDashboardPage() {
             ) : (
               <div
                 title="PostgreSQL conectado com sucesso via Prisma ORM."
-                className="hidden md:flex items-center gap-1.5 px-3 py-1 bg-emerald-50 border border-emerald-200 rounded-full text-xs font-bold text-emerald-800"
+                className="hidden xl:flex items-center gap-1.5 px-3 py-1 bg-emerald-50 border border-emerald-200 rounded-full text-xs font-bold text-emerald-800"
               >
                 <Database className="w-3.5 h-3.5 text-emerald-600" />
                 <span>PostgreSQL Ativo</span>
@@ -362,7 +404,7 @@ export default function AdminDashboardPage() {
 
             <button
               onClick={handleLogout}
-              className="btn-vb-secondary flex items-center gap-2 px-4 py-2 rounded-2xl text-xs font-bold transition-all shadow-sm"
+              className="btn-vb-secondary flex items-center gap-2 px-3.5 py-2 rounded-2xl text-xs font-bold transition-all shadow-sm"
             >
               <LogOut className="w-3.5 h-3.5" style={{ color: '#FD3100' }} />
               <span className="text-[#111111]">Sair</span>
@@ -371,9 +413,161 @@ export default function AdminDashboardPage() {
         </div>
       </header>
 
-      {/* Conteúdo Principal */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 flex-1 w-full">
-        {/* Banner de Boas-vindas e Ação Principal */}
+      {/* Conteúdo Principal com Sidebar Integrada */}
+      <div className="flex-1 flex w-full max-w-[1700px] mx-auto px-4 sm:px-6 lg:px-8 py-6 gap-6">
+        {/* SIDEBAR ESTILO TRELLO (IMAGEM 3) */}
+        {sidebarOpen && (
+          <aside className="w-64 sm:w-72 shrink-0 bg-white border-2 border-[#DCD6CC] rounded-3xl p-5 shadow-sm flex flex-col justify-between hidden lg:flex h-[calc(100vh-140px)] sticky top-24">
+            <div className="space-y-6 overflow-y-auto pr-1">
+              {/* Topo da Sidebar: Área da Agência */}
+              <div className="flex items-center gap-3 pb-4 border-b border-[#EEEDEA]">
+                <div
+                  style={{ backgroundColor: '#FD3100', color: '#FFFFFF' }}
+                  className="w-10 h-10 rounded-2xl flex items-center justify-center font-black shadow-md shrink-0 text-base"
+                >
+                  VB
+                </div>
+                <div className="min-w-0">
+                  <h4 className="font-black text-sm text-[#111111] truncate uppercase">
+                    Área VB Agência
+                  </h4>
+                  <span className="text-[10px] font-bold text-[#66635D] flex items-center gap-1">
+                    Painel Integrado
+                  </span>
+                </div>
+              </div>
+
+              {/* Menu Principal de Navegação */}
+              <nav className="space-y-1.5">
+                <button
+                  onClick={() => setActiveView('demands')}
+                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-black uppercase tracking-wider transition-all ${
+                    activeView === 'demands'
+                      ? 'bg-[#FD3100] text-white shadow-md'
+                      : 'text-[#111111] hover:bg-[#FAF9F7]'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Kanban className="w-4 h-4 stroke-[2.5]" />
+                    <span>Quadros</span>
+                  </div>
+                  <span
+                    className={`text-[10px] px-2 py-0.5 rounded-full font-black ${
+                      activeView === 'demands'
+                        ? 'bg-white/20 text-white'
+                        : 'bg-[#FAF9F7] border border-[#DCD6CC] text-[#66635D]'
+                    }`}
+                  >
+                    Trello
+                  </span>
+                </button>
+
+                <button
+                  onClick={() => setActiveView('clients')}
+                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-black uppercase tracking-wider transition-all ${
+                    activeView === 'clients'
+                      ? 'bg-[#FD3100] text-white shadow-md'
+                      : 'text-[#111111] hover:bg-[#FAF9F7]'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Users className="w-4 h-4 stroke-[2.5]" />
+                    <span>Clientes</span>
+                  </div>
+                  <span
+                    className={`text-[10px] px-2 py-0.5 rounded-full font-black ${
+                      activeView === 'clients'
+                        ? 'bg-white/20 text-white'
+                        : 'bg-[#FAF9F7] border border-[#DCD6CC] text-[#66635D]'
+                    }`}
+                  >
+                    {clients.length}
+                  </span>
+                </button>
+              </nav>
+
+              {/* Seção de Clientes Ativos na Sidebar */}
+              <div className="pt-4 border-t border-[#EEEDEA]">
+                <div className="flex items-center justify-between mb-2 px-1">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-[#66635D]">
+                    Seus Clientes ({clients.length})
+                  </span>
+                  <button
+                    onClick={handleOpenModal}
+                    className="p-1 hover:bg-[#FAF9F7] text-[#FD3100] rounded-lg transition-colors"
+                    title="Cadastrar novo cliente"
+                  >
+                    <Plus className="w-3.5 h-3.5 stroke-[3]" />
+                  </button>
+                </div>
+
+                <div className="space-y-1 max-h-56 overflow-y-auto pr-1">
+                  {clients.map((c) => (
+                    <div
+                      key={c.id}
+                      className="flex items-center justify-between p-2 rounded-xl hover:bg-[#FAF9F7] group transition-all text-xs"
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <div className="w-6 h-6 rounded-lg overflow-hidden border border-[#DCD6CC] bg-white flex items-center justify-center shrink-0">
+                          {c.logoUrl ? (
+                            <img src={c.logoUrl} alt="" className="w-full h-full object-cover" />
+                          ) : (
+                            <span className="text-[10px] font-black text-[#FD3100]">
+                              {c.name.slice(0, 2).toUpperCase()}
+                            </span>
+                          )}
+                        </div>
+                        <span className="font-bold text-[#111111] truncate">{c.name}</span>
+                      </div>
+
+                      <a
+                        href={`/c/${c.slug}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-[#66635D] hover:text-[#FD3100] opacity-0 group-hover:opacity-100 transition-opacity p-1"
+                        title="Abrir portal do cliente"
+                      >
+                        <ExternalLink className="w-3 h-3" />
+                      </a>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Ações Rápidas no Rodapé da Sidebar */}
+            <div className="pt-4 border-t border-[#EEEDEA] space-y-2">
+              <button
+                onClick={() => handleOpenPostModal()}
+                style={{ backgroundColor: '#111111', color: '#FFFFFF' }}
+                className="w-full py-2.5 px-3 rounded-2xl text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 shadow-sm hover:bg-black transition-all"
+              >
+                <Video className="w-3.5 h-3.5" style={{ color: '#FD3100' }} />
+                <span>+ Novo Post</span>
+              </button>
+
+              <button
+                onClick={handleOpenModal}
+                style={{ backgroundColor: '#FD3100', color: '#FFFFFF' }}
+                className="btn-vb-primary w-full py-2.5 px-3 rounded-2xl text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 shadow-sm transition-all"
+              >
+                <Plus className="w-3.5 h-3.5 stroke-[3]" />
+                <span>+ Novo Cliente</span>
+              </button>
+            </div>
+          </aside>
+        )}
+
+        {/* ÁREA DE CONTEÚDO PRINCIPAL */}
+        <main className="flex-1 min-w-0">
+          {activeView === 'demands' ? (
+            <DemandsBoard
+              clients={clients}
+              onOpenCreatePostModal={handleOpenPostModal}
+            />
+          ) : (
+            <div>
+              {/* Banner de Boas-vindas e Ação Principal */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
           <div>
             <div className="flex items-center gap-2 text-xs font-black uppercase tracking-widest mb-1" style={{ color: '#FD3100' }}>
@@ -684,7 +878,10 @@ export default function AdminDashboardPage() {
             })}
           </div>
         )}
-      </main>
+            </div>
+          )}
+        </main>
+      </div>
 
       {/* MODAL 1: Criação de Novo Post (Google Drive / Vídeo / Carrossel) */}
       {postModalOpen && (
