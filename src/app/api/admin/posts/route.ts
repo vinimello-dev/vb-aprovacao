@@ -11,7 +11,7 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json();
-    const { clientId, title, caption, format, scheduledDate, mediaUrls, thumbnailUrl } = body;
+    const { clientId, cycleId, title, caption, format, scheduledDate, mediaUrls, thumbnailUrl } = body;
 
     if (!clientId || !title) {
       return NextResponse.json(
@@ -41,6 +41,7 @@ export async function POST(request: Request) {
 
     const post = await createPost({
       clientId,
+      cycleId: cycleId || null,
       title,
       caption,
       format: format || 'VIDEO',

@@ -22,16 +22,28 @@ enum PostStatus {
 }
 
 model Client {
-  id        String   @id @default(cuid())
-  name      String
-  slug      String   @unique
-  pin       String   // PIN de 4 dígitos
-  logoUrl   String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  pin         String   // PIN de 4 dígitos
+  logoUrl     String?
+  
+  // Dados Cadastrais & CRM do Cliente
+  phone       String?  // Telefone / WhatsApp de contato
+  cnpj        String?  // CNPJ ou CPF
+  email       String?  // E-mail comercial
+  responsible String?  // Nome do Responsável / Decisor
+  instagram   String?  // @ do perfil no Instagram
+  notes       String?  @db.Text // Observações e preferências do cliente
 
-  posts     Post[]
-  demands   Demand[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  posts       Post[]
+  demands     Demand[]
+  cycles      ClientCycle[]
+  scripts     RecordingScript[]
+  documents   ClientDocument[]
 
   @@map("clients")
 }
@@ -41,6 +53,9 @@ model Post {
   clientId      String
   client        Client      @relation(fields: [clientId], references: [id], onDelete: Cascade)
   
+  cycleId       String?
+  cycle         ClientCycle? @relation(fields: [cycleId], references: [id], onDelete: SetNull)
+
   title         String
   caption       String?     @db.Text // Legenda do post
   format        PostFormat  @default(STATIC)
@@ -122,4 +137,59 @@ model Demand {
   updatedAt   DateTime      @updatedAt
 
   @@map("demands")
+}
+
+// 1. Ciclos de Entrega / Meses de Planejamento (Imagem 1)
+model ClientCycle {
+  id          String    @id @default(cuid())
+  clientId    String
+  client      Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  
+  name        String    // Ex: "Ciclo 11 - Novembro 2026", "Entrega Teste"
+  month       Int?      // 1 a 12
+  year        Int?      // Ex: 2026
+  active      Boolean   @default(true)
+  
+  posts       Post[]
+  
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@map("client_cycles")
+}
+
+// 2. Roteiros de Gravação de Cada Captação (Imagem 2)
+model RecordingScript {
+  id            String    @id @default(cuid())
+  clientId      String
+  client        Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  
+  title         String    // Ex: "Captação 01 - Roteiro Reels Institucional"
+  recordingDate DateTime? // Data agendada da captação
+  hook          String?   @db.Text // Gancho / Primeiros 3 segundos
+  content       String    @db.Text // Roteiro completo / Cenas / Falas
+  status        String    @default("A_GRAVAR") // "A_GRAVAR", "GRAVADO", "EM_EDICAO", "FINALIZADO"
+  scenesCount   Int?      @default(1)
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@map("recording_scripts")
+}
+
+// 3. Documentos e Contratos do Cliente (Imagem 2)
+model ClientDocument {
+  id          String   @id @default(cuid())
+  clientId    String
+  client      Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  
+  title       String   // Ex: "Contrato Anual de Gestão 2026", "Manual de Marca"
+  type        String   @default("CONTRATO") // "CONTRATO", "BRIEFING", "IDENTIDADE_VISUAL", "OUTRO"
+  fileUrl     String   @db.Text // Link Google Drive, DocuSign, PDF
+  notes       String?  @db.Text
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("client_documents")
 }

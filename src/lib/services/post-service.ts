@@ -28,6 +28,7 @@ export interface CommentData {
 export interface PostData {
   id: string;
   clientId: string;
+  cycleId?: string | null;
   title: string;
   caption?: string | null;
   format: 'VIDEO' | 'CAROUSEL' | 'STATIC' | 'REELS' | 'STORIES';
@@ -207,6 +208,7 @@ export async function getPostById(postId: string): Promise<PostData | null> {
 
 export async function createPost(data: {
   clientId: string;
+  cycleId?: string | null;
   title: string;
   caption?: string;
   format: 'VIDEO' | 'CAROUSEL' | 'STATIC' | 'REELS' | 'STORIES';
@@ -217,6 +219,7 @@ export async function createPost(data: {
     const post = await prisma.post.create({
       data: {
         clientId: data.clientId,
+        cycleId: data.cycleId || null,
         title: data.title,
         caption: data.caption || null,
         format: data.format,

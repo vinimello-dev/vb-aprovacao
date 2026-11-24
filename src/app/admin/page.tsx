@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import {
   Users,
   Plus,
@@ -507,7 +508,11 @@ export default function AdminDashboardPage() {
                       key={c.id}
                       className="flex items-center justify-between p-2 rounded-xl hover:bg-[#FAF9F7] group transition-all text-xs"
                     >
-                      <div className="flex items-center gap-2 min-w-0">
+                      <Link
+                        href={`/admin/clients/${c.id}`}
+                        className="flex items-center gap-2 min-w-0 flex-1 hover:text-[#FD3100] transition-colors"
+                        title="Abrir Gestão, Ciclos e Roteiros deste Cliente"
+                      >
                         <div className="w-6 h-6 rounded-lg overflow-hidden border border-[#DCD6CC] bg-white flex items-center justify-center shrink-0">
                           {c.logoUrl ? (
                             <img src={c.logoUrl} alt="" className="w-full h-full object-cover" />
@@ -517,14 +522,14 @@ export default function AdminDashboardPage() {
                             </span>
                           )}
                         </div>
-                        <span className="font-bold text-[#111111] truncate">{c.name}</span>
-                      </div>
+                        <span className="font-bold truncate">{c.name}</span>
+                      </Link>
 
                       <a
                         href={`/c/${c.slug}`}
                         target="_blank"
                         rel="noreferrer"
-                        className="text-[#66635D] hover:text-[#FD3100] opacity-0 group-hover:opacity-100 transition-opacity p-1"
+                        className="text-[#66635D] hover:text-[#FD3100] opacity-0 group-hover:opacity-100 transition-opacity p-1 shrink-0"
                         title="Abrir portal do cliente"
                       >
                         <ExternalLink className="w-3 h-3" />
@@ -862,16 +867,14 @@ export default function AdminDashboardPage() {
                       <ExternalLink className="w-3.5 h-3.5" style={{ color: '#FD3100' }} />
                     </a>
 
-                    <a
-                      href={`/c/${client.slug}`}
-                      target="_blank"
-                      rel="noreferrer"
+                    <Link
+                      href={`/admin/clients/${client.id}`}
                       style={{ backgroundColor: '#FD3100', color: '#FFFFFF' }}
                       className="btn-vb-primary flex-1 py-3 px-3 rounded-2xl text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all shadow-md"
                     >
-                      <span>Ver Planejamento</span>
+                      <span>Gerenciar Cliente</span>
                       <ArrowUpRight className="w-3.5 h-3.5 stroke-[3]" />
-                    </a>
+                    </Link>
                   </div>
                 </div>
               );
