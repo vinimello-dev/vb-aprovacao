@@ -415,13 +415,14 @@ export default function AdminDashboardPage() {
       <div className="h-1.5 bg-[#FD3100] w-full" />
 
       {/* Header Superior da Agência */}
-      <header className="border-b border-[#DCD6CC] bg-white sticky top-0 z-30 shadow-sm">
-        <div className="max-w-[1700px] mx-auto px-3 sm:px-6 lg:px-8 h-16 sm:h-20 flex items-center justify-between gap-2">
+      <header className="border-b border-[#DCD6CC] bg-white sticky top-0 z-30 shadow-sm w-full max-w-full">
+        {/* Linha 1: Desktop tudo em uma linha / Mobile Linha Superior (Logo, Menu, Ações) */}
+        <div className="max-w-[1700px] mx-auto px-3 sm:px-6 lg:px-8 h-14 sm:h-20 flex items-center justify-between gap-2">
           {/* Esquerda: Menu lateral + Logo */}
           <div className="flex items-center gap-2 sm:gap-4 shrink-0">
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="p-2 hover:bg-[#FAF9F7] text-[#111111] hover:text-[#FD3100] rounded-xl sm:rounded-2xl border border-[#DCD6CC] transition-colors"
+              className="p-2 hover:bg-[#FAF9F7] text-[#111111] hover:text-[#FD3100] rounded-xl sm:rounded-2xl border border-[#DCD6CC] transition-colors shrink-0"
               title={sidebarOpen ? 'Recolher menu lateral' : 'Expandir menu lateral'}
             >
               <Menu className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -452,34 +453,34 @@ export default function AdminDashboardPage() {
             </div>
           </div>
 
-          {/* Seletores de Visão: Quadro de Demandas (Trello) vs Revisões dos Clientes vs Clientes */}
-          <div className="flex items-center bg-[#FAF9F7] p-1 rounded-xl sm:rounded-2xl border-2 border-[#DCD6CC] shadow-sm text-[11px] sm:text-xs font-black uppercase">
+          {/* Seletores de Visão Desktop (escondidos em telas menores, visíveis a partir de lg) */}
+          <div className="hidden lg:flex items-center bg-[#FAF9F7] p-1 rounded-2xl border-2 border-[#DCD6CC] shadow-sm text-xs font-black uppercase">
             <button
               onClick={() => setActiveView('demands')}
-              className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3.5 py-1.5 sm:py-2 rounded-lg sm:rounded-xl transition-all font-black ${
+              className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl transition-all font-black shrink-0 ${
                 activeView === 'demands'
                   ? 'btn-vb-primary shadow-sm'
                   : 'text-[#111111] hover:bg-[#EEEDEA]'
               }`}
               title="Quadro de Demandas estilo Trello"
             >
-              <Kanban className="w-3.5 sm:w-4 h-3.5 sm:h-4 stroke-[2.5]" />
+              <Kanban className="w-4 h-4 stroke-[2.5]" />
               <span className="truncate">Demandas</span>
             </button>
 
             <button
               onClick={() => setActiveView('reviews')}
-              className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg sm:rounded-xl transition-all font-black ${
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl transition-all font-black shrink-0 ${
                 activeView === 'reviews'
                   ? 'btn-vb-primary shadow-sm'
                   : 'text-[#111111] hover:bg-[#EEEDEA]'
               }`}
               title="Central de Revisões dos Clientes"
             >
-              <FileEdit className="w-3.5 sm:w-4 h-3.5 sm:h-4 stroke-[2.5]" />
+              <FileEdit className="w-4 h-4 stroke-[2.5]" />
               <span className="truncate">Revisões</span>
               {pendingAdjustmentsCount > 0 && (
-                <span className="ml-0.5 px-1.5 py-0.2 rounded-full text-[9px] sm:text-[10px] font-black bg-rose-600 text-white shadow-sm">
+                <span className="ml-1 px-1.5 py-0.2 rounded-full text-[10px] font-black bg-rose-600 text-white shadow-sm shrink-0 whitespace-nowrap">
                   {pendingAdjustmentsCount}
                 </span>
               )}
@@ -487,30 +488,30 @@ export default function AdminDashboardPage() {
 
             <button
               onClick={() => setActiveView('financial')}
-              className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg sm:rounded-xl transition-all font-black ${
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl transition-all font-black shrink-0 ${
                 activeView === 'financial'
                   ? 'btn-vb-primary shadow-sm'
                   : 'text-[#111111] hover:bg-[#EEEDEA]'
               }`}
               title="Controle Financeiro, Recebimentos e Contas a Pagar"
             >
-              <DollarSign className="w-3.5 sm:w-4 h-3.5 sm:h-4 stroke-[2.5]" />
+              <DollarSign className="w-4 h-4 stroke-[2.5]" />
               <span className="truncate">Financeiro</span>
             </button>
 
             <button
               onClick={() => setActiveView('chat')}
-              className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg sm:rounded-xl transition-all font-black ${
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl transition-all font-black shrink-0 ${
                 activeView === 'chat'
                   ? 'btn-vb-primary shadow-sm'
                   : 'text-[#111111] hover:bg-[#EEEDEA]'
               }`}
               title="Chat e Atendimento com Clientes"
             >
-              <MessageSquare className="w-3.5 sm:w-4 h-3.5 sm:h-4 stroke-[2.5]" />
+              <MessageSquare className="w-4 h-4 stroke-[2.5]" />
               <span className="truncate">Chat</span>
               {chatUnreadTotal > 0 && (
-                <span className="ml-0.5 px-1.5 py-0.2 rounded-full text-[9px] sm:text-[10px] font-black bg-rose-600 text-white shadow-sm">
+                <span className="ml-1 px-1.5 py-0.2 rounded-full text-[10px] font-black bg-rose-600 text-white shadow-sm shrink-0 whitespace-nowrap">
                   {chatUnreadTotal}
                 </span>
               )}
@@ -518,15 +519,18 @@ export default function AdminDashboardPage() {
 
             <button
               onClick={() => setActiveView('clients')}
-              className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg sm:rounded-xl transition-all font-black ${
+              className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl transition-all font-black shrink-0 ${
                 activeView === 'clients'
                   ? 'btn-vb-primary shadow-sm'
                   : 'text-[#111111] hover:bg-[#EEEDEA]'
               }`}
               title="Clientes Cadastrados e Links de Portais"
             >
-              <Users className="w-3.5 sm:w-4 h-3.5 sm:h-4 stroke-[2.5]" />
-              <span className="truncate">Clientes <span className="hidden sm:inline">({clients.length})</span></span>
+              <Users className="w-4 h-4 stroke-[2.5]" />
+              <span className="truncate">Clientes</span>
+              <span className="ml-1 px-1.5 py-0.2 rounded-full text-[9px] font-bold bg-white text-[#66635D] border border-[#DCD6CC] shrink-0 whitespace-nowrap">
+                {clients.length}
+              </span>
             </button>
           </div>
 
@@ -675,6 +679,84 @@ export default function AdminDashboardPage() {
             >
               <LogOut className="w-3.5 h-3.5 text-[#FD3100]" />
               <span className="hidden sm:inline text-[#111111]">Sair</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Linha 2 Mobile: Barra de Abas Deslizante estilo App (visível apenas em telas menores < lg) */}
+        <div className="lg:hidden w-full border-t border-[#EEEDEA] bg-white px-2 py-1.5 overflow-x-auto no-scrollbar scroll-smooth">
+          <div className="flex items-center gap-1.5 min-w-max">
+            <button
+              onClick={() => setActiveView('demands')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all shrink-0 whitespace-nowrap ${
+                activeView === 'demands'
+                  ? 'btn-vb-primary shadow-sm'
+                  : 'text-[#111111] bg-[#FAF9F7] border border-[#DCD6CC]'
+              }`}
+            >
+              <Kanban className="w-3.5 h-3.5 stroke-[2.5]" />
+              <span>Demandas</span>
+            </button>
+
+            <button
+              onClick={() => setActiveView('reviews')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all shrink-0 whitespace-nowrap ${
+                activeView === 'reviews'
+                  ? 'btn-vb-primary shadow-sm'
+                  : 'text-[#111111] bg-[#FAF9F7] border border-[#DCD6CC]'
+              }`}
+            >
+              <FileEdit className="w-3.5 h-3.5 stroke-[2.5]" />
+              <span>Revisões</span>
+              {pendingAdjustmentsCount > 0 && (
+                <span className="px-1.5 py-0.2 rounded-full text-[9px] font-black bg-rose-600 text-white shrink-0 whitespace-nowrap">
+                  {pendingAdjustmentsCount}
+                </span>
+              )}
+            </button>
+
+            <button
+              onClick={() => setActiveView('financial')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all shrink-0 whitespace-nowrap ${
+                activeView === 'financial'
+                  ? 'btn-vb-primary shadow-sm'
+                  : 'text-[#111111] bg-[#FAF9F7] border border-[#DCD6CC]'
+              }`}
+            >
+              <DollarSign className="w-3.5 h-3.5 stroke-[2.5]" />
+              <span>Financeiro</span>
+            </button>
+
+            <button
+              onClick={() => setActiveView('chat')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all shrink-0 whitespace-nowrap ${
+                activeView === 'chat'
+                  ? 'btn-vb-primary shadow-sm'
+                  : 'text-[#111111] bg-[#FAF9F7] border border-[#DCD6CC]'
+              }`}
+            >
+              <MessageSquare className="w-3.5 h-3.5 stroke-[2.5]" />
+              <span>Chat</span>
+              {chatUnreadTotal > 0 && (
+                <span className="px-1.5 py-0.2 rounded-full text-[9px] font-black bg-rose-600 text-white shrink-0 whitespace-nowrap">
+                  {chatUnreadTotal}
+                </span>
+              )}
+            </button>
+
+            <button
+              onClick={() => setActiveView('clients')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all shrink-0 whitespace-nowrap ${
+                activeView === 'clients'
+                  ? 'btn-vb-primary shadow-sm'
+                  : 'text-[#111111] bg-[#FAF9F7] border border-[#DCD6CC]'
+              }`}
+            >
+              <Users className="w-3.5 h-3.5 stroke-[2.5]" />
+              <span>Clientes</span>
+              <span className="px-1.5 py-0.2 rounded-full text-[9px] font-bold bg-white text-[#66635D] border border-[#DCD6CC] shrink-0 whitespace-nowrap">
+                {clients.length}
+              </span>
             </button>
           </div>
         </div>
@@ -1136,34 +1218,37 @@ export default function AdminDashboardPage() {
         <main className="flex-1 min-w-0">
           {/* Banner de Notificação: Alterações Solicitadas pelos Clientes */}
           {pendingAdjustmentsCount > 0 && (
-            <div className="mb-6 p-4 sm:p-5 rounded-3xl bg-gradient-to-r from-[#FFF0EC] via-white to-[#FFF0EC] border-2 border-[#FFCEBF] shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 animate-in fade-in">
-              <div className="flex items-center gap-3.5">
-                <span className="w-11 h-11 rounded-2xl bg-rose-600 text-white flex items-center justify-center text-xl font-black shadow-md shrink-0">
+            <div className="mb-6 p-3.5 sm:p-5 rounded-3xl bg-gradient-to-r from-[#FFF0EC] via-white to-[#FFF0EC] border-2 border-[#FFCEBF] shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 animate-in fade-in">
+              <div className="flex items-start sm:items-center gap-3 min-w-0">
+                <span className="w-9 h-9 sm:w-11 sm:h-11 rounded-2xl bg-rose-600 text-white flex items-center justify-center text-base sm:text-xl font-black shadow-md shrink-0">
                   🚨
                 </span>
-                <div>
-                  <h3 className="text-xs sm:text-sm font-black uppercase text-[#111111] tracking-tight flex items-center gap-2">
-                    <span>Alterações Solicitadas pelos Clientes</span>
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-rose-600 text-white shadow-sm">
-                      {pendingAdjustmentsCount} aguardando
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h3 className="text-xs sm:text-sm font-black uppercase text-[#111111] tracking-tight">
+                      Alterações Solicitadas
+                    </h3>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-rose-600 text-white shadow-sm shrink-0 whitespace-nowrap flex items-center gap-1">
+                      <span>{pendingAdjustmentsCount}</span>
+                      <span className="hidden sm:inline">aguardando</span>
                     </span>
-                  </h3>
-                  <p className="text-xs text-[#66635D] font-medium mt-0.5">
+                  </div>
+                  <p className="text-[11px] sm:text-xs text-[#66635D] font-medium mt-0.5">
                     Clientes finalizaram a revisão e deixaram comentários de ajustes. As tarefas já foram adicionadas automaticamente com alta prioridade no seu Quadro de Demandas.
                   </p>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
+              <div className="flex items-center gap-2 self-end sm:self-center shrink-0 w-full sm:w-auto">
                 <button
                   type="button"
                   onClick={() => {
                     setActiveView('reviews');
                   }}
-                  className="btn-vb-primary px-4 py-2.5 rounded-xl text-xs uppercase font-black tracking-wider flex items-center gap-2 shadow-sm"
+                  className="btn-vb-primary w-full sm:w-auto px-4 py-2 sm:py-2.5 rounded-xl text-xs uppercase font-black tracking-wider flex items-center justify-center gap-2 shadow-sm"
                 >
                   <FileEdit className="w-3.5 h-3.5" />
-                  <span>Abrir Aba de Revisões ({pendingAdjustmentsCount})</span>
+                  <span>Ver Revisões ({pendingAdjustmentsCount})</span>
                 </button>
               </div>
             </div>

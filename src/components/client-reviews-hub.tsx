@@ -155,9 +155,10 @@ export function ClientReviewsHub({
                 Central de <span style={{ color: '#FD3100' }}>Revisões dos Clientes</span>
               </h2>
               {adjustmentsCount > 0 && (
-                <span className="px-3 py-0.5 rounded-full text-xs font-black bg-rose-600 text-white shadow-sm flex items-center gap-1.5 animate-pulse">
-                  <span className="w-2 h-2 rounded-full bg-white" />
-                  {adjustmentsCount} aguardando ajustes
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] sm:text-xs font-black bg-rose-600 text-white shadow-sm flex items-center gap-1.5 animate-pulse shrink-0 whitespace-nowrap">
+                  <span className="w-1.5 h-1.5 rounded-full bg-white" />
+                  <span>{adjustmentsCount}</span>
+                  <span className="hidden sm:inline">aguardando ajustes</span>
                 </span>
               )}
             </div>

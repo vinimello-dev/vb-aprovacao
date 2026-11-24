@@ -475,13 +475,14 @@ export function DemandsBoard({ clients, onOpenCreatePostModal }: DemandsBoardPro
               📋
             </span>
             <div>
-              <h2 className="text-lg sm:text-xl font-black text-[#111111] uppercase tracking-tight flex items-center gap-2">
-                Quadro de Demandas
+              <h2 className="text-base sm:text-xl font-black text-[#111111] uppercase tracking-tight flex items-center gap-2 flex-wrap">
+                <span>Quadro de Demandas</span>
                 <span
                   style={{ backgroundColor: '#FFF0EC', color: '#FD3100', borderColor: '#FFCEBF' }}
-                  className="px-2 py-0.5 text-[10px] sm:text-[11px] font-black rounded-full border"
+                  className="px-2 py-0.5 text-[10px] font-black rounded-full border shrink-0 whitespace-nowrap flex items-center gap-1"
                 >
-                  {totalDemandsCount} abertas
+                  <span>{totalDemandsCount}</span>
+                  <span className="hidden sm:inline">abertas</span>
                 </span>
               </h2>
               <p className="text-xs text-[#66635D] font-medium">

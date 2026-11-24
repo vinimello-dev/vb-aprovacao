@@ -12,11 +12,26 @@
   --vb-dark: #111111;
 }
 
+html, body {
+  overflow-x: hidden;
+  max-width: 100vw;
+  width: 100%;
+}
+
 body {
   color: var(--foreground);
   background-color: var(--background);
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   min-height: 100vh;
+}
+
+/* Ocultar barra de rolagem em sliders horizontais mantendo a rolagem fluida */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
 /* Classes utilitárias da Marca VB: Botão Primário com Degradê Diagonal Pêssego Solar a 135° */
