@@ -115,11 +115,17 @@ html.dark .bg-\[\#F5F3EF\] {
   background-color: #0E1015 !important;
 }
 
+/* Colunas do Quadro de Demandas (estilo Trello escuro) */
+html.dark .bg-\[\#F1F2F4\] {
+  background-color: #12151D !important;
+}
+
 /* Cartões, headers, barras e modais */
 html.dark .bg-white,
 html.dark .bg-white\/95,
-html.dark .bg-white\/90 {
-  background-color: #161922 !important;
+html.dark .bg-white\/90,
+html.dark .bg-white\/80 {
+  background-color: #1A1E29 !important;
 }
 
 /* Superfícies internas, inputs e subcards */
@@ -129,7 +135,7 @@ html.dark .bg-\[\#FAF9F7\]\/50,
 html.dark .bg-\[\#FAF9F7\]\/40,
 html.dark .bg-\[\#FAF9F7\]\/30,
 html.dark .bg-\[\#F9F8F6\] {
-  background-color: #1E222E !important;
+  background-color: #202533 !important;
 }
 
 /* Destaques laranja suaves */
@@ -140,34 +146,31 @@ html.dark .bg-\[\#FFF0EC\]\/40 {
   background-color: rgba(253, 49, 0, 0.14) !important;
 }
 
-/* Gradientes claros adaptados ao modo noturno */
-html.dark .from-\[\#FFF0EC\],
-html.dark .from-\[\#FAF9F7\] {
-  --tw-gradient-from: #1F181C var(--tw-gradient-from-position) !important;
-  --tw-gradient-to: rgb(31 24 28 / 0) var(--tw-gradient-to-position) !important;
-}
-html.dark .via-white {
-  --tw-gradient-via: #161922 var(--tw-gradient-via-position) !important;
-}
-html.dark .to-white,
-html.dark .to-\[\#FFF0EC\] {
-  --tw-gradient-to: #161922 var(--tw-gradient-to-position) !important;
+/* Remove degradês claros (ex: banner Alterações Solicitadas no topo), mantendo apenas os botões laranjas (.btn-vb-primary) */
+html.dark .bg-gradient-to-r:not(.btn-vb-primary),
+html.dark .bg-gradient-to-b:not(.btn-vb-primary),
+html.dark .bg-gradient-to-br:not(.btn-vb-primary) {
+  background-image: none !important;
+  background-color: #161922 !important;
 }
 
-/* Tipografia & Contrastes */
+/* Tipografia & Contrastes (inclui cores Trello #172B4D e #626F86) */
 html.dark .text-\[\#111111\],
-html.dark .text-\[\#222222\] {
+html.dark .text-\[\#222222\],
+html.dark .text-\[\#172B4D\] {
   color: #F3F4F6 !important;
 }
 html.dark .text-\[\#66635D\],
 html.dark .text-\[\#55524C\],
 html.dark .text-\[\#4B4843\],
 html.dark .text-\[\#444\],
+html.dark .text-\[\#626F86\],
 html.dark .text-agency-muted {
   color: #A1A7B3 !important;
 }
 html.dark .text-\[\#888580\],
-html.dark .text-\[\#A9A6A0\] {
+html.dark .text-\[\#A9A6A0\],
+html.dark .text-\[\#97A0AF\] {
   color: #7D8596 !important;
 }
 
@@ -176,7 +179,9 @@ html.dark .border-\[\#DCD6CC\],
 html.dark .border-\[\#E2DED7\],
 html.dark .border-\[\#E4E0D7\],
 html.dark .border-\[\#EEEDEA\],
-html.dark .border-\[\#D4CFC6\] {
+html.dark .border-\[\#D4CFC6\],
+html.dark .border-\[\#DFE1E6\],
+html.dark .border-\[\#F1F2F4\] {
   border-color: #2A2F3E !important;
 }
 html.dark .border-\[\#FFCEBF\] {
@@ -219,15 +224,22 @@ html.dark .btn-vb-secondary:hover {
   color: #FF7C5E !important;
 }
 
-/* Badges de status no modo noturno */
+/* Badges de status e cartões concluídos no modo noturno */
 html.dark .bg-emerald-50 {
   background-color: rgba(16, 185, 129, 0.15) !important;
+}
+html.dark .bg-emerald-50\/20 {
+  background-color: #161D1C !important;
+}
+html.dark .bg-emerald-100 {
+  background-color: rgba(16, 185, 129, 0.2) !important;
 }
 html.dark .text-emerald-700,
 html.dark .text-emerald-800 {
   color: #6EE7B7 !important;
 }
-html.dark .border-emerald-200 {
+html.dark .border-emerald-200,
+html.dark .border-emerald-300 {
   border-color: rgba(16, 185, 129, 0.35) !important;
 }
 
@@ -244,6 +256,9 @@ html.dark .border-amber-200 {
 
 html.dark .bg-rose-50 {
   background-color: rgba(244, 63, 94, 0.15) !important;
+}
+html.dark .bg-rose-100 {
+  background-color: rgba(244, 63, 94, 0.22) !important;
 }
 html.dark .text-rose-700,
 html.dark .text-rose-800 {
