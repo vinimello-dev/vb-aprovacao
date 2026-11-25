@@ -20,6 +20,11 @@ import {
   Sparkles,
   DollarSign,
   Target,
+  RefreshCw,
+  Instagram,
+  CheckCircle2,
+  AlertCircle,
+  Link2,
 } from 'lucide-react';
 import { MonthlyMetricItem, CustomMetricItem } from '@/lib/services/metrics-service';
 
@@ -95,6 +100,48 @@ export function ClientMetricsHub({
   const [formNotes, setFormNotes] = useState('');
   const [formCustom, setFormCustom] = useState<CustomMetricItem[]>([]);
 
+  // Integração Meta Business / Instagram Graph API (Admin)
+  const [metaConn, setMetaConn] = useState<{
+    igAccountId: string;
+    igUsername: string | null;
+    adAccountId: string | null;
+  } | null>(null);
+  const [hasAgencyMetaToken, setHasAgencyMetaToken] = useState(false);
+  const [metaConnectOpen, setMetaConnectOpen] = useState(false);
+  const [metaSyncOpen, setMetaSyncOpen] = useState(false);
+  const [metaTokenInput, setMetaTokenInput] = useState('');
+  const [discoveringMeta, setDiscoveringMeta] = useState(false);
+  const [discoveredIg, setDiscoveredIg] = useState<
+    Array<{ igAccountId: string; username: string; pageName: string; followersCount: number }>
+  >([]);
+  const [discoveredAds, setDiscoveredAds] = useState<Array<{ id: string; name: string }>>([]);
+  const [selectedIgId, setSelectedIgId] = useState('');
+  const [selectedIgUsername, setSelectedIgUsername] = useState('');
+  const [selectedAdId, setSelectedAdId] = useState('');
+  const [syncMonth, setSyncMonth] = useState(now.getMonth() + 1);
+  const [syncYear, setSyncYear] = useState(now.getFullYear());
+  const [syncingMeta, setSyncingMeta] = useState(false);
+  const [metaFeedback, setMetaFeedback] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  const fetchMetaConnection = async () => {
+    if (mode !== 'admin' || !clientId) return;
+    try {
+      const res = await fetch(`/api/admin/clients/${clientId}/metrics/meta`);
+      if (res.ok) {
+        const data = await res.json();
+        setMetaConn(data.connection || null);
+        setHasAgencyMetaToken(Boolean(data.hasAgencyToken));
+        if (data.connection) {
+          setSelectedIgId(data.connection.igAccountId || '');
+          setSelectedIgUsername(data.connection.igUsername || '');
+          setSelectedAdId(data.connection.adAccountId || '');
+        }
+      }
+    } catch (err) {
+      console.error('Erro ao buscar conexão Meta:', err);
+    }
+  };
+
   const fetchMetrics = async () => {
     try {
       setLoading(true);
@@ -123,7 +170,131 @@ export function ClientMetricsHub({
 
   useEffect(() => {
     fetchMetrics();
+    fetchMetaConnection();
   }, [mode, clientId, clientSlug]);
+
+  const handleOpenMetaConnect = async () => {
+    setMetaFeedback(null);
+    setMetaConnectOpen(true);
+    if (hasAgencyMetaToken && discoveredIg.length === 0) {
+      setDiscoveringMeta(true);
+      try {
+        const res = await fetch('/api/admin/meta/accounts?discover=true');
+        const data = await res.json();
+        if (data.igAccounts) setDiscoveredIg(data.igAccounts);
+        if (data.adAccounts) setDiscoveredAds(data.adAccounts);
+        if (data.error) setMetaFeedback({ type: 'error', text: data.error });
+      } catch {
+        setMetaFeedback({ type: 'error', text: 'Falha ao buscar contas do Business Manager.' });
+      } finally {
+        setDiscoveringMeta(false);
+      }
+    }
+  };
+
+  const handleValidateAndSaveToken = async () => {
+    if (!metaTokenInput.trim()) return;
+    setDiscoveringMeta(true);
+    setMetaFeedback(null);
+    try {
+      const res = await fetch('/api/admin/meta/accounts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ accessToken: metaTokenInput.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setMetaFeedback({ type: 'error', text: data.error || 'Token inválido.' });
+      } else {
+        setHasAgencyMetaToken(true);
+        setDiscoveredIg(data.igAccounts || []);
+        setDiscoveredAds(data.adAccounts || []);
+        setMetaTokenInput('');
+        setMetaFeedback({
+          type: 'success',
+          text: `Token validado! Encontramos ${(data.igAccounts || []).length} conta(s) do Instagram.`,
+        });
+      }
+    } catch {
+      setMetaFeedback({ type: 'error', text: 'Erro ao validar token da Meta.' });
+    } finally {
+      setDiscoveringMeta(false);
+    }
+  };
+
+  const handleSaveClientMetaLink = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!clientId || !selectedIgId.trim()) return;
+    setDiscoveringMeta(true);
+    setMetaFeedback(null);
+    try {
+      const matched = discoveredIg.find((a) => a.igAccountId === selectedIgId.trim());
+      const res = await fetch(`/api/admin/clients/${clientId}/metrics/meta`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          igAccountId: selectedIgId.trim(),
+          igUsername: matched?.username || selectedIgUsername || null,
+          adAccountId: selectedAdId.trim() || null,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setMetaFeedback({ type: 'error', text: data.error || 'Erro ao vincular conta.' });
+      } else {
+        setMetaConn(data.connection);
+        setMetaConnectOpen(false);
+        setMetaSyncOpen(true);
+      }
+    } catch {
+      setMetaFeedback({ type: 'error', text: 'Falha ao salvar vínculo.' });
+    } finally {
+      setDiscoveringMeta(false);
+    }
+  };
+
+  const handleDisconnectMeta = async () => {
+    if (!clientId) return;
+    try {
+      await fetch(`/api/admin/clients/${clientId}/metrics/meta`, { method: 'DELETE' });
+      setMetaConn(null);
+      setSelectedIgId('');
+      setSelectedIgUsername('');
+      setSelectedAdId('');
+    } catch (err) {
+      console.error('Erro ao desvincular Meta:', err);
+    }
+  };
+
+  const handleSyncFromMeta = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!clientId) return;
+    setSyncingMeta(true);
+    setMetaFeedback(null);
+    try {
+      const res = await fetch(`/api/admin/clients/${clientId}/metrics/meta`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'sync',
+          month: syncMonth,
+          year: syncYear,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setMetaFeedback({ type: 'error', text: data.error || 'Erro ao sincronizar.' });
+      } else {
+        setMetaSyncOpen(false);
+        await fetchMetrics();
+        if (data.metric?.id) setSelectedMetricId(data.metric.id);
+      }
+    } catch {
+      setMetaFeedback({ type: 'error', text: 'Falha de conexão com a API da Meta.' });
+    } finally {
+      setSyncingMeta(false);
+    }
+  };
 
   const currentMetric = useMemo(() => {
     if (metrics.length === 0) return null;
@@ -336,14 +507,51 @@ export function ClientMetricsHub({
           })}
 
           {mode === 'admin' && (
-            <button
-              type="button"
-              onClick={() => openNewOrEditForm(null)}
-              className="btn-vb-primary px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider flex items-center gap-1.5 shadow-sm"
-            >
-              <Plus className="w-4 h-4 stroke-[2.5]" />
-              <span>Lançar Mês</span>
-            </button>
+            <>
+              <button
+                type="button"
+                onClick={handleOpenMetaConnect}
+                className={`px-3.5 py-2 rounded-xl text-xs font-black uppercase tracking-wider flex items-center gap-1.5 border transition-all ${
+                  metaConn
+                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:border-emerald-400'
+                    : 'bg-[#FAF9F7] text-[#111111] border-[#DCD6CC] hover:border-[#FD3100]'
+                }`}
+                title="Configurar conta do Instagram / Meta Business"
+              >
+                <Instagram className="w-3.5 h-3.5" />
+                <span>
+                  {metaConn?.igUsername
+                    ? `@${metaConn.igUsername}`
+                    : metaConn
+                    ? 'Meta Conectado'
+                    : 'Conectar Meta'}
+                </span>
+              </button>
+
+              {metaConn && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMetaFeedback(null);
+                    setMetaSyncOpen(true);
+                  }}
+                  className="px-3.5 py-2 rounded-xl bg-[#FFF0EC] border border-[#FFCEBF] hover:bg-[#FD3100] hover:text-white text-[#FD3100] text-xs font-black uppercase tracking-wider flex items-center gap-1.5 transition-all"
+                  title="Puxar métricas do mês direto da API da Meta"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" />
+                  <span>Puxar do Meta</span>
+                </button>
+              )}
+
+              <button
+                type="button"
+                onClick={() => openNewOrEditForm(null)}
+                className="btn-vb-primary px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider flex items-center gap-1.5 shadow-sm"
+              >
+                <Plus className="w-4 h-4 stroke-[2.5]" />
+                <span>Lançar Mês</span>
+              </button>
+            </>
           )}
         </div>
       </div>
@@ -1048,6 +1256,270 @@ export function ClientMetricsHub({
                 >
                   <Save className="w-3.5 h-3.5" />
                   <span>{saving ? 'Salvando...' : 'Salvar Métricas'}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL ADMIN: CONECTAR META BUSINESS / INSTAGRAM */}
+      {metaConnectOpen && mode === 'admin' && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm overflow-y-auto">
+          <div className="bg-white border-2 border-[#FFCEBF] rounded-3xl w-full max-w-xl p-5 sm:p-8 shadow-2xl relative my-auto max-h-[92vh] flex flex-col">
+            <div className="flex items-center justify-between pb-4 border-b border-[#EEEDEA] shrink-0">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-2xl bg-[#FFF0EC] border border-[#FFCEBF] flex items-center justify-center text-[#FD3100]">
+                  <Instagram className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-black text-lg text-[#111111] uppercase tracking-tight">
+                    Conectar Meta Business
+                  </h3>
+                  <p className="text-xs text-[#66635D]">
+                    Puxe alcance, visitas, seguidores e engajamento direto da API oficial
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setMetaConnectOpen(false)}
+                className="p-1.5 rounded-xl text-[#66635D] hover:text-[#111111]"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="mt-4 space-y-5 overflow-y-auto pr-1">
+              {/* Passo a Passo Token da Agência */}
+              <div className="p-4 rounded-2xl bg-[#FAF9F7] border border-[#E2DED7] space-y-2 text-xs">
+                <p className="font-black text-[#111111] flex items-center gap-1.5">
+                  <Link2 className="w-3.5 h-3.5 text-[#FD3100]" />
+                  <span>1. Token do seu Gerenciador de Negócios (configura só 1 vez):</span>
+                </p>
+                <ol className="list-decimal list-inside space-y-1 text-[11px] text-[#66635D]">
+                  <li>
+                    Acesse <strong>business.facebook.com</strong> → <strong>Configurações do Negócio</strong> → <strong>Usuários do Sistema</strong>.
+                  </li>
+                  <li>
+                    Crie um usuário do sistema, atribua as contas dos clientes e clique em <strong>Gerar novo token</strong> com as permissões: <code className="bg-white px-1 rounded">instagram_basic</code>, <code className="bg-white px-1 rounded">instagram_manage_insights</code>, <code className="bg-white px-1 rounded">pages_show_list</code> e <code className="bg-white px-1 rounded">ads_read</code> (opcional).
+                  </li>
+                </ol>
+
+                <div className="flex flex-col sm:flex-row gap-2 pt-2">
+                  <input
+                    type="password"
+                    value={metaTokenInput}
+                    onChange={(e) => setMetaTokenInput(e.target.value)}
+                    placeholder={
+                      hasAgencyMetaToken
+                        ? 'Token da agência já salvo (cole outro para substituir)'
+                        : 'Cole aqui o Access Token do Meta Business...'
+                    }
+                    className="flex-1 px-3 py-2 bg-white border border-[#DCD6CC] rounded-xl text-xs font-mono"
+                  />
+                  <button
+                    type="button"
+                    disabled={discoveringMeta || !metaTokenInput.trim()}
+                    onClick={handleValidateAndSaveToken}
+                    className="btn-vb-primary px-4 py-2 rounded-xl text-[11px] font-black uppercase shrink-0 disabled:opacity-50"
+                  >
+                    {discoveringMeta ? 'Validando...' : 'Validar Token'}
+                  </button>
+                </div>
+              </div>
+
+              {metaFeedback && (
+                <div
+                  className={`p-3 rounded-xl text-xs font-bold flex items-center gap-2 ${
+                    metaFeedback.type === 'success'
+                      ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                      : 'bg-rose-50 text-rose-700 border border-rose-200'
+                  }`}
+                >
+                  {metaFeedback.type === 'success' ? (
+                    <CheckCircle2 className="w-4 h-4 shrink-0" />
+                  ) : (
+                    <AlertCircle className="w-4 h-4 shrink-0" />
+                  )}
+                  <span>{metaFeedback.text}</span>
+                </div>
+              )}
+
+              {/* Passo 2: Selecionar Instagram deste Cliente */}
+              <form onSubmit={handleSaveClientMetaLink} className="space-y-4">
+                <div>
+                  <label className="block text-[11px] font-black uppercase text-[#111111] mb-1.5">
+                    2. Conta Instagram Business de {clientName}
+                  </label>
+                  {discoveredIg.length > 0 ? (
+                    <select
+                      value={selectedIgId}
+                      onChange={(e) => {
+                        setSelectedIgId(e.target.value);
+                        const found = discoveredIg.find((a) => a.igAccountId === e.target.value);
+                        if (found) setSelectedIgUsername(found.username);
+                      }}
+                      className="w-full px-3 py-2.5 bg-[#FAF9F7] border border-[#DCD6CC] rounded-xl text-xs font-bold text-[#111111]"
+                    >
+                      <option value="">Selecione o @Instagram do cliente...</option>
+                      {discoveredIg.map((acc) => (
+                        <option key={acc.igAccountId} value={acc.igAccountId}>
+                          @{acc.username} ({acc.pageName}) — {formatNumber(acc.followersCount)} seg.
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      type="text"
+                      value={selectedIgId}
+                      onChange={(e) => setSelectedIgId(e.target.value)}
+                      placeholder="ID da Conta Instagram Business (ex: 17841400000000000)"
+                      className="w-full px-3 py-2.5 bg-[#FAF9F7] border border-[#DCD6CC] rounded-xl text-xs font-mono"
+                    />
+                  )}
+                </div>
+
+                {discoveredAds.length > 0 && (
+                  <div>
+                    <label className="block text-[11px] font-black uppercase text-[#111111] mb-1.5">
+                      Conta de Anúncios (Opcional — para puxar Tráfego Pago)
+                    </label>
+                    <select
+                      value={selectedAdId}
+                      onChange={(e) => setSelectedAdId(e.target.value)}
+                      className="w-full px-3 py-2.5 bg-[#FAF9F7] border border-[#DCD6CC] rounded-xl text-xs font-bold text-[#111111]"
+                    >
+                      <option value="">Sem conta de anúncios vinculada</option>
+                      {discoveredAds.map((ad) => (
+                        <option key={ad.id} value={ad.id}>
+                          {ad.name} ({ad.id})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                <div className="pt-3 border-t border-[#EEEDEA] flex items-center justify-between gap-2">
+                  {metaConn ? (
+                    <button
+                      type="button"
+                      onClick={handleDisconnectMeta}
+                      className="text-xs font-black text-rose-600 hover:underline"
+                    >
+                      Desvincular conta
+                    </button>
+                  ) : (
+                    <span />
+                  )}
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setMetaConnectOpen(false)}
+                      className="btn-vb-secondary px-4 py-2 rounded-xl text-xs font-black uppercase"
+                    >
+                      Fechar
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={discoveringMeta || !selectedIgId.trim()}
+                      className="btn-vb-primary px-5 py-2 rounded-xl text-xs font-black uppercase disabled:opacity-50"
+                    >
+                      Salvar Vínculo
+                    </button>
+                  </div>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL ADMIN: PUXAR MÉTRICAS DO MÊS DO META */}
+      {metaSyncOpen && mode === 'admin' && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-white border-2 border-[#FFCEBF] rounded-3xl w-full max-w-md p-6 shadow-2xl">
+            <div className="flex items-center justify-between pb-4 border-b border-[#EEEDEA]">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-[#FFF0EC] border border-[#FFCEBF] flex items-center justify-center text-[#FD3100]">
+                  <RefreshCw className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="font-black text-base text-[#111111] uppercase">
+                    Puxar Métricas do Meta
+                  </h3>
+                  <p className="text-[11px] text-[#66635D]">
+                    {metaConn?.igUsername ? `@${metaConn.igUsername}` : 'Instagram conectado'}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setMetaSyncOpen(false)}
+                className="p-1.5 rounded-xl text-[#66635D]"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSyncFromMeta} className="mt-4 space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-black uppercase text-[#111111] mb-1">
+                    Mês
+                  </label>
+                  <select
+                    value={syncMonth}
+                    onChange={(e) => setSyncMonth(Number(e.target.value))}
+                    className="w-full px-3 py-2 bg-[#FAF9F7] border border-[#DCD6CC] rounded-xl text-xs font-bold"
+                  >
+                    {MONTH_NAMES.map((m, i) => (
+                      <option key={m} value={i + 1}>
+                        {m}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[11px] font-black uppercase text-[#111111] mb-1">
+                    Ano
+                  </label>
+                  <input
+                    type="number"
+                    value={syncYear}
+                    onChange={(e) => setSyncYear(Number(e.target.value))}
+                    className="w-full px-3 py-2 bg-[#FAF9F7] border border-[#DCD6CC] rounded-xl text-xs font-bold"
+                  />
+                </div>
+              </div>
+
+              {metaFeedback && (
+                <div
+                  className={`p-3 rounded-xl text-xs font-bold ${
+                    metaFeedback.type === 'success'
+                      ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                      : 'bg-rose-50 text-rose-700 border border-rose-200'
+                  }`}
+                >
+                  {metaFeedback.text}
+                </div>
+              )}
+
+              <div className="flex items-center justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setMetaSyncOpen(false)}
+                  className="btn-vb-secondary px-4 py-2 rounded-xl text-xs font-black uppercase"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={syncingMeta}
+                  className="btn-vb-primary px-5 py-2.5 rounded-xl text-xs font-black uppercase flex items-center gap-1.5 shadow-md disabled:opacity-50"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${syncingMeta ? 'animate-spin' : ''}`} />
+                  <span>{syncingMeta ? 'Puxando da Meta...' : 'Sincronizar Agora'}</span>
                 </button>
               </div>
             </form>
