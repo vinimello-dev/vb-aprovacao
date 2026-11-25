@@ -27,9 +27,11 @@ import {
   Check,
   Plus,
   Trash2,
+  BarChart3,
 } from 'lucide-react';
 import { PostData } from '@/lib/services/post-service';
 import { PostReviewModal } from '@/components/post-review-modal';
+import { ClientMetricsHub } from '@/components/client-metrics-hub';
 import { formatDate, getScheduledYearMonthDay } from '@/lib/utils';
 import { ChatMessage } from '@/lib/services/chat-service';
 import { playMessageSound } from '@/lib/audio-notification';
@@ -74,8 +76,8 @@ export function ClientPortalView({ client }: ClientPortalViewProps) {
   const [selectedPost, setSelectedPost] = useState<PostData | null>(null);
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'PENDENTE' | 'AJUSTES' | 'APROVADO'>('ALL');
 
-  // Modo de Visualização: Instagram Feed, Calendário Mensal, Cards, Roteiros ou Chat com a Agência
-  const [viewMode, setViewMode] = useState<'instagram' | 'calendar' | 'cards' | 'scripts' | 'chat'>('instagram');
+  // Modo de Visualização: Instagram Feed, Calendário Mensal, Cards, Roteiros, Métricas ou Chat com a Agência
+  const [viewMode, setViewMode] = useState<'instagram' | 'calendar' | 'cards' | 'scripts' | 'metrics' | 'chat'>('instagram');
 
   // Roteiros de Gravação do Cliente (Visualização e Edição por Cenas)
   const [scripts, setScripts] = useState<ClientScriptItem[]>([]);
@@ -607,6 +609,16 @@ export function ClientPortalView({ client }: ClientPortalViewProps) {
                     {scripts.length}
                   </span>
                 )}
+              </button>
+
+              <button
+                onClick={() => setViewMode('metrics')}
+                style={viewMode === 'metrics' ? { backgroundColor: '#FD3100', color: '#FFFFFF' } : { color: '#111111' }}
+                className="flex items-center justify-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-2 rounded-xl transition-all font-black"
+                title="Acompanhar métricas e gráficos de resultados do mês"
+              >
+                <BarChart3 className="w-3.5 sm:w-4 h-3.5 sm:h-4 stroke-[2.5]" />
+                <span className="truncate">Métricas</span>
               </button>
 
               <button
@@ -1470,7 +1482,16 @@ export function ClientPortalView({ client }: ClientPortalViewProps) {
           </div>
         )}
 
-        {/* 5. VISÃO DE CHAT COM A VB AGÊNCIA */}
+        {/* 5. VISÃO MÉTRICAS E GRÁFICOS DO MÊS */}
+        {viewMode === 'metrics' && (
+          <ClientMetricsHub
+            mode="client"
+            clientSlug={client.slug}
+            clientName={client.name}
+          />
+        )}
+
+        {/* 6. VISÃO DE CHAT COM A VB AGÊNCIA */}
         {viewMode === 'chat' && (
           <div className="max-w-4xl mx-auto bg-white border-2 border-[#DCD6CC] rounded-3xl shadow-lg overflow-hidden flex flex-col h-[650px]">
             {/* Header do Chat */}

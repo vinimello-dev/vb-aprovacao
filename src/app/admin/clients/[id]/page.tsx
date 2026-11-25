@@ -37,10 +37,12 @@ import {
   AlertCircle,
   Eye,
   CalendarDays,
+  BarChart3,
 } from 'lucide-react';
 import { formatDate, parseThumbnailUrl, parseMediaUrl, getScheduledDateInput } from '@/lib/utils';
 import { PostReviewModal } from '@/components/post-review-modal';
 import { AdminClientCalendar } from '@/components/admin-client-calendar';
+import { ClientMetricsHub } from '@/components/client-metrics-hub';
 import {
   ScriptScene,
   SCRIPT_TEMPLATES,
@@ -115,8 +117,8 @@ export default function ClientHubPage({ params }: PageProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  // Abas do Hub do Cliente: 'cycles' (Entregas), 'calendar' (Calendário do Mês), 'scripts' (Roteiros), 'crm' (Dados), 'documents' (Documentos)
-  const [activeTab, setActiveTab] = useState<'cycles' | 'calendar' | 'scripts' | 'crm' | 'documents'>('cycles');
+  // Abas do Hub do Cliente: 'cycles' (Entregas), 'calendar' (Calendário do Mês), 'scripts' (Roteiros), 'metrics' (Métricas), 'crm' (Dados), 'documents' (Documentos)
+  const [activeTab, setActiveTab] = useState<'cycles' | 'calendar' | 'scripts' | 'metrics' | 'crm' | 'documents'>('cycles');
 
   // Ciclo Selecionado na aba de Entregas
   const [selectedCycleId, setSelectedCycleId] = useState<string>('ALL');
@@ -847,7 +849,7 @@ export default function ClientHubPage({ params }: PageProps) {
 
           <button
             onClick={() => setActiveTab('scripts')}
-            className={`flex items-center gap-2 px-5 py-3 text-xs font-black uppercase tracking-wider border-b-2 transition-all -mb-[2px] ${
+            className={`flex items-center gap-2 px-5 py-3 text-xs font-black uppercase tracking-wider border-b-2 transition-all -mb-[2px] whitespace-nowrap shrink-0 ${
               activeTab === 'scripts'
                 ? 'border-[#FD3100] text-[#FD3100] bg-white rounded-t-2xl'
                 : 'border-transparent text-[#66635D] hover:text-[#111111]'
@@ -855,6 +857,18 @@ export default function ClientHubPage({ params }: PageProps) {
           >
             <Video className="w-4 h-4" />
             <span>Roteiros de Gravação ({client.scripts.length})</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('metrics')}
+            className={`flex items-center gap-2 px-5 py-3 text-xs font-black uppercase tracking-wider border-b-2 transition-all -mb-[2px] whitespace-nowrap shrink-0 ${
+              activeTab === 'metrics'
+                ? 'border-[#FD3100] text-[#FD3100] bg-white rounded-t-2xl'
+                : 'border-transparent text-[#66635D] hover:text-[#111111]'
+            }`}
+          >
+            <BarChart3 className="w-4 h-4" />
+            <span>Métricas do Mês</span>
           </button>
 
           <button
@@ -1335,6 +1349,15 @@ export default function ClientHubPage({ params }: PageProps) {
               </div>
             )}
           </div>
+        )}
+
+        {/* ABA MÉTRICAS DO MÊS (ADMIN) */}
+        {activeTab === 'metrics' && (
+          <ClientMetricsHub
+            mode="admin"
+            clientId={client.id}
+            clientName={client.name}
+          />
         )}
 
         {/* ABA 3: DADOS DO CLIENTE (CRM) */}
