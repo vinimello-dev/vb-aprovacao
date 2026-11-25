@@ -117,6 +117,7 @@ export default function AdminDashboardPage() {
   const [postCarouselSlides, setPostCarouselSlides] = useState<CarouselSlide[]>([]);
   const [postCaption, setPostCaption] = useState('');
   const [postDate, setPostDate] = useState(new Date().toISOString().split('T')[0]);
+  const [postTime, setPostTime] = useState('');
   const [postSubmitting, setPostSubmitting] = useState(false);
   const [postError, setPostError] = useState('');
   const [postSuccess, setPostSuccess] = useState('');
@@ -260,6 +261,7 @@ export default function AdminDashboardPage() {
     }
     setPostCycleId('');
     setPostDate(new Date().toISOString().split('T')[0]);
+    setPostTime('');
     setPostTitle('');
     setPostMediaUrl('');
     setPostThumbnailUrl('');
@@ -367,6 +369,7 @@ export default function AdminDashboardPage() {
           caption: postCaption,
           format: postFormat,
           scheduledDate: postDate,
+          scheduledTime: postTime || null,
           mediaUrls: mediaUrlsPayload,
           thumbnailUrl: postThumbnailUrl.trim() || undefined,
         }),
@@ -1766,17 +1769,26 @@ export default function AdminDashboardPage() {
                   <label className="block text-xs font-black uppercase tracking-wider text-[#111111] mb-1.5 flex items-center justify-between">
                     <span className="flex items-center gap-1">
                       <Clock className="w-3.5 h-3.5 text-[#FD3100]" />
-                      <span>Data do Post *</span>
+                      <span>Data e Horário *</span>
                     </span>
-                    <span className="text-[10px] text-[#66635D] font-normal normal-case">Dia agendado</span>
+                    <span className="text-[10px] text-[#66635D] font-normal normal-case">Dia e hora</span>
                   </label>
-                  <input
-                    type="date"
-                    value={postDate}
-                    onChange={(e) => setPostDate(e.target.value)}
-                    required
-                    className="w-full px-3 py-2.5 bg-[#FAF9F7] border border-[#DCD6CC] focus:border-[#FD3100] rounded-2xl text-[#111111] text-xs font-bold focus:outline-none"
-                  />
+                  <div className="grid grid-cols-5 gap-2">
+                    <input
+                      type="date"
+                      value={postDate}
+                      onChange={(e) => setPostDate(e.target.value)}
+                      required
+                      className="col-span-3 px-3 py-2.5 bg-[#FAF9F7] border border-[#DCD6CC] focus:border-[#FD3100] rounded-2xl text-[#111111] text-xs font-bold focus:outline-none"
+                    />
+                    <input
+                      type="time"
+                      value={postTime}
+                      onChange={(e) => setPostTime(e.target.value)}
+                      title="Horário opcional do post"
+                      className="col-span-2 px-2.5 py-2.5 bg-[#FAF9F7] border border-[#DCD6CC] focus:border-[#FD3100] rounded-2xl text-[#111111] text-xs font-bold focus:outline-none"
+                    />
+                  </div>
                 </div>
               </div>
 

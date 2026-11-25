@@ -19,7 +19,7 @@ import {
 import { PostData, CommentData } from '@/lib/services/post-service';
 import { VideoPlayerReview } from './video-player-review';
 import { CarouselReview } from './carousel-review';
-import { formatDate, getScheduledDateInput } from '@/lib/utils';
+import { formatPostSchedule, getScheduledDateInput } from '@/lib/utils';
 
 interface PostReviewModalProps {
   post: PostData;
@@ -52,10 +52,13 @@ export function PostReviewModal({ post, onClose, onPostUpdated }: PostReviewModa
   const [scheduledDateValue, setScheduledDateValue] = useState(
     getScheduledDateInput(post.scheduledDate)
   );
+  const [scheduledTimeValue, setScheduledTimeValue] = useState(
+    post.scheduledTime || ''
+  );
   const [savingDate, setSavingDate] = useState(false);
   const [dateSavedSuccess, setDateSavedSuccess] = useState(false);
 
-  const handleSaveDate = async (newDateStr: string) => {
+  const handleSaveDate = async (newDateStr: string, newTimeStr?: string) => {
     if (!newDateStr) return;
     setSavingDate(true);
     try {
@@ -65,6 +68,7 @@ export function PostReviewModal({ post, onClose, onPostUpdated }: PostReviewModa
         body: JSON.stringify({
           postId: currentPost.id,
           scheduledDate: newDateStr,
+          scheduledTime: newTimeStr !== undefined ? newTimeStr || null : scheduledTimeValue || null,
         }),
       });
       let updatedPost = null;
@@ -78,6 +82,7 @@ export function PostReviewModal({ post, onClose, onPostUpdated }: PostReviewModa
           body: JSON.stringify({
             id: currentPost.id,
             scheduledDate: newDateStr,
+            scheduledTime: newTimeStr !== undefined ? newTimeStr || null : scheduledTimeValue || null,
           }),
         });
         if (adminRes.ok) {
@@ -266,22 +271,29 @@ export function PostReviewModal({ post, onClose, onPostUpdated }: PostReviewModa
                 {currentPost.scheduledDate && (
                   <span className="text-[11px] sm:text-xs font-bold flex items-center gap-1 text-[#66635D]">
                     <Calendar className="w-3 h-3 shrink-0" style={{ color: '#FD3100' }} />
-                    <span>Agendado para {formatDate(currentPost.scheduledDate)}</span>
+                    <span>Agendado para {formatPostSchedule(currentPost.scheduledDate, currentPost.scheduledTime)}</span>
                   </span>
                 )}
 
                 {isEditingDate ? (
-                  <div className="flex items-center gap-1.5 bg-white border border-[#FD3100] rounded-xl px-2 py-0.5 shadow-sm">
+                  <div className="flex flex-wrap items-center gap-1.5 bg-white border border-[#FD3100] rounded-xl px-2 py-0.5 shadow-sm">
                     <input
                       type="date"
                       value={scheduledDateValue}
                       onChange={(e) => setScheduledDateValue(e.target.value)}
                       className="text-[11px] font-bold text-[#111111] bg-transparent outline-none cursor-pointer"
                     />
+                    <input
+                      type="time"
+                      value={scheduledTimeValue}
+                      onChange={(e) => setScheduledTimeValue(e.target.value)}
+                      title="Horário do post (opcional)"
+                      className="text-[11px] font-bold text-[#111111] bg-transparent outline-none cursor-pointer border-l border-[#DCD6CC] pl-1.5"
+                    />
                     <button
                       type="button"
                       disabled={savingDate}
-                      onClick={() => handleSaveDate(scheduledDateValue)}
+                      onClick={() => handleSaveDate(scheduledDateValue, scheduledTimeValue)}
                       className="px-2 py-0.5 bg-[#FD3100] text-white rounded-lg text-[9px] font-black uppercase hover:bg-[#e02b00] disabled:opacity-50"
                     >
                       {savingDate ? 'Salvando...' : 'Salvar'}
@@ -299,11 +311,12 @@ export function PostReviewModal({ post, onClose, onPostUpdated }: PostReviewModa
                     type="button"
                     onClick={() => {
                       setScheduledDateValue(getScheduledDateInput(currentPost.scheduledDate));
+                      setScheduledTimeValue(currentPost.scheduledTime || '');
                       setIsEditingDate(true);
                     }}
                     className="text-[10px] font-black text-[#FD3100] hover:underline uppercase px-2 py-0.5 bg-[#FFF0EC] rounded-lg border border-[#FFCEBF] transition-all hover:scale-105"
                   >
-                    Mudar Dia
+                    Mudar Dia/Hora
                   </button>
                 )}
 

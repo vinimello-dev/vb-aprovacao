@@ -30,7 +30,7 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json();
-    const { clientId, cycleId, title, caption, format, scheduledDate, mediaUrls, thumbnailUrl } = body;
+    const { clientId, cycleId, title, caption, format, scheduledDate, scheduledTime, mediaUrls, thumbnailUrl } = body;
 
     if (!clientId || !title) {
       return NextResponse.json(
@@ -65,6 +65,7 @@ export async function POST(request: Request) {
       caption,
       format: format || 'VIDEO',
       scheduledDate: parseDateInput(scheduledDate) || new Date(),
+      scheduledTime: scheduledTime || null,
       mediaUrls: parsedMedia,
     });
 
@@ -83,7 +84,7 @@ export async function PATCH(request: Request) {
 
   try {
     const body = await request.json();
-    const { id, title, caption, scheduledDate, format, cycleId, mediaUrl, thumbnailUrl, mediaUrls } = body;
+    const { id, title, caption, scheduledDate, scheduledTime, format, cycleId, mediaUrl, thumbnailUrl, mediaUrls } = body;
 
     if (!id) {
       return NextResponse.json({ error: 'ID do post é obrigatório.' }, { status: 400 });
@@ -102,6 +103,7 @@ export async function PATCH(request: Request) {
       title,
       caption,
       scheduledDate: parseDateInput(scheduledDate),
+      scheduledTime,
       format,
       cycleId,
       mediaUrl: mediaUrl ? parseMediaUrl(mediaUrl) : undefined,

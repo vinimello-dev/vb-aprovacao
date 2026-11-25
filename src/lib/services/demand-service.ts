@@ -101,8 +101,9 @@ export async function createDemand(data: {
   clientId?: string | null;
   priority?: string;
 }): Promise<DemandData> {
-  const count = await prisma.demand.count({
+  await prisma.demand.updateMany({
     where: { columnId: data.columnId },
+    data: { order: { increment: 1 } },
   });
 
   const demand = await prisma.demand.create({
@@ -110,7 +111,7 @@ export async function createDemand(data: {
       title: data.title.trim(),
       description: data.description?.trim() || null,
       columnId: data.columnId,
-      order: count,
+      order: 0,
       dueDate: data.dueDate ? parseDateInput(data.dueDate) : null,
       clientId: data.clientId || null,
       priority: data.priority || 'NORMAL',

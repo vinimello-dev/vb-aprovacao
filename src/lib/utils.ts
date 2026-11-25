@@ -55,6 +55,16 @@ export function formatDate(date: Date | string | null | undefined): string {
   }).format(new Date(date));
 }
 
+export function formatPostSchedule(
+  date: Date | string | null | undefined,
+  time?: string | null
+): string {
+  const formattedDate = formatDate(date);
+  if (!formattedDate) return '';
+  const cleanTime = time?.trim();
+  return cleanTime ? `${formattedDate} às ${cleanTime}` : formattedDate;
+}
+
 /**
  * Extrai o dia do mês (1-31) de uma data agendada sem interferência de fuso horário
  */

@@ -28,7 +28,7 @@ export async function GET(request: Request) {
 export async function PATCH(request: Request) {
   try {
     const body = await request.json();
-    const { postId, scheduledDate } = body;
+    const { postId, scheduledDate, scheduledTime } = body;
 
     if (!postId || !scheduledDate) {
       return NextResponse.json(
@@ -39,6 +39,7 @@ export async function PATCH(request: Request) {
 
     const updated = await updatePost(postId, {
       scheduledDate: parseDateInput(scheduledDate),
+      scheduledTime,
     });
 
     if (!updated) {

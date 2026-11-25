@@ -35,6 +35,7 @@ export interface PostData {
   format: 'VIDEO' | 'CAROUSEL' | 'STATIC' | 'REELS' | 'STORIES';
   status: 'PENDENTE' | 'AJUSTES' | 'APROVADO';
   scheduledDate?: Date | null;
+  scheduledTime?: string | null;
   createdAt: Date;
   updatedAt: Date;
   media: PostMediaData[];
@@ -267,6 +268,7 @@ export async function createPost(data: {
   caption?: string;
   format: 'VIDEO' | 'CAROUSEL' | 'STATIC' | 'REELS' | 'STORIES';
   scheduledDate?: Date;
+  scheduledTime?: string | null;
   mediaUrls: { url: string; mediaType: string; order: number; thumbnailUrl?: string }[];
 }): Promise<PostData> {
   try {
@@ -278,6 +280,7 @@ export async function createPost(data: {
         caption: data.caption || null,
         format: data.format,
         scheduledDate: data.scheduledDate || null,
+        scheduledTime: data.scheduledTime?.trim() || null,
         status: 'PENDENTE',
         media: {
           create: data.mediaUrls.map((m) => ({
@@ -444,6 +447,7 @@ export async function updatePost(
     title?: string;
     caption?: string | null;
     scheduledDate?: Date | string | null;
+    scheduledTime?: string | null;
     format?: 'VIDEO' | 'CAROUSEL' | 'STATIC' | 'REELS' | 'STORIES';
     cycleId?: string | null;
     mediaUrl?: string;
@@ -461,6 +465,9 @@ export async function updatePost(
   if (data.caption !== undefined) updateData.caption = data.caption ? data.caption.trim() : null;
   if (data.scheduledDate !== undefined) {
     updateData.scheduledDate = data.scheduledDate ? parseDateInput(data.scheduledDate) : null;
+  }
+  if (data.scheduledTime !== undefined) {
+    updateData.scheduledTime = data.scheduledTime ? data.scheduledTime.trim() : null;
   }
   if (data.format !== undefined) updateData.format = data.format;
   if (data.cycleId !== undefined) updateData.cycleId = data.cycleId || null;

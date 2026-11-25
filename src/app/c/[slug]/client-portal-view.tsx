@@ -32,7 +32,7 @@ import {
 import { PostData } from '@/lib/services/post-service';
 import { PostReviewModal } from '@/components/post-review-modal';
 import { ClientMetricsHub } from '@/components/client-metrics-hub';
-import { formatDate, getScheduledYearMonthDay } from '@/lib/utils';
+import { formatDate, formatPostSchedule, getScheduledYearMonthDay } from '@/lib/utils';
 import { ChatMessage } from '@/lib/services/chat-service';
 import { playMessageSound } from '@/lib/audio-notification';
 import {
@@ -1149,7 +1149,7 @@ export function ClientPortalView({ client }: ClientPortalViewProps) {
                     {post.scheduledDate && (
                       <span className="text-xs font-bold flex items-center gap-1 mb-2" style={{ color: '#FD3100' }}>
                         <CalendarIcon className="w-3.5 h-3.5" />
-                        Agendado para {formatDate(post.scheduledDate)}
+                        Agendado para {formatPostSchedule(post.scheduledDate, post.scheduledTime)}
                       </span>
                     )}
 

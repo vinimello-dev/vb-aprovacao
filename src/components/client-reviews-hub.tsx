@@ -25,7 +25,7 @@ import {
   Eye,
 } from 'lucide-react';
 import { PostWithClientData } from '@/lib/services/post-service';
-import { formatDate } from '@/lib/utils';
+import { formatPostSchedule } from '@/lib/utils';
 
 interface ClientReviewsHubProps {
   clients: Array<{
@@ -445,7 +445,7 @@ export function ClientReviewsHub({
                       {post.scheduledDate && (
                         <span className="text-[11px] text-[#66635D] font-bold flex items-center gap-1">
                           <Calendar className="w-3 h-3" />
-                          {formatDate(post.scheduledDate)}
+                          {formatPostSchedule(post.scheduledDate, post.scheduledTime)}
                         </span>
                       )}
                     </div>

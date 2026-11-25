@@ -61,6 +61,7 @@ model Post {
   format        PostFormat  @default(STATIC)
   status        PostStatus  @default(PENDENTE)
   scheduledDate DateTime?   // Data de agendamento/publicação no mês
+  scheduledTime String?     // Horário opcional de publicação (ex: "18:30")
   
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt

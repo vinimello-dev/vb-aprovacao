@@ -39,7 +39,7 @@ import {
   CalendarDays,
   BarChart3,
 } from 'lucide-react';
-import { formatDate, parseThumbnailUrl, parseMediaUrl, getScheduledDateInput } from '@/lib/utils';
+import { formatDate, formatPostSchedule, parseThumbnailUrl, parseMediaUrl, getScheduledDateInput } from '@/lib/utils';
 import { PostReviewModal } from '@/components/post-review-modal';
 import { AdminClientCalendar } from '@/components/admin-client-calendar';
 import { ClientMetricsHub } from '@/components/client-metrics-hub';
@@ -143,6 +143,7 @@ export default function ClientHubPage({ params }: PageProps) {
   const [postCarouselSlides, setPostCarouselSlides] = useState<CarouselSlide[]>([]);
   const [postCaption, setPostCaption] = useState('');
   const [postDate, setPostDate] = useState(new Date().toISOString().split('T')[0]);
+  const [postTime, setPostTime] = useState('');
   const [postCycleId, setPostCycleId] = useState('');
   const [submittingPost, setSubmittingPost] = useState(false);
   const [postError, setPostError] = useState('');
@@ -157,6 +158,7 @@ export default function ClientHubPage({ params }: PageProps) {
   const [editPostCarouselSlides, setEditPostCarouselSlides] = useState<CarouselSlide[]>([]);
   const [editPostCaption, setEditPostCaption] = useState('');
   const [editPostDate, setEditPostDate] = useState('');
+  const [editPostTime, setEditPostTime] = useState('');
   const [editPostCycleId, setEditPostCycleId] = useState('');
   const [savingEditPost, setSavingEditPost] = useState(false);
   const [editPostError, setEditPostError] = useState('');
@@ -322,6 +324,7 @@ export default function ClientHubPage({ params }: PageProps) {
           title: postTitle,
           format: postFormat,
           scheduledDate: postDate,
+          scheduledTime: postTime || null,
           caption: postCaption,
           thumbnailUrl: postThumbnailUrl.trim() || undefined,
           mediaUrls: mediaUrlsPayload,
@@ -335,6 +338,7 @@ export default function ClientHubPage({ params }: PageProps) {
         setPostThumbnailUrl('');
         setPostCarouselSlides([]);
         setPostCaption('');
+        setPostTime('');
         await fetchClientData();
       } else {
         const d = await res.json();
@@ -369,6 +373,7 @@ export default function ClientHubPage({ params }: PageProps) {
     }
     setEditPostCaption(post.caption || '');
     setEditPostDate(getScheduledDateInput(post.scheduledDate));
+    setEditPostTime(post.scheduledTime || '');
     setEditPostCycleId(post.cycleId || '');
     setEditPostError('');
     setEditPostModalOpen(true);
@@ -406,6 +411,7 @@ export default function ClientHubPage({ params }: PageProps) {
           caption: editPostCaption,
           format: editPostFormat,
           scheduledDate: editPostDate || null,
+          scheduledTime: editPostTime || null,
           cycleId: editPostCycleId || null,
           mediaUrl: editPostMediaUrl.trim() || undefined,
           thumbnailUrl: editPostThumbnailUrl.trim() || undefined,
@@ -1044,7 +1050,7 @@ export default function ClientHubPage({ params }: PageProps) {
                             <div className="mt-4 pt-3 border-t border-[#DCD6CC]/60 flex items-center justify-between">
                               <span className="text-[10px] font-bold text-[#66635D] flex items-center gap-1">
                                 <Calendar className="w-3 h-3 text-[#FD3100]" />
-                                {post.scheduledDate ? formatDate(post.scheduledDate) : 'Sem data'}
+                                {post.scheduledDate ? formatPostSchedule(post.scheduledDate, post.scheduledTime) : 'Sem data'}
                               </span>
 
                               <div className="flex items-center gap-1.5">
@@ -1114,7 +1120,7 @@ export default function ClientHubPage({ params }: PageProps) {
                       <div className="mt-4 pt-3 border-t border-[#DCD6CC]/60 flex items-center justify-between">
                         <span className="text-[10px] font-bold text-[#66635D] flex items-center gap-1">
                           <Calendar className="w-3 h-3 text-[#FD3100]" />
-                          {post.scheduledDate ? formatDate(post.scheduledDate) : 'Sem data'}
+                          {post.scheduledDate ? formatPostSchedule(post.scheduledDate, post.scheduledTime) : 'Sem data'}
                         </span>
                         <div className="flex items-center gap-1.5">
                           <button
@@ -1760,17 +1766,26 @@ export default function ClientHubPage({ params }: PageProps) {
                   <label className="block text-xs font-black uppercase tracking-wider text-[#111111] mb-1.5 flex items-center justify-between">
                     <span className="flex items-center gap-1.5">
                       <Clock className="w-3.5 h-3.5 text-[#FD3100]" />
-                      <span>Data do Post *</span>
+                      <span>Data e Horário *</span>
                     </span>
-                    <span className="text-[10px] text-[#66635D] font-normal normal-case">Dia agendado</span>
+                    <span className="text-[10px] text-[#66635D] font-normal normal-case">Dia e hora</span>
                   </label>
-                  <input
-                    type="date"
-                    value={postDate}
-                    onChange={(e) => setPostDate(e.target.value)}
-                    required
-                    className="w-full px-3 py-2 bg-[#FAF9F7] border border-[#DCD6CC] focus:border-[#FD3100] rounded-xl text-xs font-bold text-[#111111] focus:outline-none"
-                  />
+                  <div className="grid grid-cols-5 gap-2">
+                    <input
+                      type="date"
+                      value={postDate}
+                      onChange={(e) => setPostDate(e.target.value)}
+                      required
+                      className="col-span-3 px-3 py-2 bg-[#FAF9F7] border border-[#DCD6CC] focus:border-[#FD3100] rounded-xl text-xs font-bold text-[#111111] focus:outline-none"
+                    />
+                    <input
+                      type="time"
+                      value={postTime}
+                      onChange={(e) => setPostTime(e.target.value)}
+                      title="Horário opcional do post"
+                      className="col-span-2 px-2.5 py-2 bg-[#FAF9F7] border border-[#DCD6CC] focus:border-[#FD3100] rounded-xl text-xs font-bold text-[#111111] focus:outline-none"
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -1957,17 +1972,26 @@ export default function ClientHubPage({ params }: PageProps) {
                   <label className="block text-xs font-black uppercase tracking-wider text-[#111111] mb-1.5 flex items-center justify-between">
                     <span className="flex items-center gap-1.5">
                       <Clock className="w-3.5 h-3.5 text-[#FD3100]" />
-                      <span>Data do Post *</span>
+                      <span>Data e Horário *</span>
                     </span>
                     <span className="text-[10px] text-[#66635D] font-normal normal-case">Agendamento</span>
                   </label>
-                  <input
-                    type="date"
-                    value={editPostDate}
-                    onChange={(e) => setEditPostDate(e.target.value)}
-                    required
-                    className="w-full px-3 py-2 bg-[#FAF9F7] border border-[#DCD6CC] focus:border-[#FD3100] rounded-xl text-xs font-bold text-[#111111] focus:outline-none"
-                  />
+                  <div className="grid grid-cols-5 gap-2">
+                    <input
+                      type="date"
+                      value={editPostDate}
+                      onChange={(e) => setEditPostDate(e.target.value)}
+                      required
+                      className="col-span-3 px-3 py-2 bg-[#FAF9F7] border border-[#DCD6CC] focus:border-[#FD3100] rounded-xl text-xs font-bold text-[#111111] focus:outline-none"
+                    />
+                    <input
+                      type="time"
+                      value={editPostTime}
+                      onChange={(e) => setEditPostTime(e.target.value)}
+                      title="Horário opcional do post"
+                      className="col-span-2 px-2.5 py-2 bg-[#FAF9F7] border border-[#DCD6CC] focus:border-[#FD3100] rounded-xl text-xs font-bold text-[#111111] focus:outline-none"
+                    />
+                  </div>
                 </div>
               </div>
 
