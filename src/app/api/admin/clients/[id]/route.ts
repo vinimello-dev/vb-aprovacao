@@ -27,7 +27,7 @@ export async function GET(request: Request, { params }: RouteParams) {
                 media: { orderBy: { order: 'asc' } },
                 comments: true,
               },
-              orderBy: { scheduledDate: 'desc' },
+              orderBy: { createdAt: 'asc' },
             },
           },
         },
@@ -43,7 +43,7 @@ export async function GET(request: Request, { params }: RouteParams) {
             media: { orderBy: { order: 'asc' } },
             comments: true,
           },
-          orderBy: { scheduledDate: 'desc' },
+          orderBy: { createdAt: 'asc' },
         },
       },
     });

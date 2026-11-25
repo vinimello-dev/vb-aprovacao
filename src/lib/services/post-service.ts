@@ -169,7 +169,7 @@ export async function getPostsByClientId(clientId: string): Promise<PostData[]> 
   try {
     const posts = await prisma.post.findMany({
       where: { clientId },
-      orderBy: { scheduledDate: 'asc' },
+      orderBy: { createdAt: 'asc' },
       include: {
         media: { orderBy: { order: 'asc' } },
         comments: { orderBy: { createdAt: 'asc' } },
