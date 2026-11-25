@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import {
   BarChart3,
   TrendingUp,
@@ -25,6 +25,9 @@ import {
   CheckCircle2,
   AlertCircle,
   Link2,
+  Activity,
+  Award,
+  ArrowRight,
 } from 'lucide-react';
 import { MonthlyMetricItem, CustomMetricItem } from '@/lib/services/metrics-service';
 
@@ -59,6 +62,53 @@ function calcDelta(current: number, previous: number | undefined): number | null
   return Math.round(((current - previous) / previous) * 100);
 }
 
+function AnimatedNumber({
+  value,
+  prefix = '',
+}: {
+  value: number;
+  prefix?: string;
+}) {
+  const [display, setDisplay] = useState(value);
+  const prevRef = useRef(0);
+
+  useEffect(() => {
+    const startVal = prevRef.current;
+    const endVal = value || 0;
+    if (startVal === endVal) {
+      setDisplay(endVal);
+      return;
+    }
+
+    const duration = 650;
+    const startTime = performance.now();
+    let rafId = 0;
+
+    const tick = (now: number) => {
+      const elapsed = now - startTime;
+      const progress = Math.min(1, elapsed / duration);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      const current = Math.round(startVal + (endVal - startVal) * eased);
+      setDisplay(current);
+      if (progress < 1) {
+        rafId = requestAnimationFrame(tick);
+      } else {
+        prevRef.current = endVal;
+      }
+    };
+
+    rafId = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(rafId);
+  }, [value]);
+
+  return (
+    <span>
+      {prefix}
+      {formatNumber(display)}
+    </span>
+  );
+}
+
 interface ClientMetricsHubProps {
   mode: 'admin' | 'client';
   clientId?: string;
@@ -78,6 +128,8 @@ export function ClientMetricsHub({
   const [chartField, setChartField] = useState<
     'reach' | 'profileVisits' | 'followersGained' | 'interactions' | 'leads'
   >('reach');
+  const [chartStyle, setChartStyle] = useState<'area' | 'bars'>('area');
+  const [hoveredMonthId, setHoveredMonthId] = useState<string | null>(null);
 
   // Modal de Lançamento / Edição (Admin)
   const [formOpen, setFormOpen] = useState(false);
@@ -619,11 +671,46 @@ export function ClientMetricsHub({
             )}
           </div>
 
-          {/* Grid Principal de KPIs */}
+          {/* Resumo Inteligente de Crescimento (quando há mês anterior para comparar) */}
+          {previousMetric && (() => {
+            const comparisons = [
+              { label: 'Alcance', delta: calcDelta(currentMetric.reach, previousMetric.reach) },
+              { label: 'Visitas ao Perfil', delta: calcDelta(currentMetric.profileVisits, previousMetric.profileVisits) },
+              { label: 'Novos Seguidores', delta: calcDelta(currentMetric.followersGained, previousMetric.followersGained) },
+              { label: 'Cliques & Leads', delta: calcDelta(currentMetric.linkClicks + currentMetric.leads, previousMetric.linkClicks + previousMetric.leads) },
+            ].filter((c) => c.delta !== null && c.delta > 0) as Array<{ label: string; delta: number }>;
+
+            if (comparisons.length === 0) return null;
+            const topWin = comparisons.sort((a, b) => b.delta - a.delta)[0];
+            return (
+              <div className="bg-gradient-to-r from-[#FFF0EC] via-white to-[#FFF0EC] border-2 border-[#FFCEBF] rounded-2xl px-4 py-3 flex items-center justify-between gap-3 shadow-xs animate-in fade-in duration-500">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-[#FD3100] text-white flex items-center justify-center shrink-0 shadow-xs">
+                    <Award className="w-4 h-4" />
+                  </div>
+                  <p className="text-xs sm:text-sm font-bold text-[#111111]">
+                    Destaque do mês: <strong className="text-[#FD3100]">{topWin.label}</strong> cresceu{' '}
+                    <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[11px] font-black">
+                      +{topWin.delta}%
+                    </span>{' '}
+                    em comparação com {MONTH_NAMES[previousMetric.month - 1]}!
+                  </p>
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* Grid Principal de KPIs (Clicáveis para sincronizar o gráfico abaixo!) */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* KPI 1: Alcance */}
-            <div className="bg-white border-2 border-[#DCD6CC] rounded-3xl p-5 shadow-sm flex flex-col justify-between">
-              <div className="flex items-center justify-between mb-3">
+            <button
+              type="button"
+              onClick={() => setChartField('reach')}
+              className={`text-left bg-white border-2 rounded-3xl p-5 shadow-sm flex flex-col justify-between transition-all duration-300 hover:-translate-y-1 hover:shadow-md ${
+                chartField === 'reach' ? 'border-[#FD3100] ring-2 ring-[#FD3100]/15' : 'border-[#DCD6CC] hover:border-[#FD3100]'
+              }`}
+            >
+              <div className="flex items-center justify-between mb-3 w-full">
                 <span className="text-[11px] font-black uppercase text-[#66635D] tracking-wider">
                   Alcance Total
                 </span>
@@ -631,24 +718,30 @@ export function ClientMetricsHub({
                   <Eye className="w-4 h-4 stroke-[2]" />
                 </div>
               </div>
-              <div>
+              <div className="w-full">
                 <p className="text-2xl sm:text-3xl font-black text-[#111111] tracking-tight">
-                  {formatNumber(currentMetric.reach)}
+                  <AnimatedNumber value={currentMetric.reach} />
                 </p>
                 <div className="flex flex-wrap items-center gap-2 mt-2">
                   {renderDeltaBadge(currentMetric.reach, previousMetric?.reach)}
                   {currentMetric.impressions > 0 && (
                     <span className="text-[10px] font-bold text-[#66635D]">
-                      {formatNumber(currentMetric.impressions)} impressões
+                      {formatNumber(currentMetric.impressions)} visualizações
                     </span>
                   )}
                 </div>
               </div>
-            </div>
+            </button>
 
             {/* KPI 2: Visitas ao Perfil */}
-            <div className="bg-white border-2 border-[#DCD6CC] rounded-3xl p-5 shadow-sm flex flex-col justify-between">
-              <div className="flex items-center justify-between mb-3">
+            <button
+              type="button"
+              onClick={() => setChartField('profileVisits')}
+              className={`text-left bg-white border-2 rounded-3xl p-5 shadow-sm flex flex-col justify-between transition-all duration-300 hover:-translate-y-1 hover:shadow-md ${
+                chartField === 'profileVisits' ? 'border-[#FD3100] ring-2 ring-[#FD3100]/15' : 'border-[#DCD6CC] hover:border-[#FD3100]'
+              }`}
+            >
+              <div className="flex items-center justify-between mb-3 w-full">
                 <span className="text-[11px] font-black uppercase text-[#66635D] tracking-wider">
                   Visitas ao Perfil
                 </span>
@@ -656,19 +749,25 @@ export function ClientMetricsHub({
                   <Target className="w-4 h-4 stroke-[2]" />
                 </div>
               </div>
-              <div>
+              <div className="w-full">
                 <p className="text-2xl sm:text-3xl font-black text-[#111111] tracking-tight">
-                  {formatNumber(currentMetric.profileVisits)}
+                  <AnimatedNumber value={currentMetric.profileVisits} />
                 </p>
                 <div className="mt-2">
                   {renderDeltaBadge(currentMetric.profileVisits, previousMetric?.profileVisits)}
                 </div>
               </div>
-            </div>
+            </button>
 
             {/* KPI 3: Seguidores */}
-            <div className="bg-white border-2 border-[#DCD6CC] rounded-3xl p-5 shadow-sm flex flex-col justify-between">
-              <div className="flex items-center justify-between mb-3">
+            <button
+              type="button"
+              onClick={() => setChartField('followersGained')}
+              className={`text-left bg-white border-2 rounded-3xl p-5 shadow-sm flex flex-col justify-between transition-all duration-300 hover:-translate-y-1 hover:shadow-md ${
+                chartField === 'followersGained' ? 'border-[#FD3100] ring-2 ring-[#FD3100]/15' : 'border-[#DCD6CC] hover:border-[#FD3100]'
+              }`}
+            >
+              <div className="flex items-center justify-between mb-3 w-full">
                 <span className="text-[11px] font-black uppercase text-[#66635D] tracking-wider">
                   Novos Seguidores
                 </span>
@@ -676,24 +775,33 @@ export function ClientMetricsHub({
                   <Users className="w-4 h-4 stroke-[2]" />
                 </div>
               </div>
-              <div>
+              <div className="w-full">
                 <p className="text-2xl sm:text-3xl font-black text-[#111111] tracking-tight">
-                  {currentMetric.followersGained >= 0 ? '+' : ''}
-                  {formatNumber(currentMetric.followersGained)}
+                  <AnimatedNumber
+                    value={currentMetric.followersGained}
+                    prefix={currentMetric.followersGained >= 0 ? '+' : ''}
+                  />
                 </p>
                 <div className="flex flex-wrap items-center gap-2 mt-2">
+                  {renderDeltaBadge(currentMetric.followersGained, previousMetric?.followersGained)}
                   {currentMetric.followersTotal > 0 && (
                     <span className="text-[11px] font-bold text-[#66635D]">
-                      Base total: <strong className="text-[#111111]">{formatNumber(currentMetric.followersTotal)}</strong>
+                      Base: <strong className="text-[#111111]">{formatNumber(currentMetric.followersTotal)}</strong>
                     </span>
                   )}
                 </div>
               </div>
-            </div>
+            </button>
 
             {/* KPI 4: Cliques & Leads */}
-            <div className="bg-white border-2 border-[#DCD6CC] rounded-3xl p-5 shadow-sm flex flex-col justify-between">
-              <div className="flex items-center justify-between mb-3">
+            <button
+              type="button"
+              onClick={() => setChartField('leads')}
+              className={`text-left bg-white border-2 rounded-3xl p-5 shadow-sm flex flex-col justify-between transition-all duration-300 hover:-translate-y-1 hover:shadow-md ${
+                chartField === 'leads' ? 'border-[#FD3100] ring-2 ring-[#FD3100]/15' : 'border-[#DCD6CC] hover:border-[#FD3100]'
+              }`}
+            >
+              <div className="flex items-center justify-between mb-3 w-full">
                 <span className="text-[11px] font-black uppercase text-[#66635D] tracking-wider">
                   Cliques & Leads
                 </span>
@@ -701,17 +809,21 @@ export function ClientMetricsHub({
                   <MousePointerClick className="w-4 h-4 stroke-[2]" />
                 </div>
               </div>
-              <div>
+              <div className="w-full">
                 <p className="text-2xl sm:text-3xl font-black text-[#111111] tracking-tight">
-                  {formatNumber(currentMetric.linkClicks + currentMetric.leads)}
+                  <AnimatedNumber value={currentMetric.linkClicks + currentMetric.leads} />
                 </p>
-                <div className="flex flex-wrap items-center gap-2 mt-2 text-[11px] font-bold text-[#66635D]">
-                  <span>{formatNumber(currentMetric.linkClicks)} cliques</span>
-                  <span>•</span>
-                  <span>{formatNumber(currentMetric.leads)} leads/msgs</span>
+                <div className="flex flex-wrap items-center gap-2 mt-2">
+                  {renderDeltaBadge(
+                    currentMetric.linkClicks + currentMetric.leads,
+                    previousMetric ? previousMetric.linkClicks + previousMetric.leads : undefined
+                  )}
+                  <span className="text-[11px] font-bold text-[#66635D]">
+                    {formatNumber(currentMetric.linkClicks)} cliques • {formatNumber(currentMetric.leads)} leads
+                  </span>
                 </div>
               </div>
-            </div>
+            </button>
           </div>
 
           {/* KPIs Extras (Tráfego Pago + Personalizados se houver) */}
@@ -749,86 +861,256 @@ export function ClientMetricsHub({
 
           {/* Gráficos Lado a Lado */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            {/* Gráfico 1: Evolução Mensal */}
+            {/* Gráfico 1: Evolução Mensal Interativa (Área/Curva ou Barras) */}
             <div className="lg:col-span-7 bg-white border-2 border-[#DCD6CC] rounded-3xl p-5 sm:p-6 shadow-sm flex flex-col justify-between">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-[#EEEDEA]">
-                <div>
-                  <h3 className="font-black text-base text-[#111111] uppercase tracking-tight">
-                    Evolução Mensal
-                  </h3>
-                  <p className="text-[11px] text-[#66635D]">
-                    Comparativo dos últimos meses registrados
-                  </p>
+                <div className="flex items-center gap-2">
+                  <Activity className="w-5 h-5 text-[#FD3100]" />
+                  <div>
+                    <h3 className="font-black text-base text-[#111111] uppercase tracking-tight">
+                      Evolução Mensal
+                    </h3>
+                    <p className="text-[11px] text-[#66635D]">
+                      Passe o mouse ou clique em um mês para comparar
+                    </p>
+                  </div>
                 </div>
 
-                <div className="flex flex-wrap gap-1 bg-[#FAF9F7] p-1 rounded-xl border border-[#DCD6CC]">
-                  {(
-                    [
-                      { key: 'reach', label: 'Alcance' },
-                      { key: 'profileVisits', label: 'Visitas' },
-                      { key: 'followersGained', label: 'Seguidores' },
-                      { key: 'interactions', label: 'Interações' },
-                      { key: 'leads', label: 'Cliques/Leads' },
-                    ] as const
-                  ).map((item) => (
+                <div className="flex flex-wrap items-center gap-2">
+                  {/* Alternador Curva vs Barras */}
+                  <div className="flex items-center bg-[#FAF9F7] p-0.5 rounded-xl border border-[#DCD6CC]">
                     <button
-                      key={item.key}
                       type="button"
-                      onClick={() => setChartField(item.key)}
-                      className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase transition-all ${
-                        chartField === item.key
-                          ? 'bg-[#FD3100] text-white shadow-xs'
+                      onClick={() => setChartStyle('area')}
+                      className={`px-2 py-1 rounded-lg text-[10px] font-black uppercase transition-all ${
+                        chartStyle === 'area'
+                          ? 'bg-[#111111] text-white'
                           : 'text-[#66635D] hover:text-[#111111]'
                       }`}
                     >
-                      {item.label}
+                      Curva
                     </button>
-                  ))}
+                    <button
+                      type="button"
+                      onClick={() => setChartStyle('bars')}
+                      className={`px-2 py-1 rounded-lg text-[10px] font-black uppercase transition-all ${
+                        chartStyle === 'bars'
+                          ? 'bg-[#111111] text-white'
+                          : 'text-[#66635D] hover:text-[#111111]'
+                      }`}
+                    >
+                      Barras
+                    </button>
+                  </div>
+
+                  <div className="flex flex-wrap gap-1 bg-[#FAF9F7] p-1 rounded-xl border border-[#DCD6CC]">
+                    {(
+                      [
+                        { key: 'reach', label: 'Alcance' },
+                        { key: 'profileVisits', label: 'Visitas' },
+                        { key: 'followersGained', label: 'Seguidores' },
+                        { key: 'interactions', label: 'Interações' },
+                        { key: 'leads', label: 'Cliques/Leads' },
+                      ] as const
+                    ).map((item) => (
+                      <button
+                        key={item.key}
+                        type="button"
+                        onClick={() => setChartField(item.key)}
+                        className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase transition-all ${
+                          chartField === item.key
+                            ? 'bg-[#FD3100] text-white shadow-xs'
+                            : 'text-[#66635D] hover:text-[#111111]'
+                        }`}
+                      >
+                        {item.label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
 
-              {/* Barras Verticais Responsivas */}
-              <div className="mt-6 pt-4">
-                <div className="h-56 flex items-end justify-around gap-2 sm:gap-4 px-2">
-                  {evolutionData.map((d) => {
-                    const heightPct = Math.max(8, Math.round((d.value / maxChartVal) * 100));
-                    const isSelected = d.id === currentMetric.id;
-                    return (
-                      <button
-                        key={d.id}
-                        type="button"
-                        onClick={() => setSelectedMetricId(d.id)}
-                        className="flex-1 flex flex-col items-center justify-end h-full group focus:outline-none"
-                      >
-                        <span
-                          className={`text-[10px] sm:text-xs font-black mb-1.5 transition-colors ${
-                            isSelected ? 'text-[#FD3100]' : 'text-[#66635D]'
-                          }`}
-                        >
-                          {formatNumber(d.value)}
-                        </span>
-                        <div className="w-full max-w-[54px] flex-1 flex items-end justify-center">
-                          <div
-                            style={{ height: `${heightPct}%` }}
-                            className={`w-full rounded-t-2xl transition-all duration-500 ${
-                              isSelected
-                                ? 'bg-gradient-to-t from-[#FD3100] to-[#FF8A6E] shadow-md'
-                                : 'bg-[#FAF9F7] border-2 border-[#DCD6CC] group-hover:border-[#FD3100]'
-                            }`}
+              {/* Área do Gráfico Dinâmico */}
+              {chartStyle === 'area' && evolutionData.length >= 2 ? (() => {
+                const W = 520;
+                const H = 200;
+                const padX = 44;
+                const padY = 28;
+                const plotW = W - padX * 2;
+                const plotH = H - padY * 2;
+
+                const pts = evolutionData.map((d, i) => {
+                  const x =
+                    evolutionData.length === 1
+                      ? W / 2
+                      : padX + (i / (evolutionData.length - 1)) * plotW;
+                  const y = padY + plotH - (d.value / maxChartVal) * plotH;
+                  return { ...d, x, y };
+                });
+
+                // Curva suave Bezier
+                let linePath = `M ${pts[0].x} ${pts[0].y}`;
+                for (let i = 0; i < pts.length - 1; i++) {
+                  const p0 = pts[i];
+                  const p1 = pts[i + 1];
+                  const cx = (p0.x + p1.x) / 2;
+                  linePath += ` C ${cx} ${p0.y}, ${cx} ${p1.y}, ${p1.x} ${p1.y}`;
+                }
+                const areaPath = `${linePath} L ${pts[pts.length - 1].x} ${H - padY} L ${pts[0].x} ${H - padY} Z`;
+
+                return (
+                  <div className="mt-5 relative">
+                    <svg viewBox={`0 0 ${W} ${H + 24}`} className="w-full h-56 overflow-visible">
+                      <defs>
+                        <linearGradient id="vbAreaGrad" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#FD3100" stopOpacity="0.32" />
+                          <stop offset="100%" stopColor="#FD3100" stopOpacity="0.02" />
+                        </linearGradient>
+                      </defs>
+
+                      {/* Linhas horizontais de grade */}
+                      {[0, 0.25, 0.5, 0.75, 1].map((t) => {
+                        const y = padY + plotH * (1 - t);
+                        return (
+                          <line
+                            key={t}
+                            x1={padX}
+                            y1={y}
+                            x2={W - padX}
+                            y2={y}
+                            stroke="#DCD6CC"
+                            strokeOpacity="0.45"
+                            strokeDasharray="4 4"
+                            strokeWidth="1"
                           />
-                        </div>
-                        <span
-                          className={`mt-2 text-[10px] sm:text-[11px] font-black uppercase ${
-                            isSelected ? 'text-[#FD3100]' : 'text-[#66635D]'
-                          }`}
+                        );
+                      })}
+
+                      {/* Preenchimento em degradê */}
+                      <path d={areaPath} fill="url(#vbAreaGrad)" className="transition-all duration-500" />
+
+                      {/* Linha principal */}
+                      <path
+                        d={linePath}
+                        fill="none"
+                        stroke="#FD3100"
+                        strokeWidth="3.5"
+                        strokeLinecap="round"
+                        className="transition-all duration-500"
+                      />
+
+                      {/* Pontos interativos */}
+                      {pts.map((pt, idx) => {
+                        const isSelected = pt.id === currentMetric.id;
+                        const isHovered = hoveredMonthId === pt.id;
+                        const prevVal = idx > 0 ? pts[idx - 1].value : undefined;
+                        const delta = calcDelta(pt.value, prevVal);
+                        return (
+                          <g
+                            key={pt.id}
+                            className="cursor-pointer"
+                            onMouseEnter={() => setHoveredMonthId(pt.id)}
+                            onMouseLeave={() => setHoveredMonthId(null)}
+                            onClick={() => setSelectedMetricId(pt.id)}
+                          >
+                            {/* Halo animado ao selecionar ou passar mouse */}
+                            {(isSelected || isHovered) && (
+                              <circle
+                                cx={pt.x}
+                                cy={pt.y}
+                                r={isHovered ? 13 : 10}
+                                fill="#FD3100"
+                                fillOpacity="0.18"
+                                className="transition-all duration-200"
+                              />
+                            )}
+                            <circle
+                              cx={pt.x}
+                              cy={pt.y}
+                              r={isSelected || isHovered ? 6.5 : 5}
+                              fill={isSelected ? '#FD3100' : '#FFFFFF'}
+                              stroke="#FD3100"
+                              strokeWidth="3"
+                              className="transition-all duration-200"
+                            />
+                            {/* Valor acima do ponto */}
+                            <text
+                              x={pt.x}
+                              y={pt.y - 14}
+                              textAnchor="middle"
+                              className="text-[11px] font-black fill-[#111111]"
+                            >
+                              {formatNumber(pt.value)}
+                              {delta !== null ? ` (${delta >= 0 ? '+' : ''}${delta}%)` : ''}
+                            </text>
+                            {/* Rótulo do mês */}
+                            <text
+                              x={pt.x}
+                              y={H + 10}
+                              textAnchor="middle"
+                              className={`text-[11px] font-black uppercase ${
+                                isSelected ? 'fill-[#FD3100]' : 'fill-[#66635D]'
+                              }`}
+                            >
+                              {pt.label}
+                            </text>
+                          </g>
+                        );
+                      })}
+                    </svg>
+                  </div>
+                );
+              })() : (
+                <div className="mt-6 pt-4">
+                  <div className="h-56 flex items-end justify-around gap-2 sm:gap-4 px-2">
+                    {evolutionData.map((d, idx) => {
+                      const heightPct = Math.max(10, Math.round((d.value / maxChartVal) * 100));
+                      const isSelected = d.id === currentMetric.id;
+                      const prevVal = idx > 0 ? evolutionData[idx - 1].value : undefined;
+                      const delta = calcDelta(d.value, prevVal);
+                      return (
+                        <button
+                          key={d.id}
+                          type="button"
+                          onClick={() => setSelectedMetricId(d.id)}
+                          className="flex-1 flex flex-col items-center justify-end h-full group focus:outline-none"
                         >
-                          {d.label}
-                        </span>
-                      </button>
-                    );
-                  })}
+                          <span
+                            className={`text-[10px] sm:text-xs font-black mb-1.5 transition-colors ${
+                              isSelected ? 'text-[#FD3100]' : 'text-[#66635D]'
+                            }`}
+                          >
+                            {formatNumber(d.value)}
+                            {delta !== null && (
+                              <span className={`ml-1 text-[9px] ${delta >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                                {delta >= 0 ? '+' : ''}
+                                {delta}%
+                              </span>
+                            )}
+                          </span>
+                          <div className="w-full max-w-[54px] flex-1 flex items-end justify-center">
+                            <div
+                              style={{ height: `${heightPct}%` }}
+                              className={`w-full rounded-t-2xl transition-all duration-500 ${
+                                isSelected
+                                  ? 'bg-gradient-to-t from-[#FD3100] to-[#FF8A6E] shadow-md'
+                                  : 'bg-[#FAF9F7] border-2 border-[#DCD6CC] group-hover:border-[#FD3100] group-hover:-translate-y-0.5'
+                              }`}
+                            />
+                          </div>
+                          <span
+                            className={`mt-2 text-[10px] sm:text-[11px] font-black uppercase ${
+                              isSelected ? 'text-[#FD3100]' : 'text-[#66635D]'
+                            }`}
+                          >
+                            {d.label}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
 
             {/* Gráfico 2: Distribuição de Engajamento (Donut + Barras) */}
@@ -928,6 +1210,116 @@ export function ClientMetricsHub({
               </div>
             </div>
           </div>
+
+          {/* Funil de Conversão Visual (Da Exposição ao Clique/Contato) */}
+          {(currentMetric.impressions > 0 || currentMetric.reach > 0) && (
+            <div className="bg-white border-2 border-[#DCD6CC] rounded-3xl p-5 sm:p-6 shadow-sm">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b border-[#EEEDEA] mb-5">
+                <div>
+                  <h3 className="font-black text-base text-[#111111] uppercase tracking-tight">
+                    Funil de Resultados do Mês
+                  </h3>
+                  <p className="text-[11px] text-[#66635D]">
+                    Jornada de quem viu os conteúdos até visitar o perfil e clicar no link
+                  </p>
+                </div>
+                {currentMetric.profileVisits > 0 && (
+                  <span className="px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-black uppercase self-start sm:self-auto">
+                    Conversão Visita → Clique:{' '}
+                    {Math.round(
+                      ((currentMetric.linkClicks + currentMetric.leads) /
+                        currentMetric.profileVisits) *
+                        100
+                    )}
+                    %
+                  </span>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 items-center">
+                {[
+                  {
+                    step: '1. Visualizações',
+                    val: currentMetric.impressions || currentMetric.reach,
+                    sub: 'Exibições totais',
+                    color: '#FD3100',
+                    pct: 100,
+                  },
+                  {
+                    step: '2. Alcance Único',
+                    val: currentMetric.reach,
+                    sub: 'Pessoas alcançadas',
+                    color: '#FB923C',
+                    pct:
+                      (currentMetric.impressions || currentMetric.reach) > 0
+                        ? Math.min(
+                            100,
+                            Math.round(
+                              (currentMetric.reach /
+                                (currentMetric.impressions || currentMetric.reach)) *
+                                100
+                            )
+                          )
+                        : 65,
+                  },
+                  {
+                    step: '3. Visitas ao Perfil',
+                    val: currentMetric.profileVisits,
+                    sub: 'Interessados na marca',
+                    color: '#3B82F6',
+                    pct:
+                      currentMetric.reach > 0
+                        ? Math.max(12, Math.min(100, Math.round((currentMetric.profileVisits / currentMetric.reach) * 400)))
+                        : 35,
+                  },
+                  {
+                    step: '4. Cliques & Leads',
+                    val: currentMetric.linkClicks + currentMetric.leads,
+                    sub: 'Ações de contato',
+                    color: '#10B981',
+                    pct:
+                      currentMetric.profileVisits > 0
+                        ? Math.max(
+                            12,
+                            Math.min(
+                              100,
+                              Math.round(
+                                ((currentMetric.linkClicks + currentMetric.leads) /
+                                  currentMetric.profileVisits) *
+                                  100
+                              )
+                            )
+                          )
+                        : 25,
+                  },
+                ].map((stage, i) => (
+                  <div
+                    key={stage.step}
+                    className="relative p-4 rounded-2xl bg-[#FAF9F7] border border-[#DCD6CC] flex flex-col justify-between transition-all hover:border-[#FD3100]"
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-[10px] font-black uppercase text-[#66635D]">
+                        {stage.step}
+                      </span>
+                      {i < 3 && (
+                        <ArrowRight className="hidden lg:block w-3.5 h-3.5 text-[#DCD6CC]" />
+                      )}
+                    </div>
+                    <p className="text-xl font-black text-[#111111]">
+                      <AnimatedNumber value={stage.val} />
+                    </p>
+                    <p className="text-[10px] text-[#66635D] mb-2">{stage.sub}</p>
+                    <div className="h-2 rounded-full bg-white border border-[#EEEDEA] overflow-hidden">
+                      <div
+                        className="h-full rounded-full transition-all duration-700"
+                        style={{ width: `${stage.pct}%`, backgroundColor: stage.color }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Análise Estratégica da Agência */}
           {currentMetric.notes && (
