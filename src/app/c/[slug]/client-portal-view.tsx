@@ -699,7 +699,7 @@ export function ClientPortalView({ client }: ClientPortalViewProps) {
               </span>
             </div>
 
-            {/* Grid 3x3 Quadrada do Instagram */}
+            {/* Grid 3 colunas 4:5 (Padrão Atual do Instagram) */}
             {filteredPosts.length === 0 ? (
               <div className="py-20 text-center text-[#66635D] font-bold">
                 Nenhum post encontrado para este filtro.
@@ -710,7 +710,7 @@ export function ClientPortalView({ client }: ClientPortalViewProps) {
                   <div
                     key={post.id}
                     onClick={() => setSelectedPost(post)}
-                    className="relative aspect-square bg-[#0b0f19] rounded-2xl overflow-hidden cursor-pointer group shadow-sm border border-[#DCD6CC]"
+                    className="relative aspect-[4/5] bg-[#0b0f19] rounded-2xl overflow-hidden cursor-pointer group shadow-sm border border-[#DCD6CC]"
                   >
                     {/* Capa do Post (Vídeo ou Carrossel) */}
                     <img
