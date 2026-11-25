@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   Calendar as CalendarIcon,
   ChevronLeft,
@@ -8,7 +8,22 @@ import {
   Plus,
 } from 'lucide-react';
 import { PostData } from '@/lib/services/post-service';
-import { getScheduledDay } from '@/lib/utils';
+import { getScheduledYearMonthDay } from '@/lib/utils';
+
+const MONTH_NAMES = [
+  'Janeiro',
+  'Fevereiro',
+  'Março',
+  'Abril',
+  'Maio',
+  'Junho',
+  'Julho',
+  'Agosto',
+  'Setembro',
+  'Outubro',
+  'Novembro',
+  'Dezembro',
+];
 
 interface CycleSummary {
   id: string;
@@ -31,11 +46,20 @@ export function AdminClientCalendar({
   onPostDateChanged,
   onOpenAddPost,
 }: AdminClientCalendarProps) {
+  const now = new Date();
+  const [calendarMonth, setCalendarMonth] = useState(now.getMonth() + 1);
+  const [calendarYear, setCalendarYear] = useState(now.getFullYear());
+  const [hasInitializedMonth, setHasInitializedMonth] = useState(false);
+
   const [selectedCycleId, setSelectedCycleId] = useState<string>('ALL');
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'PENDENTE' | 'AJUSTES' | 'APROVADO'>('ALL');
   const [draggedPostId, setDraggedPostId] = useState<string | null>(null);
   const [dragOverDay, setDragOverDay] = useState<number | null>(null);
-  const [rescheduleToast, setRescheduleToast] = useState<{ title: string; day: number } | null>(null);
+  const [rescheduleToast, setRescheduleToast] = useState<{
+    title: string;
+    day: number;
+    monthName: string;
+  } | null>(null);
 
   const allPosts = useMemo(() => {
     const cyclePosts = cycles.flatMap((c) => c.posts || []);
@@ -54,44 +78,91 @@ export function AdminClientCalendar({
     return base;
   }, [allPosts, cycles, selectedCycleId, statusFilter]);
 
-  const handleMovePostToDay = async (post: PostData, targetDay: number) => {
-    if (targetDay < 1 || targetDay > 31) return;
-    const currentDay = getScheduledDay(post.scheduledDate);
-    if (currentDay === targetDay) return;
-
-    let year = new Date().getFullYear();
-    let month = new Date().getMonth() + 1;
-
-    if (post.scheduledDate) {
-      const rawDate = post.scheduledDate as unknown;
-      if (typeof rawDate === 'string') {
-        const m = rawDate.match(/^(\d{4})-(\d{2})/);
-        if (m) {
-          year = parseInt(m[1], 10);
-          month = parseInt(m[2], 10);
-        }
-      } else if (post.scheduledDate instanceof Date) {
-        if (post.scheduledDate.getUTCHours() === 0 && post.scheduledDate.getUTCMinutes() === 0) {
-          year = post.scheduledDate.getUTCFullYear();
-          month = post.scheduledDate.getUTCMonth() + 1;
-        } else {
-          year = post.scheduledDate.getFullYear();
-          month = post.scheduledDate.getMonth() + 1;
-        }
+  // Agrupa os meses que possuem posts programados (ex: Nov/2026 (5), Dez/2026 (1))
+  const monthsWithPosts = useMemo(() => {
+    const map = new Map<string, { year: number; month: number; count: number }>();
+    for (const p of filteredPosts) {
+      const ymd = getScheduledYearMonthDay(p.scheduledDate);
+      if (!ymd) continue;
+      const key = `${ymd.year}-${String(ymd.month).padStart(2, '0')}`;
+      const existing = map.get(key);
+      if (existing) {
+        existing.count += 1;
+      } else {
+        map.set(key, { year: ymd.year, month: ymd.month, count: 1 });
       }
     }
+    return Array.from(map.values()).sort((a, b) =>
+      a.year !== b.year ? a.year - b.year : a.month - b.month
+    );
+  }, [filteredPosts]);
 
-    const mm = String(month).padStart(2, '0');
+  // Se o mês atual não tiver posts mas houver posts em outro mês na carga inicial, posiciona no primeiro mês com posts
+  useEffect(() => {
+    if (hasInitializedMonth || monthsWithPosts.length === 0) return;
+    const hasCurrentMonth = monthsWithPosts.some(
+      (m) => m.year === calendarYear && m.month === calendarMonth
+    );
+    if (!hasCurrentMonth) {
+      setCalendarYear(monthsWithPosts[0].year);
+      setCalendarMonth(monthsWithPosts[0].month);
+    }
+    setHasInitializedMonth(true);
+  }, [monthsWithPosts, hasInitializedMonth, calendarYear, calendarMonth]);
+
+  const daysInMonth = useMemo(
+    () => new Date(calendarYear, calendarMonth, 0).getDate(),
+    [calendarYear, calendarMonth]
+  );
+
+  const startingWeekday = useMemo(
+    () => new Date(calendarYear, calendarMonth - 1, 1).getDay(),
+    [calendarYear, calendarMonth]
+  );
+
+  const postsInCurrentMonthCount = useMemo(() => {
+    return filteredPosts.filter((p) => {
+      const ymd = getScheduledYearMonthDay(p.scheduledDate);
+      return ymd && ymd.year === calendarYear && ymd.month === calendarMonth;
+    }).length;
+  }, [filteredPosts, calendarYear, calendarMonth]);
+
+  const handlePrevMonth = () => {
+    if (calendarMonth === 1) {
+      setCalendarMonth(12);
+      setCalendarYear((y) => y - 1);
+    } else {
+      setCalendarMonth((m) => m - 1);
+    }
+  };
+
+  const handleNextMonth = () => {
+    if (calendarMonth === 12) {
+      setCalendarMonth(1);
+      setCalendarYear((y) => y + 1);
+    } else {
+      setCalendarMonth((m) => m + 1);
+    }
+  };
+
+  const handleMovePostToDay = async (post: PostData, targetDay: number) => {
+    if (targetDay < 1 || targetDay > daysInMonth) return;
+    const ymd = getScheduledYearMonthDay(post.scheduledDate);
+    if (ymd && ymd.year === calendarYear && ymd.month === calendarMonth && ymd.day === targetDay) {
+      return;
+    }
+
+    const mm = String(calendarMonth).padStart(2, '0');
     const dd = String(targetDay).padStart(2, '0');
-    const newDateStr = `${year}-${mm}-${dd}`;
+    const newDateStr = `${calendarYear}-${mm}-${dd}`;
     const newDateObj = new Date(`${newDateStr}T12:00:00.000Z`);
 
-    // Atualização otimista no estado pai
     onPostDateChanged(post.id, newDateObj);
 
     setRescheduleToast({
       title: post.title,
       day: targetDay,
+      monthName: MONTH_NAMES[calendarMonth - 1],
     });
     setTimeout(() => {
       setRescheduleToast(null);
@@ -183,29 +254,83 @@ export function AdminClientCalendar({
         </div>
       </div>
 
-      {/* Grade Mensal (Mesmo Padrão do Portal do Cliente) */}
+      {/* Grade Mensal Real com Navegação Entre Meses */}
       <div className="bg-white border-2 border-[#DCD6CC] rounded-3xl p-5 sm:p-8 shadow-lg">
-        {/* Cabeçalho do Mês */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-6 border-b border-[#EEEDEA] mb-6">
-          <div className="flex items-center gap-2">
-            <CalendarIcon className="w-6 h-6" style={{ color: '#FD3100' }} />
+        {/* Cabeçalho do Mês com Navegação */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-5 border-b border-[#EEEDEA] mb-5">
+          <div className="flex items-center gap-3">
+            <CalendarIcon className="w-6 h-6 shrink-0" style={{ color: '#FD3100' }} />
             <div>
               <h2 className="font-black text-xl text-[#111111] uppercase tracking-tight">
-                Planejamento do Mês
+                {MONTH_NAMES[calendarMonth - 1]} {calendarYear}
               </h2>
               <p className="text-[11px] text-[#66635D] font-medium">
-                Arraste os posts entre os dias ou use as setas para reprogramar a grade.
+                Arraste os posts entre os dias ou navegue pelos próximos meses do ciclo.
               </p>
             </div>
           </div>
 
-          <div
-            style={{ backgroundColor: '#FFF0EC', color: '#FD3100', borderColor: '#FFCEBF' }}
-            className="text-xs font-black px-4 py-1.5 rounded-full border uppercase shadow-sm self-start sm:self-auto"
-          >
-            {filteredPosts.length} publicações programadas
+          <div className="flex flex-wrap items-center gap-2.5">
+            {/* Navegador de Mês */}
+            <div className="flex items-center gap-1 bg-[#FAF9F7] p-1 rounded-2xl border border-[#DCD6CC]">
+              <button
+                type="button"
+                onClick={handlePrevMonth}
+                className="p-2 rounded-xl hover:bg-white hover:text-[#FD3100] text-[#111111] transition-colors"
+                title="Mês anterior"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <span className="px-3 text-xs font-black uppercase text-[#111111] min-w-[130px] text-center">
+                {MONTH_NAMES[calendarMonth - 1]} {calendarYear}
+              </span>
+              <button
+                type="button"
+                onClick={handleNextMonth}
+                className="p-2 rounded-xl hover:bg-white hover:text-[#FD3100] text-[#111111] transition-colors"
+                title="Próximo mês"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div
+              style={{ backgroundColor: '#FFF0EC', color: '#FD3100', borderColor: '#FFCEBF' }}
+              className="text-xs font-black px-4 py-2 rounded-full border uppercase shadow-sm"
+            >
+              {postsInCurrentMonthCount} neste mês • {filteredPosts.length} total
+            </div>
           </div>
         </div>
+
+        {/* Atalhos rápidos para meses que já têm posts programados */}
+        {monthsWithPosts.length > 0 && (
+          <div className="flex flex-wrap items-center gap-1.5 mb-5">
+            <span className="text-[10px] font-black uppercase text-[#66635D] mr-1">
+              Meses com posts:
+            </span>
+            {monthsWithPosts.map((m) => {
+              const isCurrent = m.year === calendarYear && m.month === calendarMonth;
+              return (
+                <button
+                  type="button"
+                  key={`${m.year}-${m.month}`}
+                  onClick={() => {
+                    setCalendarYear(m.year);
+                    setCalendarMonth(m.month);
+                  }}
+                  className={`px-3 py-1 rounded-full text-[11px] font-black uppercase border transition-all ${
+                    isCurrent
+                      ? 'bg-[#FD3100] text-white border-[#FD3100] shadow-xs'
+                      : 'bg-[#FAF9F7] text-[#111111] border-[#DCD6CC] hover:border-[#FD3100]'
+                  }`}
+                >
+                  {MONTH_NAMES[m.month - 1].slice(0, 3)}/{m.year} ({m.count})
+                </button>
+              );
+            })}
+          </div>
+        )}
 
         {/* Dias da Semana */}
         <div className="grid grid-cols-7 gap-2 text-center text-xs font-black uppercase text-[#111111] pb-3 border-b border-[#EEEDEA]">
@@ -218,13 +343,26 @@ export function AdminClientCalendar({
           <div>Sáb</div>
         </div>
 
-        {/* Grade dos Dias do Mês */}
+        {/* Grade Real dos Dias do Mês */}
         <div className="grid grid-cols-7 gap-2 pt-3">
-          {Array.from({ length: 31 }).map((_, dayIndex) => {
+          {/* Espaços vazios antes do dia 1 para alinhar com o dia da semana real */}
+          {Array.from({ length: startingWeekday }).map((_, emptyIdx) => (
+            <div
+              key={`empty_${emptyIdx}`}
+              className="min-h-[115px] sm:min-h-[135px] rounded-2xl bg-[#FAF9F7]/30 border border-dashed border-[#EEEDEA]"
+            />
+          ))}
+
+          {Array.from({ length: daysInMonth }).map((_, dayIndex) => {
             const dayNumber = dayIndex + 1;
             const dayPosts = filteredPosts.filter((p) => {
-              if (!p.scheduledDate) return false;
-              return getScheduledDay(p.scheduledDate) === dayNumber;
+              const ymd = getScheduledYearMonthDay(p.scheduledDate);
+              if (!ymd) return false;
+              return (
+                ymd.year === calendarYear &&
+                ymd.month === calendarMonth &&
+                ymd.day === dayNumber
+              );
             });
             const isDragOver = dragOverDay === dayNumber;
 
@@ -345,7 +483,7 @@ export function AdminClientCalendar({
                             title="Mudar dia da publicação"
                             className="text-[9px] font-black bg-[#FAF9F7] text-[#111111] border border-[#DCD6CC] rounded px-1 py-0.5 outline-none cursor-pointer hover:border-[#FD3100]"
                           >
-                            {Array.from({ length: 31 }, (_, i) => i + 1).map((d) => (
+                            {Array.from({ length: daysInMonth }, (_, i) => i + 1).map((d) => (
                               <option key={d} value={d}>
                                 Dia {d}
                               </option>
@@ -354,7 +492,7 @@ export function AdminClientCalendar({
 
                           <button
                             type="button"
-                            disabled={dayNumber >= 31}
+                            disabled={dayNumber >= daysInMonth}
                             onClick={() => handleMovePostToDay(post, dayNumber + 1)}
                             title="Avançar 1 dia"
                             className="p-0.5 rounded hover:bg-[#FFF0EC] hover:text-[#FD3100] disabled:opacity-25 transition-colors"
@@ -383,8 +521,10 @@ export function AdminClientCalendar({
           <div>
             <p className="text-xs font-black text-white">Publicação Reprogramada!</p>
             <p className="text-[11px] text-[#A9A6A0]">
-              &quot;{rescheduleToast.title}&quot; movido para o{' '}
-              <strong className="text-[#FD3100]">Dia {rescheduleToast.day}</strong>
+              &quot;{rescheduleToast.title}&quot; movido para{' '}
+              <strong className="text-[#FD3100]">
+                {rescheduleToast.day} de {rescheduleToast.monthName}
+              </strong>
             </p>
           </div>
         </div>

@@ -1,6 +1,6 @@
 ﻿'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import {
   KeyRound,
   Calendar as CalendarIcon,
@@ -30,7 +30,7 @@ import {
 } from 'lucide-react';
 import { PostData } from '@/lib/services/post-service';
 import { PostReviewModal } from '@/components/post-review-modal';
-import { formatDate, getScheduledDay } from '@/lib/utils';
+import { formatDate, getScheduledYearMonthDay } from '@/lib/utils';
 import { ChatMessage } from '@/lib/services/chat-service';
 import { playMessageSound } from '@/lib/audio-notification';
 import {
@@ -86,41 +86,86 @@ export function ClientPortalView({ client }: ClientPortalViewProps) {
   const [savedScriptId, setSavedScriptId] = useState<string | null>(null);
   const [copiedScriptId, setCopiedScriptId] = useState<string | null>(null);
 
-  // Drag & Drop no Calendário Mensal
+  // Drag & Drop e Navegação Mensal no Calendário
+  const PORTAL_MONTHS = [
+    'Janeiro',
+    'Fevereiro',
+    'Março',
+    'Abril',
+    'Maio',
+    'Junho',
+    'Julho',
+    'Agosto',
+    'Setembro',
+    'Outubro',
+    'Novembro',
+    'Dezembro',
+  ];
+  const nowDate = new Date();
+  const [calendarMonth, setCalendarMonth] = useState(nowDate.getMonth() + 1);
+  const [calendarYear, setCalendarYear] = useState(nowDate.getFullYear());
+  const [hasInitializedMonth, setHasInitializedMonth] = useState(false);
+
   const [draggedPostId, setDraggedPostId] = useState<string | null>(null);
   const [dragOverDay, setDragOverDay] = useState<number | null>(null);
   const [rescheduleToast, setRescheduleToast] = useState<{ title: string; day: number } | null>(null);
 
-  const handleMovePostToDay = async (post: PostData, targetDay: number) => {
-    if (targetDay < 1 || targetDay > 31) return;
-    const currentDay = getScheduledDay(post.scheduledDate);
-    if (currentDay === targetDay) return;
+  const daysInMonth = useMemo(
+    () => new Date(calendarYear, calendarMonth, 0).getDate(),
+    [calendarYear, calendarMonth]
+  );
 
-    let year = new Date().getFullYear();
-    let month = new Date().getMonth() + 1;
+  const startingWeekday = useMemo(
+    () => new Date(calendarYear, calendarMonth - 1, 1).getDay(),
+    [calendarYear, calendarMonth]
+  );
 
-    if (post.scheduledDate) {
-      const rawDate = post.scheduledDate as unknown;
-      if (typeof rawDate === 'string') {
-        const m = rawDate.match(/^(\d{4})-(\d{2})/);
-        if (m) {
-          year = parseInt(m[1], 10);
-          month = parseInt(m[2], 10);
-        }
-      } else if (post.scheduledDate instanceof Date) {
-        if (post.scheduledDate.getUTCHours() === 0 && post.scheduledDate.getUTCMinutes() === 0) {
-          year = post.scheduledDate.getUTCFullYear();
-          month = post.scheduledDate.getUTCMonth() + 1;
-        } else {
-          year = post.scheduledDate.getFullYear();
-          month = post.scheduledDate.getMonth() + 1;
-        }
+  useEffect(() => {
+    if (hasInitializedMonth || posts.length === 0) return;
+    const dated = posts
+      .map((p) => getScheduledYearMonthDay(p.scheduledDate))
+      .filter((x): x is { year: number; month: number; day: number } => x !== null)
+      .sort((a, b) => (a.year !== b.year ? a.year - b.year : a.month - b.month));
+    if (dated.length > 0) {
+      const hasCurrent = dated.some(
+        (m) => m.year === calendarYear && m.month === calendarMonth
+      );
+      if (!hasCurrent) {
+        setCalendarYear(dated[0].year);
+        setCalendarMonth(dated[0].month);
       }
+      setHasInitializedMonth(true);
+    }
+  }, [posts, hasInitializedMonth, calendarYear, calendarMonth]);
+
+  const handlePrevMonth = () => {
+    if (calendarMonth === 1) {
+      setCalendarMonth(12);
+      setCalendarYear((y) => y - 1);
+    } else {
+      setCalendarMonth((m) => m - 1);
+    }
+  };
+
+  const handleNextMonth = () => {
+    if (calendarMonth === 12) {
+      setCalendarMonth(1);
+      setCalendarYear((y) => y + 1);
+    } else {
+      setCalendarMonth((m) => m + 1);
+    }
+  };
+
+  const handleMovePostToDay = async (post: PostData, targetDay: number) => {
+    if (targetDay < 1 || targetDay > daysInMonth) return;
+    const ymd = getScheduledYearMonthDay(post.scheduledDate);
+    if (ymd && ymd.year === calendarYear && ymd.month === calendarMonth && ymd.day === targetDay) {
+      return;
     }
 
-    const mm = String(month).padStart(2, '0');
+    const mm = String(calendarMonth).padStart(2, '0');
     const dd = String(targetDay).padStart(2, '0');
-    const newDateStr = `${year}-${mm}-${dd}`;
+    const newDateStr = `${calendarYear}-${mm}-${dd}`;
     const newDateObj = new Date(`${newDateStr}T12:00:00.000Z`);
 
     // Atualização otimista imediata no estado local
@@ -738,25 +783,101 @@ export function ClientPortalView({ client }: ClientPortalViewProps) {
           </div>
         )}
 
-        {/* 2. VISÃO CALENDÁRIO MENSAL (MÊS INTEIRO) */}
-        {viewMode === 'calendar' && (
+        {/* 2. VISÃO CALENDÁRIO MENSAL (MÊS INTEIRO COM NAVEGAÇÃO ENTRE MESES) */}
+        {viewMode === 'calendar' && (() => {
+          const monthsMap = new Map<string, { year: number; month: number; count: number }>();
+          for (const p of filteredPosts) {
+            const ymd = getScheduledYearMonthDay(p.scheduledDate);
+            if (!ymd) continue;
+            const key = `${ymd.year}-${String(ymd.month).padStart(2, '0')}`;
+            const existing = monthsMap.get(key);
+            if (existing) existing.count += 1;
+            else monthsMap.set(key, { year: ymd.year, month: ymd.month, count: 1 });
+          }
+          const monthsWithPosts = Array.from(monthsMap.values()).sort((a, b) =>
+            a.year !== b.year ? a.year - b.year : a.month - b.month
+          );
+          const postsInMonthCount = filteredPosts.filter((p) => {
+            const ymd = getScheduledYearMonthDay(p.scheduledDate);
+            return ymd && ymd.year === calendarYear && ymd.month === calendarMonth;
+          }).length;
+
+          return (
           <div className="bg-white border-2 border-[#DCD6CC] rounded-3xl p-6 sm:p-8 shadow-lg">
-            {/* Cabeçalho do Mês */}
-            <div className="flex items-center justify-between pb-6 border-b border-[#EEEDEA] mb-6">
-              <div className="flex items-center gap-2">
-                <CalendarIcon className="w-6 h-6" style={{ color: '#FD3100' }} />
-                <h2 className="font-black text-xl text-[#111111] uppercase tracking-tight">
-                  Planejamento do Mês
-                </h2>
+            {/* Cabeçalho do Mês com Navegação */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-5 border-b border-[#EEEDEA] mb-5">
+              <div className="flex items-center gap-2.5">
+                <CalendarIcon className="w-6 h-6 shrink-0" style={{ color: '#FD3100' }} />
+                <div>
+                  <h2 className="font-black text-xl text-[#111111] uppercase tracking-tight">
+                    {PORTAL_MONTHS[calendarMonth - 1]} {calendarYear}
+                  </h2>
+                  <p className="text-[11px] text-[#66635D] font-medium">
+                    Navegue entre os meses para acompanhar todo o seu planejamento.
+                  </p>
+                </div>
               </div>
 
-              <div
-                style={{ backgroundColor: '#FFF0EC', color: '#FD3100', borderColor: '#FFCEBF' }}
-                className="text-xs font-black px-4 py-1.5 rounded-full border uppercase shadow-sm"
-              >
-                {posts.length} publicações programadas
+              <div className="flex flex-wrap items-center gap-2.5">
+                <div className="flex items-center gap-1 bg-[#FAF9F7] p-1 rounded-2xl border border-[#DCD6CC]">
+                  <button
+                    type="button"
+                    onClick={handlePrevMonth}
+                    className="p-2 rounded-xl hover:bg-white hover:text-[#FD3100] text-[#111111] transition-colors"
+                    title="Mês anterior"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                  <span className="px-3 text-xs font-black uppercase text-[#111111] min-w-[130px] text-center">
+                    {PORTAL_MONTHS[calendarMonth - 1]} {calendarYear}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleNextMonth}
+                    className="p-2 rounded-xl hover:bg-white hover:text-[#FD3100] text-[#111111] transition-colors"
+                    title="Próximo mês"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+
+                <div
+                  style={{ backgroundColor: '#FFF0EC', color: '#FD3100', borderColor: '#FFCEBF' }}
+                  className="text-xs font-black px-4 py-2 rounded-full border uppercase shadow-sm"
+                >
+                  {postsInMonthCount} neste mês • {filteredPosts.length} total
+                </div>
               </div>
             </div>
+
+            {/* Atalhos rápidos para meses com publicações */}
+            {monthsWithPosts.length > 0 && (
+              <div className="flex flex-wrap items-center gap-1.5 mb-5">
+                <span className="text-[10px] font-black uppercase text-[#66635D] mr-1">
+                  Meses com posts:
+                </span>
+                {monthsWithPosts.map((m) => {
+                  const isCurrent = m.year === calendarYear && m.month === calendarMonth;
+                  return (
+                    <button
+                      type="button"
+                      key={`${m.year}-${m.month}`}
+                      onClick={() => {
+                        setCalendarYear(m.year);
+                        setCalendarMonth(m.month);
+                      }}
+                      className={`px-3 py-1 rounded-full text-[11px] font-black uppercase border transition-all ${
+                        isCurrent
+                          ? 'bg-[#FD3100] text-white border-[#FD3100] shadow-xs'
+                          : 'bg-[#FAF9F7] text-[#111111] border-[#DCD6CC] hover:border-[#FD3100]'
+                      }`}
+                    >
+                      {PORTAL_MONTHS[m.month - 1].slice(0, 3)}/{m.year} ({m.count})
+                    </button>
+                  );
+                })}
+              </div>
+            )}
 
             {/* Dias da Semana */}
             <div className="grid grid-cols-7 gap-2 text-center text-xs font-black uppercase text-[#111111] pb-3 border-b border-[#EEEDEA]">
@@ -769,13 +890,25 @@ export function ClientPortalView({ client }: ClientPortalViewProps) {
               <div>Sáb</div>
             </div>
 
-            {/* Grade dos Dias do Mês com Drag & Drop e Troca Rápida de Dia */}
+            {/* Grade Real dos Dias do Mês com Drag & Drop e Troca Rápida de Dia */}
             <div className="grid grid-cols-7 gap-2 pt-3">
-              {Array.from({ length: 31 }).map((_, dayIndex) => {
+              {Array.from({ length: startingWeekday }).map((_, emptyIdx) => (
+                <div
+                  key={`empty_${emptyIdx}`}
+                  className="min-h-[115px] sm:min-h-[135px] rounded-2xl bg-[#FAF9F7]/30 border border-dashed border-[#EEEDEA]"
+                />
+              ))}
+
+              {Array.from({ length: daysInMonth }).map((_, dayIndex) => {
                 const dayNumber = dayIndex + 1;
                 const dayPosts = filteredPosts.filter((p) => {
-                  if (!p.scheduledDate) return false;
-                  return getScheduledDay(p.scheduledDate) === dayNumber;
+                  const ymd = getScheduledYearMonthDay(p.scheduledDate);
+                  if (!ymd) return false;
+                  return (
+                    ymd.year === calendarYear &&
+                    ymd.month === calendarMonth &&
+                    ymd.day === dayNumber
+                  );
                 });
                 const isDragOver = dragOverDay === dayNumber;
 
@@ -890,7 +1023,7 @@ export function ClientPortalView({ client }: ClientPortalViewProps) {
                                 title="Mudar dia da publicação"
                                 className="text-[9px] font-black bg-[#FAF9F7] text-[#111111] border border-[#DCD6CC] rounded px-1 py-0.5 outline-none cursor-pointer hover:border-[#FD3100]"
                               >
-                                {Array.from({ length: 31 }, (_, i) => i + 1).map((d) => (
+                                {Array.from({ length: daysInMonth }, (_, i) => i + 1).map((d) => (
                                   <option key={d} value={d}>
                                     Dia {d}
                                   </option>
@@ -899,7 +1032,7 @@ export function ClientPortalView({ client }: ClientPortalViewProps) {
 
                               <button
                                 type="button"
-                                disabled={dayNumber >= 31}
+                                disabled={dayNumber >= daysInMonth}
                                 onClick={() => handleMovePostToDay(post, dayNumber + 1)}
                                 title="Avançar 1 dia"
                                 className="p-0.5 rounded hover:bg-[#FFF0EC] hover:text-[#FD3100] disabled:opacity-25 transition-colors"
@@ -918,7 +1051,8 @@ export function ClientPortalView({ client }: ClientPortalViewProps) {
               })}
             </div>
           </div>
-        )}
+          );
+        })()}
 
         {/* 3. VISÃO CARDS DETALHADOS (LISTA COM LEGENDA) */}
         {viewMode === 'cards' && (

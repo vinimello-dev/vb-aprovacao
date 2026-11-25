@@ -77,6 +77,46 @@ export function getScheduledDay(date: Date | string | null | undefined): number 
 }
 
 /**
+ * Extrai ano, mês (1-12) e dia (1-31) de uma data agendada sem interferência de fuso horário
+ */
+export function getScheduledYearMonthDay(
+  date: Date | string | null | undefined
+): { year: number; month: number; day: number } | null {
+  if (!date) return null;
+  if (typeof date === 'string') {
+    const match = date.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (match) {
+      return {
+        year: parseInt(match[1], 10),
+        month: parseInt(match[2], 10),
+        day: parseInt(match[3], 10),
+      };
+    }
+  }
+  if (date instanceof Date) {
+    if (date.getUTCHours() === 0 && date.getUTCMinutes() === 0) {
+      return {
+        year: date.getUTCFullYear(),
+        month: date.getUTCMonth() + 1,
+        day: date.getUTCDate(),
+      };
+    }
+    return {
+      year: date.getFullYear(),
+      month: date.getMonth() + 1,
+      day: date.getDate(),
+    };
+  }
+  const d = new Date(date);
+  if (Number.isNaN(d.getTime())) return null;
+  return {
+    year: d.getUTCFullYear(),
+    month: d.getUTCMonth() + 1,
+    day: d.getUTCDate(),
+  };
+}
+
+/**
  * Converte qualquer valor de data para string YYYY-MM-DD para uso em <input type="date"> sem desvio de fuso
  */
 export function getScheduledDateInput(date: Date | string | null | undefined): string {
