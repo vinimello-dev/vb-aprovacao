@@ -1,3 +1,5 @@
+import nodemailer from 'nodemailer';
+
 export type NotificationEmailType = 'CYCLE_READY' | 'VIDEO_REVISED' | 'NEW_POST';
 
 interface SendClientNotificationParams {
@@ -24,15 +26,17 @@ export async function sendClientNotificationEmail(
     return { sent: false, reason: 'Cliente sem e-mail cadastrado na aba Dados.' };
   }
 
-  const apiKey = process.env.RESEND_API_KEY?.trim();
-  if (!apiKey) {
+  const gmailUser = process.env.GMAIL_USER?.trim();
+  const gmailAppPassword = process.env.GMAIL_APP_PASSWORD?.replace(/\s+/g, '').trim();
+  const resendApiKey = process.env.RESEND_API_KEY?.trim();
+
+  if (!gmailUser && !resendApiKey) {
     return {
       sent: false,
-      reason: 'RESEND_API_KEY não configurada nas variáveis de ambiente.',
+      reason: 'Configure GMAIL_USER e GMAIL_APP_PASSWORD (ou RESEND_API_KEY) na Vercel.',
     };
   }
 
-  const from = process.env.EMAIL_FROM?.trim() || 'VB Hub <onboarding@resend.dev>';
   const baseUrl = (process.env.NEXT_PUBLIC_APP_URL || 'https://vb-aprovacao.vercel.app').replace(
     /\/$/,
     ''
@@ -92,30 +96,64 @@ export async function sendClientNotificationEmail(
     </div>
   </div>`;
 
-  try {
-    const res = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        from,
-        to: [to],
+  // Prioridade 1: Gmail direto (sem necessidade de domínio próprio)
+  if (gmailUser && gmailAppPassword) {
+    try {
+      const transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+          user: gmailUser,
+          pass: gmailAppPassword,
+        },
+      });
+
+      await transporter.sendMail({
+        from: `VB Hub <${gmailUser}>`,
+        to,
         subject,
         html,
-      }),
-    });
+      });
 
-    if (!res.ok) {
-      const errText = await res.text();
-      console.error('Erro ao enviar e-mail via Resend:', res.status, errText);
-      return { sent: false, reason: `Falha no provedor de e-mail (${res.status}).` };
+      return { sent: true };
+    } catch (err: any) {
+      console.error('Erro ao enviar e-mail via Gmail:', err);
+      return {
+        sent: false,
+        reason: `Falha ao enviar via Gmail (${err?.message || 'verifique GMAIL_USER e GMAIL_APP_PASSWORD'}).`,
+      };
     }
-
-    return { sent: true };
-  } catch (err) {
-    console.error('Erro de rede ao enviar e-mail:', err);
-    return { sent: false, reason: 'Erro de conexão ao enviar e-mail.' };
   }
+
+  // Prioridade 2: Resend API
+  if (resendApiKey) {
+    const from = process.env.EMAIL_FROM?.trim() || 'VB Hub <onboarding@resend.dev>';
+    try {
+      const res = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${resendApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          from,
+          to: [to],
+          subject,
+          html,
+        }),
+      });
+
+      if (!res.ok) {
+        const errText = await res.text();
+        console.error('Erro ao enviar e-mail via Resend:', res.status, errText);
+        return { sent: false, reason: `Falha no provedor de e-mail (${res.status}).` };
+      }
+
+      return { sent: true };
+    } catch (err) {
+      console.error('Erro de rede ao enviar e-mail:', err);
+      return { sent: false, reason: 'Erro de conexão ao enviar e-mail.' };
+    }
+  }
+
+  return { sent: false, reason: 'Nenhum provedor de e-mail configurado.' };
 }
