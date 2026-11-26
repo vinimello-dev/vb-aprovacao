@@ -2492,6 +2492,7 @@ export default function ClientHubPage({ params }: PageProps) {
       {/* MODAL DE REVISÃO DO POST (SE CLICADO) */}
       {selectedPost && (
         <PostReviewModal
+          isAdmin
           post={selectedPost}
           onClose={() => setSelectedPost(null)}
           onPostUpdated={() => fetchClientData()}

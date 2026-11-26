@@ -84,7 +84,7 @@ export async function PATCH(request: Request) {
 
   try {
     const body = await request.json();
-    const { id, title, caption, scheduledDate, scheduledTime, format, cycleId, mediaUrl, thumbnailUrl, mediaUrls } = body;
+    const { id, title, caption, scheduledDate, scheduledTime, status, resolveComments, format, cycleId, mediaUrl, thumbnailUrl, mediaUrls } = body;
 
     if (!id) {
       return NextResponse.json({ error: 'ID do post é obrigatório.' }, { status: 400 });
@@ -99,15 +99,22 @@ export async function PATCH(request: Request) {
         }))
       : undefined;
 
+    const resolvedThumb =
+      thumbnailUrl !== undefined
+        ? (thumbnailUrl ? parseThumbnailUrl(thumbnailUrl) : null)
+        : (mediaUrl ? getAutoThumbnail(mediaUrl) : undefined);
+
     const post = await updatePost(id, {
       title,
       caption,
-      scheduledDate: parseDateInput(scheduledDate),
+      scheduledDate: scheduledDate !== undefined ? parseDateInput(scheduledDate) : undefined,
       scheduledTime,
+      status,
+      resolveComments: Boolean(resolveComments),
       format,
       cycleId,
       mediaUrl: mediaUrl ? parseMediaUrl(mediaUrl) : undefined,
-      thumbnailUrl: thumbnailUrl ? parseThumbnailUrl(thumbnailUrl) : undefined,
+      thumbnailUrl: resolvedThumb,
       mediaUrls: parsedMediaUrls,
     });
 

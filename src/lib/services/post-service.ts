@@ -448,6 +448,8 @@ export async function updatePost(
     caption?: string | null;
     scheduledDate?: Date | string | null;
     scheduledTime?: string | null;
+    status?: 'PENDENTE' | 'AJUSTES' | 'APROVADO';
+    resolveComments?: boolean;
     format?: 'VIDEO' | 'CAROUSEL' | 'STATIC' | 'REELS' | 'STORIES';
     cycleId?: string | null;
     mediaUrl?: string;
@@ -469,6 +471,7 @@ export async function updatePost(
   if (data.scheduledTime !== undefined) {
     updateData.scheduledTime = data.scheduledTime ? data.scheduledTime.trim() : null;
   }
+  if (data.status !== undefined) updateData.status = data.status;
   if (data.format !== undefined) updateData.format = data.format;
   if (data.cycleId !== undefined) updateData.cycleId = data.cycleId || null;
 
@@ -505,6 +508,13 @@ export async function updatePost(
           data: mediaUpdate,
         });
       }
+    }
+
+    if (data.resolveComments) {
+      await prisma.comment.updateMany({
+        where: { postId },
+        data: { resolved: true },
+      });
     }
 
     const finalPost = await prisma.post.findUnique({

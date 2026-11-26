@@ -2211,6 +2211,7 @@ export default function AdminDashboardPage() {
       {/* MODAL DE REVISÃO INTERATIVA DO POST (CENTRAL DE REVISÕES) */}
       {reviewModalPost && (
         <PostReviewModal
+          isAdmin
           post={reviewModalPost}
           onClose={() => setReviewModalPost(null)}
           onPostUpdated={() => {

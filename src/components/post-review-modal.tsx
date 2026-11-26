@@ -15,6 +15,7 @@ import {
   Save,
   MessageSquare,
   Send,
+  Upload,
 } from 'lucide-react';
 import { PostData, CommentData } from '@/lib/services/post-service';
 import { VideoPlayerReview } from './video-player-review';
@@ -25,9 +26,10 @@ interface PostReviewModalProps {
   post: PostData;
   onClose: () => void;
   onPostUpdated: (updatedPost: PostData) => void;
+  isAdmin?: boolean;
 }
 
-export function PostReviewModal({ post, onClose, onPostUpdated }: PostReviewModalProps) {
+export function PostReviewModal({ post, onClose, onPostUpdated, isAdmin = false }: PostReviewModalProps) {
   const [currentPost, setCurrentPost] = useState<PostData>(post);
   const [activeTab, setActiveTab] = useState<'review' | 'caption'>('review');
   const [copyFeedback, setCopyFeedback] = useState(false);
@@ -46,6 +48,57 @@ export function PostReviewModal({ post, onClose, onPostUpdated }: PostReviewModa
 
   // Feedback de Status
   const [statusFeedbackMessage, setStatusFeedbackMessage] = useState<string | null>(null);
+
+  // Envio de Vídeo / Mídia Revisada (Admin após ajustes)
+  const [isRevisionOpen, setIsRevisionOpen] = useState(false);
+  const [revisedMediaUrl, setRevisedMediaUrl] = useState('');
+  const [revisedThumbnailUrl, setRevisedThumbnailUrl] = useState('');
+  const [resolveOldComments, setResolveOldComments] = useState(true);
+  const [resetToPending, setResetToPending] = useState(true);
+  const [savingRevision, setSavingRevision] = useState(false);
+  const [revisionError, setRevisionError] = useState('');
+
+  const handleSubmitRevision = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!revisedMediaUrl.trim()) {
+      setRevisionError('Cole o link do vídeo/mídia revisada.');
+      return;
+    }
+
+    setSavingRevision(true);
+    setRevisionError('');
+    try {
+      const res = await fetch('/api/admin/posts', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: currentPost.id,
+          mediaUrl: revisedMediaUrl.trim(),
+          thumbnailUrl: revisedThumbnailUrl.trim() || undefined,
+          status: resetToPending ? 'PENDENTE' : currentPost.status,
+          resolveComments: resolveOldComments,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.post) {
+        setRevisionError(data.error || 'Erro ao enviar vídeo revisado.');
+        setSavingRevision(false);
+        return;
+      }
+
+      setCurrentPost(data.post);
+      onPostUpdated(data.post);
+      setIsRevisionOpen(false);
+      setRevisedMediaUrl('');
+      setRevisedThumbnailUrl('');
+      setStatusFeedbackMessage('Vídeo revisado enviado para aprovação!');
+      setTimeout(() => setStatusFeedbackMessage(null), 4000);
+    } catch {
+      setRevisionError('Erro de conexão ao salvar vídeo revisado.');
+    } finally {
+      setSavingRevision(false);
+    }
+  };
 
   // Alteração de Data Agendada do Post
   const [isEditingDate, setIsEditingDate] = useState(false);
@@ -330,7 +383,26 @@ export function PostReviewModal({ post, onClose, onPostUpdated }: PostReviewModa
           </div>
 
           {/* Botões de Decisão 100% Enquadrados */}
-          <div className="flex items-center gap-2 sm:gap-2.5 shrink-0 justify-end self-end md:self-center">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 shrink-0 justify-end self-end md:self-center">
+            {isAdmin && currentPost.format !== 'CAROUSEL' && (
+              <button
+                type="button"
+                onClick={() => {
+                  setRevisionError('');
+                  setIsRevisionOpen((prev) => !prev);
+                }}
+                className={`px-3.5 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl text-[11px] sm:text-xs font-black uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all border-2 shadow-sm shrink-0 whitespace-nowrap hover:scale-[1.02] ${
+                  currentPost.status === 'AJUSTES'
+                    ? 'bg-amber-500 text-white border-amber-500 animate-pulse'
+                    : 'bg-[#FAF9F7] text-[#111111] border-[#DCD6CC] hover:border-[#FD3100]'
+                }`}
+                title="Enviar nova versão do vídeo/mídia após realizar os ajustes do cliente"
+              >
+                <Upload className="w-3.5 h-3.5 stroke-[2.5]" />
+                <span>Enviar Revisado</span>
+              </button>
+            )}
+
             {/* Botão Solicitar Ajustes */}
             <button
               disabled={updatingStatus}
@@ -367,6 +439,98 @@ export function PostReviewModal({ post, onClose, onPostUpdated }: PostReviewModa
             </button>
           </div>
         </div>
+
+        {/* Painel Inline para Envio de Vídeo Revisado (Admin) */}
+        {isAdmin && isRevisionOpen && (
+          <form
+            onSubmit={handleSubmitRevision}
+            className="bg-[#FFF8F6] border-b border-[#FFCEBF] px-4 sm:px-6 py-4 space-y-3 animate-in fade-in slide-in-from-top-2 duration-200 shrink-0"
+          >
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <Upload className="w-4 h-4 text-[#FD3100]" />
+                <span className="text-xs font-black uppercase tracking-wider text-[#111111]">
+                  Enviar Nova Versão (Vídeo / Mídia Revisada)
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsRevisionOpen(false)}
+                className="text-xs font-bold text-[#66635D] hover:text-[#111111]"
+              >
+                ✕ Fechar
+              </button>
+            </div>
+
+            {revisionError && (
+              <div className="p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold">
+                {revisionError}
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-[10px] font-black uppercase text-[#66635D] mb-1">
+                  Link do Vídeo Revisado (Google Drive / Dropbox / URL) *
+                </label>
+                <input
+                  type="url"
+                  value={revisedMediaUrl}
+                  onChange={(e) => setRevisedMediaUrl(e.target.value)}
+                  placeholder="https://drive.google.com/file/d/..."
+                  required
+                  className="w-full px-3 py-2 bg-white border border-[#DCD6CC] focus:border-[#FD3100] rounded-xl text-xs font-bold text-[#111111] focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-black uppercase text-[#66635D] mb-1">
+                  Nova Capa / Thumbnail (Opcional)
+                </label>
+                <input
+                  type="url"
+                  value={revisedThumbnailUrl}
+                  onChange={(e) => setRevisedThumbnailUrl(e.target.value)}
+                  placeholder="Deixe em branco para gerar automático do Drive"
+                  className="w-full px-3 py-2 bg-white border border-[#DCD6CC] focus:border-[#FD3100] rounded-xl text-xs font-bold text-[#111111] focus:outline-none"
+                />
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
+              <div className="flex flex-wrap items-center gap-4 text-xs font-bold text-[#111111]">
+                <label className="flex items-center gap-1.5 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={resolveOldComments}
+                    onChange={(e) => setResolveOldComments(e.target.checked)}
+                    className="rounded accent-[#FD3100]"
+                  />
+                  <span>Marcar observações anteriores como resolvidas</span>
+                </label>
+
+                <label className="flex items-center gap-1.5 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={resetToPending}
+                    onChange={(e) => setResetToPending(e.target.checked)}
+                    className="rounded accent-[#FD3100]"
+                  />
+                  <span>Voltar status para Pendente</span>
+                </label>
+              </div>
+
+              <button
+                type="submit"
+                disabled={savingRevision}
+                style={{ backgroundColor: '#FD3100', color: '#FFFFFF' }}
+                className="px-5 py-2 rounded-xl text-xs font-black uppercase tracking-wider shadow-md hover:opacity-90 disabled:opacity-50 shrink-0"
+              >
+                {savingRevision ? 'Salvando...' : 'Salvar Vídeo Revisado'}
+              </button>
+            </div>
+          </form>
+        )}
 
         {/* Banner de Feedback de Status Enviado */}
         {statusFeedbackMessage && (
