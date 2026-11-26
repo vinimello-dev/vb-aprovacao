@@ -135,13 +135,14 @@ export function VideoPlayerReview({
     }
   };
 
-  // REQUISITO: Clicar no comentário faz o vídeo pular para aquele segundo exato
+  // REQUISITO: Clicar no comentário faz o vídeo pular para aquele segundo exato e pausar nele
   const jumpToTimestamp = (seconds?: number | null) => {
     setActiveMediaView('video');
     if (typeof seconds === 'number' && videoRef.current) {
       videoRef.current.currentTime = seconds;
-      videoRef.current.play();
-      setIsPlaying(true);
+      videoRef.current.pause();
+      setIsPlaying(false);
+      setCurrentTime(seconds);
     }
   };
 
