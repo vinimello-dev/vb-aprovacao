@@ -36,6 +36,7 @@ export interface PostData {
   status: 'PENDENTE' | 'AJUSTES' | 'APROVADO';
   scheduledDate?: Date | null;
   scheduledTime?: string | null;
+  revisionVersion?: number;
   createdAt: Date;
   updatedAt: Date;
   media: PostMediaData[];
@@ -450,6 +451,7 @@ export async function updatePost(
     scheduledTime?: string | null;
     status?: 'PENDENTE' | 'AJUSTES' | 'APROVADO';
     resolveComments?: boolean;
+    incrementRevision?: boolean;
     format?: 'VIDEO' | 'CAROUSEL' | 'STATIC' | 'REELS' | 'STORIES';
     cycleId?: string | null;
     mediaUrl?: string;
@@ -472,6 +474,7 @@ export async function updatePost(
     updateData.scheduledTime = data.scheduledTime ? data.scheduledTime.trim() : null;
   }
   if (data.status !== undefined) updateData.status = data.status;
+  if (data.incrementRevision) updateData.revisionVersion = { increment: 1 };
   if (data.format !== undefined) updateData.format = data.format;
   if (data.cycleId !== undefined) updateData.cycleId = data.cycleId || null;
 
@@ -535,6 +538,8 @@ export async function updatePost(
       if (data.scheduledDate !== undefined) {
         post.scheduledDate = data.scheduledDate ? parseDateInput(data.scheduledDate) : null;
       }
+      if (data.status !== undefined) post.status = data.status;
+      if (data.incrementRevision) post.revisionVersion = (post.revisionVersion || 0) + 1;
       if (data.format !== undefined) post.format = data.format;
       if (data.cycleId !== undefined) post.cycleId = data.cycleId;
       if (data.mediaUrl && post.media.length > 0) post.media[0].url = data.mediaUrl;

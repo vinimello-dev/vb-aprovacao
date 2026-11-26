@@ -78,6 +78,7 @@ export function PostReviewModal({ post, onClose, onPostUpdated, isAdmin = false 
           thumbnailUrl: revisedThumbnailUrl.trim() || undefined,
           status: resetToPending ? 'PENDENTE' : currentPost.status,
           resolveComments: resolveOldComments,
+          incrementRevision: true,
           notifyClient: notifyClientEmail,
         }),
       });
@@ -303,6 +304,13 @@ export function PostReviewModal({ post, onClose, onPostUpdated, isAdmin = false 
                 <h2 className="font-black text-sm sm:text-base md:text-lg text-[#111111] uppercase tracking-tight truncate max-w-[200px] sm:max-w-xs md:max-w-md lg:max-w-lg xl:max-w-xl">
                   {currentPost.title}
                 </h2>
+
+                {typeof currentPost.revisionVersion === 'number' && currentPost.revisionVersion > 0 && (
+                  <span className="px-2.5 py-0.5 bg-amber-50 text-amber-800 border border-amber-300 rounded-full text-[10px] sm:text-[11px] font-black uppercase flex items-center gap-1 shrink-0">
+                    <Sparkles className="w-3 h-3 text-amber-600" />
+                    Vídeo Revisado • Versão {currentPost.revisionVersion}
+                  </span>
+                )}
 
                 {/* Badge de Status Atual */}
                 {currentPost.status === 'APROVADO' && (
@@ -596,6 +604,7 @@ export function PostReviewModal({ post, onClose, onPostUpdated, isAdmin = false 
                   videoUrl={currentPost.media[0]?.url || 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4'}
                   thumbnailUrl={currentPost.media[0]?.thumbnailUrl}
                   postId={currentPost.id}
+                  revisionVersion={currentPost.revisionVersion}
                   comments={currentPost.comments}
                   onCommentAdded={handleCommentAdded}
                   onCommentResolvedToggle={handleCommentResolvedToggle}

@@ -1119,17 +1119,24 @@ export function ClientPortalView({ client }: ClientPortalViewProps) {
                   )}
 
                   {/* Badge de Formato no canto da imagem */}
-                  <div className="absolute top-3 left-3 flex items-center gap-1.5 px-2.5 py-1 bg-black/80 backdrop-blur-md rounded-xl text-white text-[10px] font-black uppercase tracking-wider">
-                    {post.format === 'VIDEO' ? (
-                      <>
-                        <Play className="w-3 h-3 fill-white text-white" />
-                        <span>Vídeo</span>
-                      </>
-                    ) : (
-                      <>
-                        <Layers className="w-3 h-3" style={{ color: '#FD3100' }} />
-                        <span>Carrossel ({post.media.length} lâminas)</span>
-                      </>
+                  <div className="absolute top-3 left-3 flex flex-wrap items-center gap-1.5">
+                    <div className="flex items-center gap-1.5 px-2.5 py-1 bg-black/80 backdrop-blur-md rounded-xl text-white text-[10px] font-black uppercase tracking-wider">
+                      {post.format === 'VIDEO' ? (
+                        <>
+                          <Play className="w-3 h-3 fill-white text-white" />
+                          <span>Vídeo</span>
+                        </>
+                      ) : (
+                        <>
+                          <Layers className="w-3 h-3" style={{ color: '#FD3100' }} />
+                          <span>Carrossel ({post.media.length} lâminas)</span>
+                        </>
+                      )}
+                    </div>
+                    {typeof post.revisionVersion === 'number' && post.revisionVersion > 0 && (
+                      <span className="px-2.5 py-1 bg-amber-500 text-white rounded-xl text-[10px] font-black uppercase tracking-wider shadow-md">
+                        Vídeo Revisado • Versão {post.revisionVersion}
+                      </span>
                     )}
                   </div>
 

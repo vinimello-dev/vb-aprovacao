@@ -29,6 +29,7 @@ interface VideoPlayerReviewProps {
   videoUrl: string;
   thumbnailUrl?: string | null;
   postId: string;
+  revisionVersion?: number;
   comments: CommentData[];
   onCommentAdded: (comment: CommentData) => void;
   onCommentResolvedToggle: (commentId: string) => void;
@@ -39,6 +40,7 @@ export function VideoPlayerReview({
   videoUrl,
   thumbnailUrl,
   postId,
+  revisionVersion,
   comments,
   onCommentAdded,
   onCommentResolvedToggle,
@@ -428,6 +430,14 @@ export function VideoPlayerReview({
                     {isVertical ? <Smartphone className="w-2.5 h-2.5" /> : <Monitor className="w-2.5 h-2.5" />}
                     <span>{isVertical ? 'Reels 9:16' : '16:9 Widescreen'}</span>
                   </div>
+
+                  {/* Selo de Vídeo Revisado • Versão X em cima do vídeo */}
+                  {typeof revisionVersion === 'number' && revisionVersion > 0 && (
+                    <div className="absolute top-2.5 right-2.5 z-10 bg-amber-500 text-white px-2.5 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider flex items-center gap-1 shadow-md">
+                      <Sparkles className="w-2.5 h-2.5" />
+                      <span>Vídeo Revisado • Versão {revisionVersion}</span>
+                    </div>
+                  )}
 
                   {/* Mensagem caso o vídeo não carregue */}
                   {videoError && (

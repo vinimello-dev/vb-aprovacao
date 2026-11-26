@@ -11,6 +11,7 @@ interface SendClientNotificationParams {
   cycleName?: string;
   postTitle?: string;
   postsCount?: number;
+  revisionVersion?: number;
 }
 
 export interface EmailSendResult {
@@ -59,11 +60,15 @@ export async function sendClientNotificationEmail(
         : ''
     }. Acesse o link abaixo para revisar e aprovar.`;
   } else if (params.type === 'VIDEO_REVISED') {
-    subject = `VB Hub | Vídeo revisado pronto — ${params.postTitle || params.clientName}`;
-    headline = 'Seu vídeo revisado está pronto!';
+    const versionLabel =
+      typeof params.revisionVersion === 'number' && params.revisionVersion > 0
+        ? ` (Versão ${params.revisionVersion})`
+        : '';
+    subject = `VB Hub | Vídeo revisado${versionLabel} pronto — ${params.postTitle || params.clientName}`;
+    headline = `Seu vídeo revisado${versionLabel} está pronto!`;
     bodyText = `Olá! Já realizamos os ajustes solicitados${
       params.postTitle ? ` no material <strong>"${params.postTitle}"</strong>` : ''
-    } da <strong>${params.clientName}</strong>. A nova versão já está disponível para sua aprovação no VB Hub.`;
+    }${versionLabel ? ` — <strong>Vídeo Revisado • Versão ${params.revisionVersion}</strong>` : ''} da <strong>${params.clientName}</strong>. A nova versão já está disponível para sua aprovação no VB Hub.`;
   } else if (params.type === 'NEW_POST') {
     subject = `VB Hub | Novo material disponível — ${params.postTitle || params.clientName}`;
     headline = 'Novo material disponível para revisão!';

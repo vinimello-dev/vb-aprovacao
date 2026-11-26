@@ -104,7 +104,7 @@ export async function PATCH(request: Request) {
 
   try {
     const body = await request.json();
-    const { id, title, caption, scheduledDate, scheduledTime, status, resolveComments, format, cycleId, mediaUrl, thumbnailUrl, mediaUrls, notifyClient } = body;
+    const { id, title, caption, scheduledDate, scheduledTime, status, resolveComments, incrementRevision, format, cycleId, mediaUrl, thumbnailUrl, mediaUrls, notifyClient } = body;
 
     if (!id) {
       return NextResponse.json({ error: 'ID do post é obrigatório.' }, { status: 400 });
@@ -131,6 +131,7 @@ export async function PATCH(request: Request) {
       scheduledTime,
       status,
       resolveComments: Boolean(resolveComments),
+      incrementRevision: Boolean(incrementRevision),
       format,
       cycleId,
       mediaUrl: mediaUrl ? parseMediaUrl(mediaUrl) : undefined,
@@ -156,6 +157,7 @@ export async function PATCH(request: Request) {
           pin: client.pin,
           type: 'VIDEO_REVISED',
           postTitle: post.title,
+          revisionVersion: post.revisionVersion,
         });
       }
     }

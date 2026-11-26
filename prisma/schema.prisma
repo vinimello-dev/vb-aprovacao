@@ -59,9 +59,10 @@ model Post {
   title         String
   caption       String?     @db.Text // Legenda do post
   format        PostFormat  @default(STATIC)
-  status        PostStatus  @default(PENDENTE)
-  scheduledDate DateTime?   // Data de agendamento/publicação no mês
-  scheduledTime String?     // Horário opcional de publicação (ex: "18:30")
+  status          PostStatus  @default(PENDENTE)
+  scheduledDate   DateTime?   // Data de agendamento/publicação no mês
+  scheduledTime   String?     // Horário opcional de publicação (ex: "18:30")
+  revisionVersion Int         @default(0) // 0 = original, 1+ = vídeo revisado versão X
   
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
