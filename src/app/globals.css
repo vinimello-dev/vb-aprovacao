@@ -21,8 +21,34 @@ html, body {
 body {
   color: var(--foreground);
   background-color: var(--background);
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  font-family: inherit;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   min-height: 100vh;
+}
+
+/* Tipografia mais fina, limpa e sofisticada para textos menores (badges, abas, botões e subtítulos) */
+.text-xs.font-black,
+.text-xs.font-extrabold,
+.text-\[11px\].font-black,
+.text-\[11px\].font-extrabold,
+.text-\[10px\].font-black,
+.text-\[10px\].font-extrabold,
+.text-\[9px\].font-black,
+.text-\[9px\].font-extrabold {
+  font-weight: 600 !important;
+  letter-spacing: 0.02em;
+}
+
+.text-xs.font-bold,
+.text-\[11px\].font-bold,
+.text-\[10px\].font-bold,
+.text-\[9px\].font-bold {
+  font-weight: 500 !important;
+}
+
+.text-sm.font-black {
+  font-weight: 700 !important;
 }
 
 /* Ocultar barra de rolagem em sliders horizontais mantendo a rolagem fluida */
@@ -38,7 +64,7 @@ body {
 .btn-vb-primary {
   background: linear-gradient(135deg, #FD3100 0%, #FF5A36 45%, #FFA58E 100%) !important;
   color: #FFFFFF !important;
-  font-weight: 900 !important;
+  font-weight: 600 !important;
   border: 1px solid #FF7C5E !important;
   box-shadow: 0 4px 16px rgba(253, 49, 0, 0.32), inset 0 1px 1px rgba(255, 255, 255, 0.4) !important;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.15) !important;
@@ -57,7 +83,7 @@ body {
 .btn-vb-secondary {
   background-color: #FFFFFF !important;
   color: #111111 !important;
-  font-weight: 800 !important;
+  font-weight: 600 !important;
   border: 1.5px solid #DCD6CC !important;
 }
 .btn-vb-secondary:hover {
@@ -69,14 +95,14 @@ body {
 .badge-vb-orange {
   background-color: #FD3100 !important;
   color: #FFFFFF !important;
-  font-weight: 900 !important;
+  font-weight: 600 !important;
 }
 
 .badge-vb-light {
   background-color: #FFF0EC !important;
   color: #FD3100 !important;
   border: 1px solid #FFCEBF !important;
-  font-weight: 800 !important;
+  font-weight: 600 !important;
 }
 
 /* Custom scrollbars */

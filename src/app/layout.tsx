@@ -1,6 +1,13 @@
 import type { Metadata } from 'next';
+import { Inter } from 'next/font/google';
 import './globals.css';
 import { ThemeToggle } from '@/components/theme-toggle';
+
+const inter = Inter({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700', '800'],
+  display: 'swap',
+});
 
 export const metadata: Metadata = {
   title: 'VB Hub | Central de Conteúdos & Aprovações',
@@ -46,7 +53,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className="antialiased bg-[#EEEDEA] text-[#111111] min-h-screen selection:bg-brand-500 selection:text-white transition-colors duration-200">
+      <body className={`${inter.className} antialiased bg-[#EEEDEA] text-[#111111] min-h-screen selection:bg-brand-500 selection:text-white transition-colors duration-200`}>
         {children}
         <ThemeToggle />
       </body>
