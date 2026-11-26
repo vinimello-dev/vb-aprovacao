@@ -28,10 +28,12 @@ import {
   Plus,
   Trash2,
   BarChart3,
+  Camera,
 } from 'lucide-react';
 import { PostData } from '@/lib/services/post-service';
 import { PostReviewModal } from '@/components/post-review-modal';
 import { ClientMetricsHub } from '@/components/client-metrics-hub';
+import { ClientPhotosHub } from '@/components/client-photos-hub';
 import { formatDate, formatPostSchedule, getScheduledYearMonthDay } from '@/lib/utils';
 import { ChatMessage } from '@/lib/services/chat-service';
 import { playMessageSound } from '@/lib/audio-notification';
@@ -77,7 +79,7 @@ export function ClientPortalView({ client }: ClientPortalViewProps) {
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'PENDENTE' | 'AJUSTES' | 'APROVADO'>('ALL');
 
   // Modo de Visualização: Instagram Feed, Calendário Mensal, Cards, Roteiros, Métricas ou Chat com a Agência
-  const [viewMode, setViewMode] = useState<'instagram' | 'calendar' | 'cards' | 'scripts' | 'metrics' | 'chat'>('instagram');
+  const [viewMode, setViewMode] = useState<'instagram' | 'calendar' | 'cards' | 'scripts' | 'metrics' | 'photos' | 'chat'>('instagram');
 
   // Roteiros de Gravação do Cliente (Visualização e Edição por Cenas)
   const [scripts, setScripts] = useState<ClientScriptItem[]>([]);
@@ -619,6 +621,16 @@ export function ClientPortalView({ client }: ClientPortalViewProps) {
               >
                 <BarChart3 className="w-3.5 sm:w-4 h-3.5 sm:h-4 stroke-[2.5]" />
                 <span className="truncate">Métricas</span>
+              </button>
+
+              <button
+                onClick={() => setViewMode('photos')}
+                style={viewMode === 'photos' ? { backgroundColor: '#FD3100', color: '#FFFFFF' } : { color: '#111111' }}
+                className="flex items-center justify-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-2 rounded-xl transition-all font-black"
+                title="Acessar e baixar pastas de fotos por mês"
+              >
+                <Camera className="w-3.5 sm:w-4 h-3.5 sm:h-4 stroke-[2.5]" />
+                <span className="truncate">Fotos</span>
               </button>
 
               <button
@@ -1485,6 +1497,15 @@ export function ClientPortalView({ client }: ClientPortalViewProps) {
         {/* 5. VISÃO MÉTRICAS E GRÁFICOS DO MÊS */}
         {viewMode === 'metrics' && (
           <ClientMetricsHub
+            mode="client"
+            clientSlug={client.slug}
+            clientName={client.name}
+          />
+        )}
+
+        {/* 5B. VISÃO BANCO DE FOTOS POR MÊS */}
+        {viewMode === 'photos' && (
+          <ClientPhotosHub
             mode="client"
             clientSlug={client.slug}
             clientName={client.name}

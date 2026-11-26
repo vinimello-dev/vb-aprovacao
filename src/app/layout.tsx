@@ -3,8 +3,22 @@ import './globals.css';
 import { ThemeToggle } from '@/components/theme-toggle';
 
 export const metadata: Metadata = {
-  title: 'VB HUB | Central de Conteúdos & Aprovações',
-  description: 'VB HUB — Central de Conteúdos, Roteiros e Aprovações',
+  title: 'VB Hub | Central de Conteúdos & Aprovações',
+  description: 'VB Hub — Central de Conteúdos, Roteiros, Métricas e Aprovações',
+  openGraph: {
+    title: 'VB Hub | Central de Conteúdos & Aprovações',
+    description: 'Acesse seus conteúdos, roteiros, métricas e aprovações no VB Hub.',
+    siteName: 'VB Hub',
+    type: 'website',
+    locale: 'pt_BR',
+    images: [{ url: '/logo-vb.png' }],
+  },
+  twitter: {
+    card: 'summary',
+    title: 'VB Hub | Central de Conteúdos & Aprovações',
+    description: 'Acesse seus conteúdos, roteiros, métricas e aprovações no VB Hub.',
+    images: ['/logo-vb.png'],
+  },
   icons: {
     icon: [
       { url: '/logo-vb.png', sizes: 'any' },

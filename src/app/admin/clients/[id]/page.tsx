@@ -38,11 +38,13 @@ import {
   Eye,
   CalendarDays,
   BarChart3,
+  Camera,
 } from 'lucide-react';
 import { formatDate, formatPostSchedule, parseThumbnailUrl, parseMediaUrl, getScheduledDateInput } from '@/lib/utils';
 import { PostReviewModal } from '@/components/post-review-modal';
 import { AdminClientCalendar } from '@/components/admin-client-calendar';
 import { ClientMetricsHub } from '@/components/client-metrics-hub';
+import { ClientPhotosHub } from '@/components/client-photos-hub';
 import {
   ScriptScene,
   SCRIPT_TEMPLATES,
@@ -118,7 +120,7 @@ export default function ClientHubPage({ params }: PageProps) {
   const [error, setError] = useState('');
 
   // Abas do Hub do Cliente: 'cycles' (Entregas), 'calendar' (Calendário do Mês), 'scripts' (Roteiros), 'metrics' (Métricas), 'crm' (Dados), 'documents' (Documentos)
-  const [activeTab, setActiveTab] = useState<'cycles' | 'calendar' | 'scripts' | 'metrics' | 'crm' | 'documents'>('cycles');
+  const [activeTab, setActiveTab] = useState<'cycles' | 'calendar' | 'scripts' | 'metrics' | 'photos' | 'crm' | 'documents'>('cycles');
 
   // Ciclo Selecionado na aba de Entregas
   const [selectedCycleId, setSelectedCycleId] = useState<string>('ALL');
@@ -878,6 +880,18 @@ export default function ClientHubPage({ params }: PageProps) {
           </button>
 
           <button
+            onClick={() => setActiveTab('photos')}
+            className={`flex items-center gap-2 px-5 py-3 text-xs font-black uppercase tracking-wider border-b-2 transition-all -mb-[2px] ${
+              activeTab === 'photos'
+                ? 'border-[#FD3100] text-[#FD3100] bg-white rounded-t-2xl'
+                : 'border-transparent text-[#66635D] hover:text-[#111111]'
+            }`}
+          >
+            <Camera className="w-4 h-4" />
+            <span>Fotos</span>
+          </button>
+
+          <button
             onClick={() => setActiveTab('crm')}
             className={`flex items-center gap-2 px-5 py-3 text-xs font-black uppercase tracking-wider border-b-2 transition-all -mb-[2px] ${
               activeTab === 'crm'
@@ -1360,6 +1374,15 @@ export default function ClientHubPage({ params }: PageProps) {
         {/* ABA MÉTRICAS DO MÊS (ADMIN) */}
         {activeTab === 'metrics' && (
           <ClientMetricsHub
+            mode="admin"
+            clientId={client.id}
+            clientName={client.name}
+          />
+        )}
+
+        {/* ABA FOTOS (GOOGLE DRIVE POR MÊS) */}
+        {activeTab === 'photos' && (
+          <ClientPhotosHub
             mode="admin"
             clientId={client.id}
             clientName={client.name}
