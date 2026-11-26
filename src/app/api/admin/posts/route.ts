@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { isAuthenticatedAdmin } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
 import { createPost, updatePost, deletePost, getAllPosts } from '@/lib/services/post-service';
+import { sendClientNotificationEmail } from '@/lib/services/email-service';
 import { parseMediaUrl, parseThumbnailUrl, getAutoThumbnail, parseDateInput } from '@/lib/utils';
 
 export async function GET(request: Request) {
@@ -30,7 +32,7 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json();
-    const { clientId, cycleId, title, caption, format, scheduledDate, scheduledTime, mediaUrls, thumbnailUrl } = body;
+    const { clientId, cycleId, title, caption, format, scheduledDate, scheduledTime, mediaUrls, thumbnailUrl, notifyClient } = body;
 
     if (!clientId || !title) {
       return NextResponse.json(
@@ -69,7 +71,25 @@ export async function POST(request: Request) {
       mediaUrls: parsedMedia,
     });
 
-    return NextResponse.json({ success: true, post }, { status: 201 });
+    let emailNotification = null;
+    if (notifyClient) {
+      const client = await prisma.client.findUnique({
+        where: { id: clientId },
+        select: { name: true, slug: true, email: true, pin: true },
+      });
+      if (client) {
+        emailNotification = await sendClientNotificationEmail({
+          to: client.email,
+          clientName: client.name,
+          clientSlug: client.slug,
+          pin: client.pin,
+          type: 'NEW_POST',
+          postTitle: post.title,
+        });
+      }
+    }
+
+    return NextResponse.json({ success: true, post, emailNotification }, { status: 201 });
   } catch (error) {
     console.error('Erro ao criar post:', error);
     return NextResponse.json({ error: 'Erro ao criar publicação.' }, { status: 500 });
@@ -84,7 +104,7 @@ export async function PATCH(request: Request) {
 
   try {
     const body = await request.json();
-    const { id, title, caption, scheduledDate, scheduledTime, status, resolveComments, format, cycleId, mediaUrl, thumbnailUrl, mediaUrls } = body;
+    const { id, title, caption, scheduledDate, scheduledTime, status, resolveComments, format, cycleId, mediaUrl, thumbnailUrl, mediaUrls, notifyClient } = body;
 
     if (!id) {
       return NextResponse.json({ error: 'ID do post é obrigatório.' }, { status: 400 });
@@ -122,7 +142,25 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: 'Post não encontrado.' }, { status: 404 });
     }
 
-    return NextResponse.json({ success: true, post });
+    let emailNotification = null;
+    if (notifyClient) {
+      const client = await prisma.client.findUnique({
+        where: { id: post.clientId },
+        select: { name: true, slug: true, email: true, pin: true },
+      });
+      if (client) {
+        emailNotification = await sendClientNotificationEmail({
+          to: client.email,
+          clientName: client.name,
+          clientSlug: client.slug,
+          pin: client.pin,
+          type: 'VIDEO_REVISED',
+          postTitle: post.title,
+        });
+      }
+    }
+
+    return NextResponse.json({ success: true, post, emailNotification });
   } catch (error) {
     console.error('Erro ao atualizar post:', error);
     return NextResponse.json({ error: 'Erro ao salvar alterações do post.' }, { status: 500 });

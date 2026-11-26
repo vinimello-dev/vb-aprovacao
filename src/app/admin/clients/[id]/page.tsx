@@ -147,8 +147,17 @@ export default function ClientHubPage({ params }: PageProps) {
   const [postDate, setPostDate] = useState(new Date().toISOString().split('T')[0]);
   const [postTime, setPostTime] = useState('');
   const [postCycleId, setPostCycleId] = useState('');
+  const [postNotifyClient, setPostNotifyClient] = useState(false);
   const [submittingPost, setSubmittingPost] = useState(false);
   const [postError, setPostError] = useState('');
+
+  // Notificação por E-mail do Planejamento (Ciclo)
+  const [notifyingCycleId, setNotifyingCycleId] = useState<string | null>(null);
+  const [cycleNotifyFeedback, setCycleNotifyFeedback] = useState<{
+    cycleId: string;
+    type: 'success' | 'error';
+    message: string;
+  } | null>(null);
 
   // Modal Editar Post
   const [editPostModalOpen, setEditPostModalOpen] = useState(false);
@@ -330,6 +339,7 @@ export default function ClientHubPage({ params }: PageProps) {
           caption: postCaption,
           thumbnailUrl: postThumbnailUrl.trim() || undefined,
           mediaUrls: mediaUrlsPayload,
+          notifyClient: postNotifyClient,
         }),
       });
 
@@ -829,90 +839,90 @@ export default function ClientHubPage({ params }: PageProps) {
           </div>
         </div>
 
-        {/* NAVEGAÇÃO POR ABAS (Estilo Imagem 2: Entregas, Roteiros, Dados, Documentos) */}
-        <div className="flex items-center gap-2 border-b-2 border-[#DCD6CC] pb-0 mb-8 overflow-x-auto">
+        {/* NAVEGAÇÃO POR ABAS (Compacta e Harmônica) */}
+        <div className="flex items-center gap-1 border-b-2 border-[#DCD6CC] pb-0 mb-8 overflow-x-auto">
           <button
             onClick={() => setActiveTab('cycles')}
-            className={`flex items-center gap-2 px-5 py-3 text-xs font-black uppercase tracking-wider border-b-2 transition-all -mb-[2px] whitespace-nowrap shrink-0 ${
+            className={`flex items-center gap-1.5 px-3 py-2 text-[11px] font-black uppercase tracking-wider border-b-2 transition-all -mb-[2px] whitespace-nowrap shrink-0 ${
               activeTab === 'cycles'
-                ? 'border-[#FD3100] text-[#FD3100] bg-white rounded-t-2xl'
+                ? 'border-[#FD3100] text-[#FD3100] bg-white rounded-t-xl'
                 : 'border-transparent text-[#66635D] hover:text-[#111111]'
             }`}
           >
-            <Calendar className="w-4 h-4" />
-            <span>Entregas & Ciclos ({client.cycles.length})</span>
+            <Calendar className="w-3.5 h-3.5" />
+            <span>Entregas ({client.cycles.length})</span>
           </button>
 
           <button
             onClick={() => setActiveTab('calendar')}
-            className={`flex items-center gap-2 px-5 py-3 text-xs font-black uppercase tracking-wider border-b-2 transition-all -mb-[2px] whitespace-nowrap shrink-0 ${
+            className={`flex items-center gap-1.5 px-3 py-2 text-[11px] font-black uppercase tracking-wider border-b-2 transition-all -mb-[2px] whitespace-nowrap shrink-0 ${
               activeTab === 'calendar'
-                ? 'border-[#FD3100] text-[#FD3100] bg-white rounded-t-2xl'
+                ? 'border-[#FD3100] text-[#FD3100] bg-white rounded-t-xl'
                 : 'border-transparent text-[#66635D] hover:text-[#111111]'
             }`}
           >
-            <CalendarDays className="w-4 h-4" />
-            <span>Calendário do Mês</span>
+            <CalendarDays className="w-3.5 h-3.5" />
+            <span>Calendário</span>
           </button>
 
           <button
             onClick={() => setActiveTab('scripts')}
-            className={`flex items-center gap-2 px-5 py-3 text-xs font-black uppercase tracking-wider border-b-2 transition-all -mb-[2px] whitespace-nowrap shrink-0 ${
+            className={`flex items-center gap-1.5 px-3 py-2 text-[11px] font-black uppercase tracking-wider border-b-2 transition-all -mb-[2px] whitespace-nowrap shrink-0 ${
               activeTab === 'scripts'
-                ? 'border-[#FD3100] text-[#FD3100] bg-white rounded-t-2xl'
+                ? 'border-[#FD3100] text-[#FD3100] bg-white rounded-t-xl'
                 : 'border-transparent text-[#66635D] hover:text-[#111111]'
             }`}
           >
-            <Video className="w-4 h-4" />
-            <span>Roteiros de Gravação ({client.scripts.length})</span>
+            <Video className="w-3.5 h-3.5" />
+            <span>Roteiros ({client.scripts.length})</span>
           </button>
 
           <button
             onClick={() => setActiveTab('metrics')}
-            className={`flex items-center gap-2 px-5 py-3 text-xs font-black uppercase tracking-wider border-b-2 transition-all -mb-[2px] whitespace-nowrap shrink-0 ${
+            className={`flex items-center gap-1.5 px-3 py-2 text-[11px] font-black uppercase tracking-wider border-b-2 transition-all -mb-[2px] whitespace-nowrap shrink-0 ${
               activeTab === 'metrics'
-                ? 'border-[#FD3100] text-[#FD3100] bg-white rounded-t-2xl'
+                ? 'border-[#FD3100] text-[#FD3100] bg-white rounded-t-xl'
                 : 'border-transparent text-[#66635D] hover:text-[#111111]'
             }`}
           >
-            <BarChart3 className="w-4 h-4" />
-            <span>Métricas do Mês</span>
+            <BarChart3 className="w-3.5 h-3.5" />
+            <span>Métricas</span>
           </button>
 
           <button
             onClick={() => setActiveTab('photos')}
-            className={`flex items-center gap-2 px-5 py-3 text-xs font-black uppercase tracking-wider border-b-2 transition-all -mb-[2px] ${
+            className={`flex items-center gap-1.5 px-3 py-2 text-[11px] font-black uppercase tracking-wider border-b-2 transition-all -mb-[2px] whitespace-nowrap shrink-0 ${
               activeTab === 'photos'
-                ? 'border-[#FD3100] text-[#FD3100] bg-white rounded-t-2xl'
+                ? 'border-[#FD3100] text-[#FD3100] bg-white rounded-t-xl'
                 : 'border-transparent text-[#66635D] hover:text-[#111111]'
             }`}
           >
-            <Camera className="w-4 h-4" />
+            <Camera className="w-3.5 h-3.5" />
             <span>Fotos</span>
           </button>
 
           <button
             onClick={() => setActiveTab('crm')}
-            className={`flex items-center gap-2 px-5 py-3 text-xs font-black uppercase tracking-wider border-b-2 transition-all -mb-[2px] ${
+            className={`flex items-center gap-1.5 px-3 py-2 text-[11px] font-black uppercase tracking-wider border-b-2 transition-all -mb-[2px] whitespace-nowrap shrink-0 ${
               activeTab === 'crm'
-                ? 'border-[#FD3100] text-[#FD3100] bg-white rounded-t-2xl'
+                ? 'border-[#FD3100] text-[#FD3100] bg-white rounded-t-xl'
                 : 'border-transparent text-[#66635D] hover:text-[#111111]'
             }`}
           >
-            <Building2 className="w-4 h-4" />
-            <span>Dados do Cliente</span>
+            <Building2 className="w-3.5 h-3.5" />
+            <span>Dados</span>
           </button>
 
           <button
             onClick={() => setActiveTab('documents')}
-            className={`flex items-center gap-2 px-5 py-3 text-xs font-black uppercase tracking-wider border-b-2 transition-all -mb-[2px] ${
+            className={`flex items-center gap-1.5 px-3 py-2 text-[11px] font-black uppercase tracking-wider border-b-2 transition-all -mb-[2px] whitespace-nowrap shrink-0 ${
               activeTab === 'documents'
-                ? 'border-[#FD3100] text-[#FD3100] bg-white rounded-t-2xl'
+                ? 'border-[#FD3100] text-[#FD3100] bg-white rounded-t-xl'
                 : 'border-transparent text-[#66635D] hover:text-[#111111]'
             }`}
           >
-            <FileCheck2 className="w-4 h-4" />
-            <span>Documentos & Contratos ({client.documents.length})</span>
+            <FileCheck2 className="w-3.5 h-3.5" />
+            <span>Documentos ({client.documents.length})</span>
           </button>
         </div>
       </div>
@@ -999,7 +1009,56 @@ export default function ClientHubPage({ params }: PageProps) {
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <button
+                          type="button"
+                          disabled={notifyingCycleId === cycle.id}
+                          onClick={async () => {
+                            setNotifyingCycleId(cycle.id);
+                            setCycleNotifyFeedback(null);
+                            try {
+                              const res = await fetch(`/api/admin/clients/${client.id}/notify`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                  type: 'CYCLE_READY',
+                                  cycleName: cycle.name,
+                                  postsCount: cycle.posts.length,
+                                }),
+                              });
+                              const data = await res.json();
+                              if (res.ok && data.sent) {
+                                setCycleNotifyFeedback({
+                                  cycleId: cycle.id,
+                                  type: 'success',
+                                  message: data.message || `E-mail enviado para ${client.email}!`,
+                                });
+                              } else {
+                                setCycleNotifyFeedback({
+                                  cycleId: cycle.id,
+                                  type: 'error',
+                                  message: data.error || 'Não foi possível enviar o e-mail.',
+                                });
+                              }
+                            } catch {
+                              setCycleNotifyFeedback({
+                                cycleId: cycle.id,
+                                type: 'error',
+                                message: 'Erro de conexão ao enviar e-mail.',
+                              });
+                            } finally {
+                              setNotifyingCycleId(null);
+                            }
+                          }}
+                          className="px-3.5 py-2 bg-emerald-50 hover:bg-emerald-600 text-emerald-700 hover:text-white rounded-xl text-xs font-black uppercase border border-emerald-200 transition-all flex items-center gap-1.5 disabled:opacity-50"
+                          title={client.email ? `Enviar e-mail para ${client.email}` : 'Cadastre um e-mail na aba Dados'}
+                        >
+                          <Mail className="w-3.5 h-3.5" />
+                          <span>
+                            {notifyingCycleId === cycle.id ? 'Enviando...' : 'Finalizar & Notificar'}
+                          </span>
+                        </button>
+
                         <button
                           onClick={() => {
                             setPostCycleId(cycle.id);
@@ -1020,6 +1079,25 @@ export default function ClientHubPage({ params }: PageProps) {
                         </button>
                       </div>
                     </div>
+
+                    {cycleNotifyFeedback?.cycleId === cycle.id && (
+                      <div
+                        className={`mb-4 px-4 py-2.5 rounded-2xl text-xs font-bold border flex items-center justify-between ${
+                          cycleNotifyFeedback.type === 'success'
+                            ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+                            : 'bg-amber-50 border-amber-200 text-amber-800'
+                        }`}
+                      >
+                        <span>{cycleNotifyFeedback.message}</span>
+                        <button
+                          type="button"
+                          onClick={() => setCycleNotifyFeedback(null)}
+                          className="text-xs font-black ml-3"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    )}
 
                     {/* Posts dentro deste Ciclo */}
                     {cycle.posts.length === 0 ? (
@@ -1909,6 +1987,16 @@ export default function ClientHubPage({ params }: PageProps) {
                   className="w-full px-3 py-2 bg-[#FAF9F7] border border-[#DCD6CC] rounded-xl text-xs font-medium text-[#111111] focus:outline-none resize-none"
                 />
               </div>
+
+              <label className="flex items-center gap-2 text-xs font-bold text-[#111111] cursor-pointer pt-1">
+                <input
+                  type="checkbox"
+                  checked={postNotifyClient}
+                  onChange={(e) => setPostNotifyClient(e.target.checked)}
+                  className="rounded accent-[#FD3100]"
+                />
+                <span>Notificar cliente por e-mail ao salvar</span>
+              </label>
 
               <div className="pt-3 border-t border-[#EEEDEA] flex items-center justify-end gap-2">
                 <button

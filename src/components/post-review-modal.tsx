@@ -55,6 +55,7 @@ export function PostReviewModal({ post, onClose, onPostUpdated, isAdmin = false 
   const [revisedThumbnailUrl, setRevisedThumbnailUrl] = useState('');
   const [resolveOldComments, setResolveOldComments] = useState(true);
   const [resetToPending, setResetToPending] = useState(true);
+  const [notifyClientEmail, setNotifyClientEmail] = useState(true);
   const [savingRevision, setSavingRevision] = useState(false);
   const [revisionError, setRevisionError] = useState('');
 
@@ -77,6 +78,7 @@ export function PostReviewModal({ post, onClose, onPostUpdated, isAdmin = false 
           thumbnailUrl: revisedThumbnailUrl.trim() || undefined,
           status: resetToPending ? 'PENDENTE' : currentPost.status,
           resolveComments: resolveOldComments,
+          notifyClient: notifyClientEmail,
         }),
       });
       const data = await res.json();
@@ -91,8 +93,14 @@ export function PostReviewModal({ post, onClose, onPostUpdated, isAdmin = false 
       setIsRevisionOpen(false);
       setRevisedMediaUrl('');
       setRevisedThumbnailUrl('');
-      setStatusFeedbackMessage('Vídeo revisado enviado para aprovação!');
-      setTimeout(() => setStatusFeedbackMessage(null), 4000);
+      if (data.emailNotification?.sent) {
+        setStatusFeedbackMessage('Vídeo revisado salvo e e-mail enviado para o cliente!');
+      } else if (notifyClientEmail && data.emailNotification?.reason) {
+        setStatusFeedbackMessage(`Vídeo revisado salvo! (E-mail não enviado: ${data.emailNotification.reason})`);
+      } else {
+        setStatusFeedbackMessage('Vídeo revisado enviado para aprovação!');
+      }
+      setTimeout(() => setStatusFeedbackMessage(null), 5000);
     } catch {
       setRevisionError('Erro de conexão ao salvar vídeo revisado.');
     } finally {
@@ -517,6 +525,16 @@ export function PostReviewModal({ post, onClose, onPostUpdated, isAdmin = false 
                     className="rounded accent-[#FD3100]"
                   />
                   <span>Voltar status para Pendente</span>
+                </label>
+
+                <label className="flex items-center gap-1.5 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={notifyClientEmail}
+                    onChange={(e) => setNotifyClientEmail(e.target.checked)}
+                    className="rounded accent-[#FD3100]"
+                  />
+                  <span>Notificar cliente por e-mail</span>
                 </label>
               </div>
 
