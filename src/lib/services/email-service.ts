@@ -1,6 +1,11 @@
 import nodemailer from 'nodemailer';
 
-export type NotificationEmailType = 'CYCLE_READY' | 'VIDEO_REVISED' | 'NEW_POST';
+export type NotificationEmailType =
+  | 'CYCLE_READY'
+  | 'VIDEO_REVISED'
+  | 'NEW_POST'
+  | 'VIDEOS_READY'
+  | 'PHOTOS_READY';
 
 interface SendClientNotificationParams {
   to?: string | null;
@@ -75,6 +80,22 @@ export async function sendClientNotificationEmail(
     bodyText = `Olá! Um novo conteúdo${
       params.postTitle ? ` (<strong>"${params.postTitle}"</strong>)` : ''
     } foi adicionado ao portal da <strong>${params.clientName}</strong> para aprovação.`;
+  } else if (params.type === 'VIDEOS_READY') {
+    subject = `VB Hub | Seus vídeos estão prontos para aprovação — ${params.clientName}`;
+    headline = 'Seus vídeos estão prontos para aprovação!';
+    bodyText = `Olá! Já disponibilizamos ${
+      typeof params.postsCount === 'number' && params.postsCount > 0
+        ? `<strong>${params.postsCount} ${params.postsCount === 1 ? 'vídeo' : 'vídeos'}</strong>`
+        : 'os novos vídeos'
+    } da <strong>${params.clientName}</strong> no VB Hub para você assistir, solicitar ajustes ou aprovar.`;
+  } else if (params.type === 'PHOTOS_READY') {
+    subject = `VB Hub | Suas pastas de fotos estão disponíveis — ${params.clientName}`;
+    headline = 'Suas fotos já estão disponíveis no VB Hub!';
+    bodyText = `Olá! Compartilhamos ${
+      typeof params.postsCount === 'number' && params.postsCount > 0
+        ? `<strong>${params.postsCount} ${params.postsCount === 1 ? 'pasta de fotos' : 'pastas de fotos'}</strong>`
+        : 'as pastas de fotos'
+    } da <strong>${params.clientName}</strong> no VB Hub para você visualizar e baixar.`;
   }
 
   const pinBlock = params.pin

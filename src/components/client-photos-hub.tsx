@@ -14,6 +14,7 @@ import {
   X,
   Loader2,
   Image as ImageIcon,
+  Mail,
 } from 'lucide-react';
 import type { PhotoFolderItem } from '@/lib/services/photo-folder-service';
 
@@ -84,6 +85,46 @@ export function ClientPhotosHub({
   const [notes, setNotes] = useState('');
   const [saving, setSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [notifying, setNotifying] = useState(false);
+  const [notifyFeedback, setNotifyFeedback] = useState<{
+    type: 'success' | 'error';
+    message: string;
+  } | null>(null);
+
+  const handleNotifyPhotos = async () => {
+    if (!clientId) return;
+    setNotifying(true);
+    setNotifyFeedback(null);
+    try {
+      const res = await fetch(`/api/admin/clients/${clientId}/notify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'PHOTOS_READY',
+          postsCount: folders.length,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.sent) {
+        setNotifyFeedback({
+          type: 'success',
+          message: data.message || 'E-mail enviado com sucesso!',
+        });
+      } else {
+        setNotifyFeedback({
+          type: 'error',
+          message: data.error || 'Não foi possível enviar o e-mail.',
+        });
+      }
+    } catch {
+      setNotifyFeedback({
+        type: 'error',
+        message: 'Erro de conexão ao enviar e-mail.',
+      });
+    } finally {
+      setNotifying(false);
+    }
+  };
 
   const fetchFolders = async () => {
     try {
@@ -245,17 +286,48 @@ export function ClientPhotosHub({
         </div>
 
         {mode === 'admin' && (
-          <button
-            type="button"
-            onClick={openCreateModal}
-            style={{ backgroundColor: '#FD3100', color: '#FFFFFF' }}
-            className="btn-vb-primary flex items-center gap-2 px-5 py-2.5 rounded-2xl text-xs font-black uppercase tracking-wider shadow-md shrink-0"
-          >
-            <Plus className="w-4 h-4 stroke-[3]" />
-            <span>Nova Pasta de Fotos</span>
-          </button>
+          <div className="flex flex-wrap items-center gap-2 shrink-0">
+            <button
+              type="button"
+              disabled={notifying}
+              onClick={handleNotifyPhotos}
+              className="px-4 py-2.5 bg-emerald-50 hover:bg-emerald-600 text-emerald-700 hover:text-white rounded-2xl text-xs font-black uppercase border border-emerald-200 transition-all flex items-center gap-1.5 disabled:opacity-50"
+            >
+              <Mail className="w-3.5 h-3.5" />
+              <span>{notifying ? 'Enviando...' : 'Notificar Cliente'}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={openCreateModal}
+              style={{ backgroundColor: '#FD3100', color: '#FFFFFF' }}
+              className="btn-vb-primary flex items-center gap-2 px-5 py-2.5 rounded-2xl text-xs font-black uppercase tracking-wider shadow-md shrink-0"
+            >
+              <Plus className="w-4 h-4 stroke-[3]" />
+              <span>Nova Pasta de Fotos</span>
+            </button>
+          </div>
         )}
       </div>
+
+      {notifyFeedback && (
+        <div
+          className={`px-4 py-2.5 rounded-2xl text-xs font-bold border flex items-center justify-between ${
+            notifyFeedback.type === 'success'
+              ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+              : 'bg-amber-50 border-amber-200 text-amber-800'
+          }`}
+        >
+          <span>{notifyFeedback.message}</span>
+          <button
+            type="button"
+            onClick={() => setNotifyFeedback(null)}
+            className="text-xs font-black ml-3"
+          >
+            ✕
+          </button>
+        </div>
+      )}
 
       {/* Filtro por Mês */}
       {folders.length > 0 && (
