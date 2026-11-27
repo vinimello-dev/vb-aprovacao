@@ -12,6 +12,7 @@ async function handleVideoStream(request: NextRequest, method: 'GET' | 'HEAD') {
   const searchParams = request.nextUrl.searchParams;
   const id = searchParams.get('id');
   const urlParam = searchParams.get('url');
+  const isDownload = searchParams.get('download') === '1';
 
   let targetUrl = '';
   if (id) {
@@ -43,7 +44,10 @@ async function handleVideoStream(request: NextRequest, method: 'GET' | 'HEAD') {
     responseHeaders.set('Access-Control-Allow-Origin', '*');
     responseHeaders.set('Access-Control-Allow-Headers', 'Range, Accept, Content-Type');
     responseHeaders.set('Access-Control-Expose-Headers', 'Content-Range, Content-Length, Accept-Ranges');
-    responseHeaders.set('Content-Disposition', 'inline');
+    responseHeaders.set(
+      'Content-Disposition',
+      isDownload ? 'attachment; filename="video-vbhub.mp4"' : 'inline'
+    );
 
     const contentLength = upstreamRes.headers.get('content-length');
     if (contentLength) {

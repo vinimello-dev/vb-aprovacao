@@ -21,6 +21,7 @@ import {
   Monitor,
   Maximize2,
   Minimize2,
+  Download,
 } from 'lucide-react';
 import { CommentData } from '@/lib/services/post-service';
 import { parseMediaUrl } from '@/lib/utils';
@@ -377,19 +378,35 @@ export function VideoPlayerReview({
                   </button>
                 </div>
 
-                {/* Alternância Sem Bordas (Preencher) vs Conter */}
-                <button
-                  type="button"
-                  onClick={() => setFitMode(fitMode === 'cover' ? 'contain' : 'cover')}
-                  style={fitMode === 'cover' ? { backgroundColor: '#FD3100', color: '#FFFFFF' } : {}}
-                  className={`flex items-center gap-1.5 px-3 py-1 rounded-lg font-black uppercase text-[10px] transition-all ${
-                    fitMode === 'cover' ? 'shadow-sm' : 'bg-white/10 text-white/80 hover:bg-white/20'
-                  }`}
-                  title={fitMode === 'cover' ? 'Sem bordas pretas (Preenchimento total)' : 'Conter (Exibir vídeo completo com bordas)'}
-                >
-                  {fitMode === 'cover' ? <Maximize2 className="w-3 h-3" /> : <Minimize2 className="w-3 h-3" />}
-                  <span>{fitMode === 'cover' ? 'Sem Bordas (Preencher)' : 'Conter'}</span>
-                </button>
+                {/* Alternância Sem Bordas (Preencher) vs Conter + Baixar Vídeo */}
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setFitMode(fitMode === 'cover' ? 'contain' : 'cover')}
+                    style={fitMode === 'cover' ? { backgroundColor: '#FD3100', color: '#FFFFFF' } : {}}
+                    className={`flex items-center gap-1.5 px-3 py-1 rounded-lg font-black uppercase text-[10px] transition-all ${
+                      fitMode === 'cover' ? 'shadow-sm' : 'bg-white/10 text-white/80 hover:bg-white/20'
+                    }`}
+                    title={fitMode === 'cover' ? 'Sem bordas pretas (Preenchimento total)' : 'Conter (Exibir vídeo completo com bordas)'}
+                  >
+                    {fitMode === 'cover' ? <Maximize2 className="w-3 h-3" /> : <Minimize2 className="w-3 h-3" />}
+                    <span>{fitMode === 'cover' ? 'Sem Bordas (Preencher)' : 'Conter'}</span>
+                  </button>
+
+                  <a
+                    href={
+                      finalVideoUrl.startsWith('/api/video-stream')
+                        ? `${finalVideoUrl}&download=1`
+                        : `/api/video-stream?url=${encodeURIComponent(finalVideoUrl)}&download=1`
+                    }
+                    download="video-vbhub.mp4"
+                    className="flex items-center gap-1.5 px-3 py-1 rounded-lg font-black uppercase text-[10px] bg-white text-[#111111] hover:bg-[#FD3100] hover:text-white transition-all shadow-sm"
+                    title="Baixar este vídeo em MP4"
+                  >
+                    <Download className="w-3 h-3" />
+                    <span>Baixar Vídeo</span>
+                  </a>
+                </div>
               </div>
 
               {/* Área do Player de Vídeo Responsiva */}
