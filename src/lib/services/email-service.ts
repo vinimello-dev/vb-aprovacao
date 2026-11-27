@@ -183,3 +183,136 @@ export async function sendClientNotificationEmail(
 
   return { sent: false, reason: 'Nenhum provedor de e-mail configurado.' };
 }
+
+interface SendAgencyNotificationParams {
+  clientId: string;
+  clientName: string;
+  postTitle: string;
+  status: 'AJUSTES' | 'APROVADO';
+  comments?: Array<{ author: string; content: string; timestampSeconds?: number | null }>;
+}
+
+export async function sendAgencyNotificationEmail(
+  params: SendAgencyNotificationParams
+): Promise<EmailSendResult> {
+  const to =
+    process.env.AGENCY_NOTIFY_EMAIL?.trim() || process.env.GMAIL_USER?.trim();
+  if (!to) {
+    return {
+      sent: false,
+      reason: 'Configure AGENCY_NOTIFY_EMAIL ou GMAIL_USER na Vercel.',
+    };
+  }
+
+  const gmailUser = process.env.GMAIL_USER?.trim();
+  const gmailAppPassword = process.env.GMAIL_APP_PASSWORD?.replace(/\s+/g, '').trim();
+  const resendApiKey = process.env.RESEND_API_KEY?.trim();
+
+  if (!gmailUser && !resendApiKey) {
+    return { sent: false, reason: 'Nenhum provedor de e-mail configurado.' };
+  }
+
+  const baseUrl = (process.env.NEXT_PUBLIC_APP_URL || 'https://vb-aprovacao.vercel.app').replace(
+    /\/$/,
+    ''
+  );
+  const adminClientUrl = `${baseUrl}/admin/clients/${params.clientId}`;
+  const isAdjust = params.status === 'AJUSTES';
+
+  const subject = isAdjust
+    ? `VB Hub | Ajustes solicitados — ${params.clientName} (${params.postTitle})`
+    : `VB Hub | Conteúdo aprovado — ${params.clientName} (${params.postTitle})`;
+
+  const badgeBg = isAdjust ? '#FD3100' : '#059669';
+  const badgeText = isAdjust ? 'AJUSTES SOLICITADOS' : 'CONTEÚDO APROVADO';
+  const headline = isAdjust
+    ? `${params.clientName} solicitou ajustes!`
+    : `${params.clientName} aprovou um conteúdo!`;
+  const bodyText = isAdjust
+    ? `O cliente <strong>${params.clientName}</strong> finalizou a revisão de <strong>"${params.postTitle}"</strong> e solicitou alterações. Veja abaixo e acesse o painel para conferir os detalhes.`
+    : `Ótima notícia! O cliente <strong>${params.clientName}</strong> aprovou o material <strong>"${params.postTitle}"</strong> no VB Hub.`;
+
+  const commentsList = (params.comments || []).slice(-5);
+  const commentsHtml =
+    isAdjust && commentsList.length > 0
+      ? `<div style="margin:18px 0;padding:14px 16px;background:#FAF9F7;border:1px solid #DCD6CC;border-radius:14px;">
+          <p style="margin:0 0 8px;font-size:12px;font-weight:900;text-transform:uppercase;color:#111111;">Observações do cliente:</p>
+          <ul style="margin:0;padding-left:18px;font-size:13px;color:#44423E;line-height:1.5;">
+            ${commentsList
+              .map((c) => {
+                const ts =
+                  typeof c.timestampSeconds === 'number'
+                    ? `[${String(Math.floor(c.timestampSeconds / 60)).padStart(2, '0')}:${String(
+                        Math.floor(c.timestampSeconds % 60)
+                      ).padStart(2, '0')}] `
+                    : '';
+                return `<li style="margin-bottom:4px;"><strong>${ts}</strong>${c.content}</li>`;
+              })
+              .join('')}
+          </ul>
+        </div>`
+      : '';
+
+  const html = `
+  <div style="font-family:Arial,Helvetica,sans-serif;background:#EEEDEA;padding:32px 16px;color:#111111;">
+    <div style="max-width:540px;margin:0 auto;background:#FFFFFF;border:2px solid #DCD6CC;border-radius:24px;overflow:hidden;">
+      <div style="background:#111111;padding:20px 28px;display:flex;align-items:center;justify-content:space-between;">
+        <span style="display:inline-block;background:#FD3100;color:#FFFFFF;font-weight:900;font-size:14px;padding:6px 12px;border-radius:10px;letter-spacing:0.5px;">VB HUB</span>
+        <span style="display:inline-block;background:${badgeBg};color:#FFFFFF;font-weight:900;font-size:11px;padding:5px 10px;border-radius:8px;margin-left:10px;">${badgeText}</span>
+      </div>
+      <div style="padding:28px;">
+        <h1 style="margin:0 0 12px;font-size:20px;font-weight:900;color:#111111;">${headline}</h1>
+        <p style="margin:0 0 18px;font-size:14px;line-height:1.6;color:#44423E;">${bodyText}</p>
+        ${commentsHtml}
+        <a href="${adminClientUrl}" style="display:inline-block;background:#FD3100;color:#FFFFFF;text-decoration:none;font-weight:900;font-size:13px;text-transform:uppercase;letter-spacing:0.6px;padding:13px 24px;border-radius:14px;">
+          Abrir no Painel Admin
+        </a>
+      </div>
+      <div style="padding:16px 28px;background:#FAF9F7;border-top:1px solid #EEEDEA;font-size:11px;color:#66635D;">
+        Notificação automática de revisão • VB Hub
+      </div>
+    </div>
+  </div>`;
+
+  if (gmailUser && gmailAppPassword) {
+    try {
+      const transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+          user: gmailUser,
+          pass: gmailAppPassword,
+        },
+      });
+      await transporter.sendMail({
+        from: `VB Hub <${gmailUser}>`,
+        to,
+        subject,
+        html,
+      });
+      return { sent: true };
+    } catch (err: any) {
+      console.error('Erro ao notificar agência via Gmail:', err);
+      return { sent: false, reason: err?.message || 'Erro Gmail' };
+    }
+  }
+
+  if (resendApiKey) {
+    const from = process.env.EMAIL_FROM?.trim() || 'VB Hub <onboarding@resend.dev>';
+    try {
+      const res = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${resendApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ from, to: [to], subject, html }),
+      });
+      return { sent: res.ok };
+    } catch (err) {
+      console.error('Erro ao notificar agência via Resend:', err);
+      return { sent: false };
+    }
+  }
+
+  return { sent: false };
+}
