@@ -39,6 +39,7 @@ import {
   CalendarDays,
   BarChart3,
   Camera,
+  Upload,
 } from 'lucide-react';
 import { formatDate, formatPostSchedule, parseThumbnailUrl, parseMediaUrl, getScheduledDateInput } from '@/lib/utils';
 import { PostReviewModal } from '@/components/post-review-modal';
@@ -47,6 +48,7 @@ import { ClientMetricsHub } from '@/components/client-metrics-hub';
 import { ClientPhotosHub } from '@/components/client-photos-hub';
 import {
   ScriptScene,
+  ParsedImportedScript,
   SCRIPT_TEMPLATES,
   createEmptyScene,
   parseScriptScenes,
@@ -242,6 +244,107 @@ export default function ClientHubPage({ params }: PageProps) {
   const [scriptStatus, setScriptStatus] = useState<'A_GRAVAR' | 'GRAVADO' | 'EM_EDICAO' | 'FINALIZADO'>('A_GRAVAR');
   const [scriptScenes, setScriptScenes] = useState(1);
   const [submittingScript, setSubmittingScript] = useState(false);
+
+  // Modal Importar Documento de Roteiros (.docx / .txt / .md / texto)
+  const [importScriptModalOpen, setImportScriptModalOpen] = useState(false);
+  const [importRawText, setImportRawText] = useState('');
+  const [importRecordingDate, setImportRecordingDate] = useState('');
+  const [importParsing, setImportParsing] = useState(false);
+  const [importSaving, setImportSaving] = useState(false);
+  const [importError, setImportError] = useState('');
+  const [importedScripts, setImportedScripts] = useState<
+    Array<ParsedImportedScript & { selected: boolean }>
+  >([]);
+
+  const handleImportFileChange = async (file: File | null) => {
+    if (!file) return;
+    setImportParsing(true);
+    setImportError('');
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await fetch(`/api/admin/clients/${id}/scripts/import`, {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setImportError(data.error || 'Erro ao ler o documento.');
+        setImportParsing(false);
+        return;
+      }
+      setImportRawText(data.rawText || '');
+      setImportedScripts(
+        (data.scripts || []).map((s: ParsedImportedScript) => ({ ...s, selected: true }))
+      );
+    } catch {
+      setImportError('Erro de conexão ao processar o documento.');
+    } finally {
+      setImportParsing(false);
+    }
+  };
+
+  const handleParseImportText = async () => {
+    if (!importRawText.trim()) {
+      setImportError('Cole o texto do roteiro ou selecione um arquivo .docx / .txt.');
+      return;
+    }
+    setImportParsing(true);
+    setImportError('');
+    try {
+      const res = await fetch(`/api/admin/clients/${id}/scripts/import`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rawText: importRawText }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setImportError(data.error || 'Não foi possível formatar o texto.');
+        setImportParsing(false);
+        return;
+      }
+      setImportedScripts(
+        (data.scripts || []).map((s: ParsedImportedScript) => ({ ...s, selected: true }))
+      );
+    } catch {
+      setImportError('Erro de conexão ao processar o texto.');
+    } finally {
+      setImportParsing(false);
+    }
+  };
+
+  const handleSaveImportedScripts = async () => {
+    const selected = importedScripts.filter((s) => s.selected);
+    if (selected.length === 0) return;
+
+    setImportSaving(true);
+    setImportError('');
+    try {
+      for (const item of selected) {
+        await fetch(`/api/admin/clients/${id}/scripts`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title: item.title.trim(),
+            recordingDate: importRecordingDate || null,
+            hook: item.hook?.trim() || null,
+            content: serializeScriptScenes(item.scenes),
+            status: 'A_GRAVAR',
+            scenesCount: item.scenes.length,
+          }),
+        });
+      }
+      setImportScriptModalOpen(false);
+      setImportRawText('');
+      setImportRecordingDate('');
+      setImportedScripts([]);
+      await fetchClientData();
+    } catch {
+      setImportError('Erro ao salvar os roteiros importados.');
+    } finally {
+      setImportSaving(false);
+    }
+  };
 
   // Modal Novo Documento / Contrato
   const [docModalOpen, setDocModalOpen] = useState(false);
@@ -1361,24 +1464,40 @@ export default function ClientHubPage({ params }: PageProps) {
                 </p>
               </div>
 
-              <button
-                onClick={() => {
-                  setScriptEditingId(null);
-                  setScriptTitle('');
-                  setScriptDate('');
-                  setScriptHook('');
-                  setScriptContent('');
-                  setScriptSceneList([createEmptyScene(1), createEmptyScene(2)]);
-                  setScriptStatus('A_GRAVAR');
-                  setScriptScenes(2);
-                  setScriptModalOpen(true);
-                }}
-                style={{ backgroundColor: '#FD3100', color: '#FFFFFF' }}
-                className="btn-vb-primary flex items-center gap-2 px-5 py-2.5 rounded-2xl text-xs font-black uppercase tracking-wider shadow-md"
-              >
-                <Plus className="w-4 h-4 stroke-[3]" />
-                <span>+ Novo Roteiro</span>
-              </button>
+              <div className="flex flex-wrap items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setImportError('');
+                    setImportedScripts([]);
+                    setImportRawText('');
+                    setImportScriptModalOpen(true);
+                  }}
+                  className="px-4 py-2.5 bg-[#FAF9F7] hover:bg-[#EEEDEA] text-[#111111] hover:text-[#FD3100] rounded-2xl text-xs font-black uppercase tracking-wider border border-[#DCD6CC] transition-all flex items-center gap-1.5"
+                >
+                  <Upload className="w-3.5 h-3.5" />
+                  <span>Importar Documento</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    setScriptEditingId(null);
+                    setScriptTitle('');
+                    setScriptDate('');
+                    setScriptHook('');
+                    setScriptContent('');
+                    setScriptSceneList([createEmptyScene(1), createEmptyScene(2)]);
+                    setScriptStatus('A_GRAVAR');
+                    setScriptScenes(2);
+                    setScriptModalOpen(true);
+                  }}
+                  style={{ backgroundColor: '#FD3100', color: '#FFFFFF' }}
+                  className="btn-vb-primary flex items-center gap-2 px-5 py-2.5 rounded-2xl text-xs font-black uppercase tracking-wider shadow-md"
+                >
+                  <Plus className="w-4 h-4 stroke-[3]" />
+                  <span>+ Novo Roteiro</span>
+                </button>
+              </div>
             </div>
 
             {client.scripts.length === 0 ? (
@@ -2914,6 +3033,200 @@ export default function ClientHubPage({ params }: PageProps) {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL IMPORTAR DOCUMENTO DE ROTEIROS */}
+      {importScriptModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm overflow-y-auto">
+          <div className="bg-white border-2 border-[#DCD6CC] rounded-3xl w-full max-w-3xl max-h-[90vh] shadow-2xl flex flex-col overflow-hidden my-auto animate-in fade-in zoom-in-95 duration-200">
+            <div className="px-6 py-4 border-b border-[#EEEDEA] flex items-center justify-between bg-[#FAF9F7] shrink-0">
+              <div>
+                <h3 className="font-black text-base text-[#111111] uppercase tracking-tight">
+                  Importar Documento de Roteiros
+                </h3>
+                <p className="text-[11px] text-[#66635D] font-medium">
+                  Envie um arquivo Word (.docx), .txt/.md ou cole o texto — o VB Hub formata tudo em cenas automaticamente.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setImportScriptModalOpen(false)}
+                className="p-1.5 rounded-xl text-[#66635D] hover:text-[#111111] hover:bg-[#EEEDEA]"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-6 overflow-y-auto space-y-5 flex-1">
+              {importError && (
+                <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold">
+                  {importError}
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-black uppercase tracking-wider text-[#111111] mb-1.5">
+                    1. Enviar Arquivo (.docx, .txt, .md)
+                  </label>
+                  <label className="flex items-center justify-center gap-2 px-4 py-3 bg-[#FFF0EC] hover:bg-[#FFE3DA] border-2 border-dashed border-[#FFCEBF] rounded-2xl text-xs font-black uppercase text-[#FD3100] cursor-pointer transition-all">
+                    <Upload className="w-4 h-4" />
+                    <span>{importParsing ? 'Lendo arquivo...' : 'Escolher Documento'}</span>
+                    <input
+                      type="file"
+                      accept=".docx,.txt,.md"
+                      className="hidden"
+                      onChange={(e) => handleImportFileChange(e.target.files?.[0] || null)}
+                    />
+                  </label>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-black uppercase tracking-wider text-[#111111] mb-1.5">
+                    Data de Captação (Opcional)
+                  </label>
+                  <input
+                    type="date"
+                    value={importRecordingDate}
+                    onChange={(e) => setImportRecordingDate(e.target.value)}
+                    className="w-full px-3.5 py-2.5 bg-[#FAF9F7] border border-[#DCD6CC] focus:border-[#FD3100] rounded-xl text-xs font-bold text-[#111111] focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-xs font-black uppercase tracking-wider text-[#111111]">
+                    Ou Cole o Texto do Roteiro Aqui
+                  </label>
+                  <button
+                    type="button"
+                    disabled={importParsing}
+                    onClick={handleParseImportText}
+                    className="px-3 py-1 bg-[#111111] hover:bg-[#FD3100] text-white rounded-xl text-[10px] font-black uppercase transition-colors disabled:opacity-50"
+                  >
+                    {importParsing ? 'Formatando...' : 'Formatar Texto em Cenas'}
+                  </button>
+                </div>
+                <textarea
+                  rows={5}
+                  value={importRawText}
+                  onChange={(e) => setImportRawText(e.target.value)}
+                  placeholder={`Exemplo:\nRoteiro 1: Dica de Treino\nGancho: Você ainda comete esse erro?\nCena 1:\nDireção: Plano médio olhando para câmera\nFala: Hoje vou te mostrar...\nObs: 0-3s texto grande na tela`}
+                  className="w-full px-3.5 py-2.5 bg-[#FAF9F7] border border-[#DCD6CC] focus:border-[#FD3100] rounded-2xl text-xs font-medium text-[#111111] focus:outline-none resize-y"
+                />
+              </div>
+
+              {importedScripts.length > 0 && (
+                <div className="space-y-3 pt-2 border-t border-[#EEEDEA]">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-black uppercase tracking-wider text-[#111111]">
+                      Prévia Formatada ({importedScripts.filter((s) => s.selected).length} de {importedScripts.length} selecionado(s))
+                    </span>
+                  </div>
+
+                  {importedScripts.map((item, idx) => (
+                    <div
+                      key={idx}
+                      className={`p-4 rounded-2xl border-2 transition-all ${
+                        item.selected
+                          ? 'bg-[#FAF9F7] border-[#FD3100]/50'
+                          : 'bg-white border-[#EEEDEA] opacity-60'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-3 mb-2">
+                        <label className="flex items-center gap-2 cursor-pointer flex-1 min-w-0">
+                          <input
+                            type="checkbox"
+                            checked={item.selected}
+                            onChange={(e) =>
+                              setImportedScripts((prev) =>
+                                prev.map((s, i) =>
+                                  i === idx ? { ...s, selected: e.target.checked } : s
+                                )
+                              )
+                            }
+                            className="rounded accent-[#FD3100]"
+                          />
+                          <input
+                            type="text"
+                            value={item.title}
+                            onChange={(e) =>
+                              setImportedScripts((prev) =>
+                                prev.map((s, i) =>
+                                  i === idx ? { ...s, title: e.target.value } : s
+                                )
+                              )
+                            }
+                            className="flex-1 px-2.5 py-1 bg-white border border-[#DCD6CC] rounded-lg text-xs font-black text-[#111111]"
+                          />
+                        </label>
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-[#FFF0EC] text-[#FD3100] border border-[#FFCEBF] shrink-0">
+                          {item.scenes.length} {item.scenes.length === 1 ? 'cena' : 'cenas'}
+                        </span>
+                      </div>
+
+                      {item.hook && (
+                        <p className="text-[11px] font-bold text-[#FD3100] mb-2">
+                          🎯 Gancho: {item.hook}
+                        </p>
+                      )}
+
+                      <div className="space-y-1.5">
+                        {item.scenes.map((sc) => (
+                          <div
+                            key={sc.sceneNumber}
+                            className="bg-white border border-[#DCD6CC] rounded-xl p-2.5 text-[11px]"
+                          >
+                            <span className="font-black text-[#111111] uppercase">
+                              Cena {sc.sceneNumber}
+                            </span>
+                            {sc.direction && (
+                              <p className="text-[#66635D] mt-0.5">
+                                <strong>Direção:</strong> {sc.direction}
+                              </p>
+                            )}
+                            {sc.speech && (
+                              <p className="text-[#111111] mt-0.5">
+                                <strong>Fala:</strong> {sc.speech}
+                              </p>
+                            )}
+                            {sc.notes && (
+                              <p className="text-[#66635D] mt-0.5">
+                                <strong>Obs/Tela:</strong> {sc.notes}
+                              </p>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="px-6 py-4 border-t border-[#EEEDEA] bg-[#FAF9F7] flex items-center justify-end gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={() => setImportScriptModalOpen(false)}
+                className="px-4 py-2.5 rounded-xl text-xs font-black uppercase text-[#66635D] hover:bg-[#EEEDEA]"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                disabled={importSaving || importedScripts.filter((s) => s.selected).length === 0}
+                onClick={handleSaveImportedScripts}
+                style={{ backgroundColor: '#FD3100', color: '#FFFFFF' }}
+                className="px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider shadow-md disabled:opacity-50"
+              >
+                {importSaving
+                  ? 'Salvando...'
+                  : `Importar ${importedScripts.filter((s) => s.selected).length} Roteiro(s)`}
+              </button>
+            </div>
           </div>
         </div>
       )}
