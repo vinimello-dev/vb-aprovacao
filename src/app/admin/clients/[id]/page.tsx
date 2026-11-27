@@ -120,7 +120,7 @@ export default function ClientHubPage({ params }: PageProps) {
   const [error, setError] = useState('');
 
   // Abas do Hub do Cliente: 'cycles' (Entregas), 'calendar' (Calendário do Mês), 'scripts' (Roteiros), 'metrics' (Métricas), 'crm' (Dados), 'documents' (Documentos)
-  const [activeTab, setActiveTab] = useState<'cycles' | 'calendar' | 'scripts' | 'metrics' | 'photos' | 'crm' | 'documents'>('cycles');
+  const [activeTab, setActiveTab] = useState<'cycles' | 'calendar' | 'scripts' | 'metrics' | 'videos' | 'photos' | 'crm' | 'documents'>('cycles');
 
   // Ciclo Selecionado na aba de Entregas
   const [selectedCycleId, setSelectedCycleId] = useState<string>('ALL');
@@ -158,6 +158,58 @@ export default function ClientHubPage({ params }: PageProps) {
     type: 'success' | 'error';
     message: string;
   } | null>(null);
+
+  // Modal Enviar Vídeo Avulso (sem post/legenda)
+  const [videoOnlyModalOpen, setVideoOnlyModalOpen] = useState(false);
+  const [videoOnlyTitle, setVideoOnlyTitle] = useState('');
+  const [videoOnlyUrl, setVideoOnlyUrl] = useState('');
+  const [videoOnlyThumb, setVideoOnlyThumb] = useState('');
+  const [videoOnlyNotify, setVideoOnlyNotify] = useState(true);
+  const [submittingVideoOnly, setSubmittingVideoOnly] = useState(false);
+  const [videoOnlyError, setVideoOnlyError] = useState('');
+
+  const handleCreateVideoOnly = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!videoOnlyTitle.trim() || !videoOnlyUrl.trim()) return;
+    setSubmittingVideoOnly(true);
+    setVideoOnlyError('');
+    try {
+      const res = await fetch('/api/admin/posts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          clientId: id,
+          title: videoOnlyTitle.trim(),
+          format: 'VIDEO',
+          isVideoOnly: true,
+          notifyClient: videoOnlyNotify,
+          thumbnailUrl: videoOnlyThumb.trim() || undefined,
+          mediaUrls: [
+            {
+              url: videoOnlyUrl.trim(),
+              mediaType: 'VIDEO',
+              order: 0,
+              thumbnailUrl: videoOnlyThumb.trim() || undefined,
+            },
+          ],
+        }),
+      });
+      if (res.ok) {
+        setVideoOnlyModalOpen(false);
+        setVideoOnlyTitle('');
+        setVideoOnlyUrl('');
+        setVideoOnlyThumb('');
+        await fetchClientData();
+      } else {
+        const d = await res.json();
+        setVideoOnlyError(d.error || 'Erro ao enviar vídeo.');
+      }
+    } catch {
+      setVideoOnlyError('Erro de conexão ao enviar vídeo.');
+    } finally {
+      setSubmittingVideoOnly(false);
+    }
+  };
 
   // Modal Editar Post
   const [editPostModalOpen, setEditPostModalOpen] = useState(false);
@@ -890,6 +942,18 @@ export default function ClientHubPage({ params }: PageProps) {
           </button>
 
           <button
+            onClick={() => setActiveTab('videos')}
+            className={`flex items-center gap-1.5 px-3 py-2 text-[11px] font-black uppercase tracking-wider border-b-2 transition-all -mb-[2px] whitespace-nowrap shrink-0 ${
+              activeTab === 'videos'
+                ? 'border-[#FD3100] text-[#FD3100] bg-white rounded-t-xl'
+                : 'border-transparent text-[#66635D] hover:text-[#111111]'
+            }`}
+          >
+            <Play className="w-3.5 h-3.5" />
+            <span>Vídeos ({client.posts.filter((p) => p.isVideoOnly).length})</span>
+          </button>
+
+          <button
             onClick={() => setActiveTab('photos')}
             className={`flex items-center gap-1.5 px-3 py-2 text-[11px] font-black uppercase tracking-wider border-b-2 transition-all -mb-[2px] whitespace-nowrap shrink-0 ${
               activeTab === 'photos'
@@ -1181,18 +1245,18 @@ export default function ClientHubPage({ params }: PageProps) {
               </div>
             )}
 
-            {/* Posts Gerais (sem ciclo atribuído) */}
-            {client.posts.length > 0 && (
+            {/* Posts Gerais (sem ciclo atribuído, excluindo vídeos avulsos) */}
+            {client.posts.filter((p) => !p.isVideoOnly).length > 0 && (
               <div className="bg-white border-2 border-[#DCD6CC] rounded-3xl p-6 shadow-sm">
                 <h4 className="font-black text-base text-[#111111] uppercase tracking-tight mb-4 flex items-center gap-2">
                   <span>Outras Publicações (Gerais)</span>
                   <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-[#FAF9F7] border border-[#DCD6CC] text-[#66635D]">
-                    {client.posts.length}
+                    {client.posts.filter((p) => !p.isVideoOnly).length}
                   </span>
                 </h4>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {client.posts.map((post) => (
+                  {client.posts.filter((p) => !p.isVideoOnly).map((post) => (
                     <div
                       key={post.id}
                       className="bg-[#FAF9F7] border border-[#DCD6CC] rounded-2xl p-4 flex flex-col justify-between"
@@ -1456,6 +1520,120 @@ export default function ClientHubPage({ params }: PageProps) {
             clientId={client.id}
             clientName={client.name}
           />
+        )}
+
+        {/* ABA VÍDEOS AVULSOS (APROVAÇÃO DE VÍDEOS SEM POST) */}
+        {activeTab === 'videos' && (
+          <div className="space-y-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white p-5 rounded-3xl border-2 border-[#DCD6CC] shadow-sm">
+              <div>
+                <h3 className="font-black text-lg text-[#111111] uppercase tracking-tight">
+                  Vídeos para <span style={{ color: '#FD3100' }}>Aprovação</span>
+                </h3>
+                <p className="text-xs text-[#66635D] font-medium">
+                  Envie vídeos avulsos sem precisar criar post ou legenda — ideal para produção de vídeo e revisões.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setVideoOnlyError('');
+                  setVideoOnlyModalOpen(true);
+                }}
+                style={{ backgroundColor: '#FD3100', color: '#FFFFFF' }}
+                className="btn-vb-primary flex items-center gap-2 px-5 py-2.5 rounded-2xl text-xs font-black uppercase tracking-wider shadow-md shrink-0"
+              >
+                <Plus className="w-4 h-4 stroke-[3]" />
+                <span>Enviar Vídeo</span>
+              </button>
+            </div>
+
+            {client.posts.filter((p) => p.isVideoOnly).length === 0 ? (
+              <div className="bg-white border-2 border-dashed border-[#FFCEBF] rounded-3xl p-12 text-center flex flex-col items-center justify-center">
+                <div className="w-16 h-16 bg-[#FFF0EC] rounded-2xl flex items-center justify-center mb-3 text-[#FD3100] border border-[#FFCEBF]">
+                  <Play className="w-8 h-8" />
+                </div>
+                <h4 className="text-xl font-black uppercase text-[#111111] mb-1">
+                  Nenhum vídeo avulso enviado
+                </h4>
+                <p className="text-xs text-[#66635D] max-w-md mb-6 font-medium">
+                  Use esta aba para mandar vídeos direto para o cliente assistir, marcar alterações por minuto, aprovar ou baixar.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setVideoOnlyError('');
+                    setVideoOnlyModalOpen(true);
+                  }}
+                  style={{ backgroundColor: '#FD3100', color: '#FFFFFF' }}
+                  className="btn-vb-primary px-6 py-3 rounded-2xl text-xs uppercase font-black tracking-wider"
+                >
+                  Enviar Primeiro Vídeo
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                {client.posts
+                  .filter((p) => p.isVideoOnly)
+                  .map((videoPost) => (
+                    <div
+                      key={videoPost.id}
+                      className="bg-white border-2 border-[#DCD6CC] hover:border-[#FD3100] rounded-3xl p-5 shadow-sm flex flex-col justify-between transition-all"
+                    >
+                      <div>
+                        <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[10px] font-black uppercase px-2.5 py-0.5 rounded-lg bg-[#FAF9F7] border border-[#DCD6CC] text-[#111111]">
+                              VÍDEO
+                            </span>
+                            {typeof videoPost.revisionVersion === 'number' && videoPost.revisionVersion > 0 && (
+                              <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-lg bg-amber-500 text-white">
+                                Versão {videoPost.revisionVersion}
+                              </span>
+                            )}
+                          </div>
+                          {getStatusBadge(videoPost.status)}
+                        </div>
+
+                        <h4 className="font-black text-base text-[#111111] line-clamp-2 mb-1.5">
+                          {videoPost.title}
+                        </h4>
+                        <p className="text-[11px] text-[#66635D] font-medium">
+                          {videoPost.comments.length}{' '}
+                          {videoPost.comments.length === 1 ? 'observação' : 'observações'}
+                        </p>
+                      </div>
+
+                      <div className="mt-4 pt-3 border-t border-[#EEEDEA] flex items-center justify-between gap-2">
+                        <span className="text-[10px] text-[#66635D] font-bold">
+                          {formatDate(videoPost.createdAt)}
+                        </span>
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => handleDeletePost(videoPost.id)}
+                            className="p-1.5 bg-[#FAF9F7] hover:bg-rose-50 text-[#66635D] hover:text-rose-600 rounded-xl border border-[#DCD6CC] transition-all"
+                            title="Excluir vídeo"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setSelectedPost(videoPost)}
+                            style={{ backgroundColor: '#FD3100', color: '#FFFFFF' }}
+                            className="px-3 py-1.5 rounded-xl text-xs font-black uppercase flex items-center gap-1.5 shadow-sm hover:opacity-90"
+                          >
+                            <Eye className="w-3.5 h-3.5" />
+                            <span>Ver / Revisar</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            )}
+          </div>
         )}
 
         {/* ABA FOTOS (GOOGLE DRIVE POR MÊS) */}
@@ -2570,6 +2748,99 @@ export default function ClientHubPage({ params }: PageProps) {
                   className="btn-vb-primary px-6 py-2 rounded-xl text-xs font-black uppercase disabled:opacity-50"
                 >
                   {submittingDoc ? 'Salvando...' : 'Adicionar Documento'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL ENVIAR VÍDEO AVULSO (SEM POST) */}
+      {videoOnlyModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-white border-2 border-[#DCD6CC] rounded-3xl w-full max-w-md shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="px-6 py-4 border-b border-[#EEEDEA] flex items-center justify-between bg-[#FAF9F7]">
+              <h3 className="font-black text-base text-[#111111] uppercase tracking-tight">
+                Enviar Vídeo para Aprovação
+              </h3>
+              <button
+                type="button"
+                onClick={() => setVideoOnlyModalOpen(false)}
+                className="p-1.5 rounded-xl text-[#66635D] hover:text-[#111111] hover:bg-[#EEEDEA]"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateVideoOnly} className="p-6 space-y-4">
+              {videoOnlyError && (
+                <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold">
+                  {videoOnlyError}
+                </div>
+              )}
+
+              <div>
+                <label className="block text-xs font-black uppercase tracking-wider text-[#111111] mb-1.5">
+                  Título do Vídeo *
+                </label>
+                <input
+                  type="text"
+                  value={videoOnlyTitle}
+                  onChange={(e) => setVideoOnlyTitle(e.target.value)}
+                  placeholder="Ex: Vídeo Institucional, Reels 01..."
+                  required
+                  className="w-full px-3.5 py-2.5 bg-[#FAF9F7] border border-[#DCD6CC] focus:border-[#FD3100] rounded-xl text-xs font-bold text-[#111111] focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-black uppercase tracking-wider text-[#111111] mb-1.5">
+                  Link do Vídeo (Google Drive / Dropbox / URL) *
+                </label>
+                <input
+                  type="url"
+                  value={videoOnlyUrl}
+                  onChange={(e) => setVideoOnlyUrl(e.target.value)}
+                  placeholder="https://drive.google.com/file/d/..."
+                  required
+                  className="w-full px-3.5 py-2.5 bg-[#FAF9F7] border border-[#DCD6CC] focus:border-[#FD3100] rounded-xl text-xs font-bold text-[#111111] focus:outline-none"
+                />
+              </div>
+
+              <ImageUploadInput
+                value={videoOnlyThumb}
+                onChange={setVideoOnlyThumb}
+                label="Capa do Vídeo (Opcional)"
+                optional
+                sublabel="Deixe em branco para gerar automático do Drive"
+                placeholder="Link da imagem de capa"
+              />
+
+              <label className="flex items-center gap-2 text-xs font-bold text-[#111111] cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={videoOnlyNotify}
+                  onChange={(e) => setVideoOnlyNotify(e.target.checked)}
+                  className="rounded accent-[#FD3100]"
+                />
+                <span>Notificar cliente por e-mail ao enviar</span>
+              </label>
+
+              <div className="flex items-center justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setVideoOnlyModalOpen(false)}
+                  className="px-4 py-2.5 rounded-xl text-xs font-black uppercase text-[#66635D] hover:bg-[#EEEDEA]"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={submittingVideoOnly}
+                  style={{ backgroundColor: '#FD3100', color: '#FFFFFF' }}
+                  className="px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider shadow-md disabled:opacity-50"
+                >
+                  {submittingVideoOnly ? 'Enviando...' : 'Enviar Vídeo'}
                 </button>
               </div>
             </form>

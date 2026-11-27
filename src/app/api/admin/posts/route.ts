@@ -32,7 +32,7 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json();
-    const { clientId, cycleId, title, caption, format, scheduledDate, scheduledTime, mediaUrls, thumbnailUrl, notifyClient } = body;
+    const { clientId, cycleId, title, caption, format, scheduledDate, scheduledTime, isVideoOnly, mediaUrls, thumbnailUrl, notifyClient } = body;
 
     if (!clientId || !title) {
       return NextResponse.json(
@@ -66,8 +66,9 @@ export async function POST(request: Request) {
       title,
       caption,
       format: format || 'VIDEO',
-      scheduledDate: parseDateInput(scheduledDate) || new Date(),
-      scheduledTime: scheduledTime || null,
+      scheduledDate: isVideoOnly ? null : (parseDateInput(scheduledDate) || new Date()),
+      scheduledTime: isVideoOnly ? null : (scheduledTime || null),
+      isVideoOnly: Boolean(isVideoOnly),
       mediaUrls: parsedMedia,
     });
 

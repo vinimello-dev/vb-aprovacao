@@ -63,6 +63,7 @@ model Post {
   scheduledDate   DateTime?   // Data de agendamento/publicação no mês
   scheduledTime   String?     // Horário opcional de publicação (ex: "18:30")
   revisionVersion Int         @default(0) // 0 = original, 1+ = vídeo revisado versão X
+  isVideoOnly     Boolean     @default(false) // true = vídeo avulso para aprovação (sem post/legenda)
   
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt

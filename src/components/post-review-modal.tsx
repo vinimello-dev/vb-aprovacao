@@ -335,8 +335,9 @@ export function PostReviewModal({ post, onClose, onPostUpdated, isAdmin = false 
                 )}
               </div>
 
-              {/* Data Agendada com Opção de Mudar o Dia */}
-              <div className="flex flex-wrap items-center gap-2 mt-0.5">
+              {/* Data Agendada com Opção de Mudar o Dia (oculta para vídeo avulso sem post) */}
+              {!currentPost.isVideoOnly && (
+                <div className="flex flex-wrap items-center gap-2 mt-0.5">
                 {currentPost.scheduledDate && (
                   <span className="text-[11px] sm:text-xs font-bold flex items-center gap-1 text-[#66635D]">
                     <Calendar className="w-3 h-3 shrink-0" style={{ color: '#FD3100' }} />
@@ -395,6 +396,7 @@ export function PostReviewModal({ post, onClose, onPostUpdated, isAdmin = false 
                   </span>
                 )}
               </div>
+              )}
             </div>
           </div>
 
@@ -442,7 +444,7 @@ export function PostReviewModal({ post, onClose, onPostUpdated, isAdmin = false 
               className="btn-vb-primary px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl text-[11px] sm:text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all hover:scale-[1.02] active:scale-[0.98] shrink-0 whitespace-nowrap shadow-md"
             >
               <CheckCircle className="w-4 h-4 stroke-[3]" />
-              <span>Aprovar Post</span>
+              <span>{currentPost.isVideoOnly ? 'Aprovar Vídeo' : 'Aprovar Post'}</span>
             </button>
 
             {/* Botão Fechar Modal */}
@@ -582,17 +584,19 @@ export function PostReviewModal({ post, onClose, onPostUpdated, isAdmin = false 
             className="py-3 sm:py-3.5 border-b-2 transition-all flex items-center gap-2 font-black shrink-0"
           >
             <Sparkles className="w-4 h-4" />
-            <span>Mídia & Revisão</span>
+            <span>{currentPost.isVideoOnly ? 'Vídeo & Revisão' : 'Mídia & Revisão'}</span>
           </button>
 
-          <button
-            onClick={() => setActiveTab('caption')}
-            style={activeTab === 'caption' ? { borderColor: '#FD3100', color: '#FD3100' } : { color: '#111111' }}
-            className="py-3 sm:py-3.5 border-b-2 transition-all flex items-center gap-2 font-black shrink-0"
-          >
-            <FileText className="w-4 h-4" />
-            <span>Legenda (Copy) & Edição</span>
-          </button>
+          {!currentPost.isVideoOnly && (
+            <button
+              onClick={() => setActiveTab('caption')}
+              style={activeTab === 'caption' ? { borderColor: '#FD3100', color: '#FD3100' } : { color: '#111111' }}
+              className="py-3 sm:py-3.5 border-b-2 transition-all flex items-center gap-2 font-black shrink-0"
+            >
+              <FileText className="w-4 h-4" />
+              <span>Legenda (Copy) & Edição</span>
+            </button>
+          )}
         </div>
 
         {/* Conteúdo Principal do Modal */}

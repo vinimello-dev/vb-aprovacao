@@ -37,6 +37,7 @@ export interface PostData {
   scheduledDate?: Date | null;
   scheduledTime?: string | null;
   revisionVersion?: number;
+  isVideoOnly?: boolean;
   createdAt: Date;
   updatedAt: Date;
   media: PostMediaData[];
@@ -268,8 +269,9 @@ export async function createPost(data: {
   title: string;
   caption?: string;
   format: 'VIDEO' | 'CAROUSEL' | 'STATIC' | 'REELS' | 'STORIES';
-  scheduledDate?: Date;
+  scheduledDate?: Date | null;
   scheduledTime?: string | null;
+  isVideoOnly?: boolean;
   mediaUrls: { url: string; mediaType: string; order: number; thumbnailUrl?: string }[];
 }): Promise<PostData> {
   try {
@@ -280,8 +282,9 @@ export async function createPost(data: {
         title: data.title,
         caption: data.caption || null,
         format: data.format,
-        scheduledDate: data.scheduledDate || null,
+        scheduledDate: data.scheduledDate ?? null,
         scheduledTime: data.scheduledTime?.trim() || null,
+        isVideoOnly: Boolean(data.isVideoOnly),
         status: 'PENDENTE',
         media: {
           create: data.mediaUrls.map((m) => ({
