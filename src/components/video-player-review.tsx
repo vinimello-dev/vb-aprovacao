@@ -433,6 +433,9 @@ export function VideoPlayerReview({
                     onError={(e) => {
                       console.warn('Erro ao carregar o vídeo:', e);
                       setVideoError(true);
+                      if (finalVideoUrl.includes('id=')) {
+                        setUseDriveIframeFallback(true);
+                      }
                     }}
                     onEnded={() => setIsPlaying(false)}
                     onClick={togglePlay}
@@ -461,7 +464,7 @@ export function VideoPlayerReview({
                   {useDriveIframeFallback && finalVideoUrl.includes('id=') ? (
                     <iframe
                       src={`https://drive.google.com/file/d/${finalVideoUrl.match(/[?&]id=([a-zA-Z0-9_-]+)/)?.[1]}/preview`}
-                      className="w-full h-full border-0"
+                      className="absolute inset-0 w-full h-full border-0 z-20 bg-black"
                       allow="autoplay; fullscreen"
                       title="Player Google Drive"
                     />

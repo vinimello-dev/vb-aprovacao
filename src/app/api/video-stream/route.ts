@@ -28,8 +28,8 @@ async function handleVideoStream(request: NextRequest, method: 'GET' | 'HEAD') {
     return NextResponse.redirect(targetUrl, 302);
   }
 
-  // Limite máximo de 2 MB por chunk para nunca exceder o limite de payload (4.5 MB) das Serverless Functions da Vercel
-  const MAX_CHUNK_BYTES = 2 * 1024 * 1024;
+  // Limite máximo de 3.5 MB por chunk para reduzir requisições mantendo margem abaixo do limite de 4.5 MB da Vercel
+  const MAX_CHUNK_BYTES = Math.floor(3.5 * 1024 * 1024);
   const rawRange = request.headers.get('range');
   let boundedRange: string | undefined;
 
