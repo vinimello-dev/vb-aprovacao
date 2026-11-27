@@ -23,12 +23,36 @@ async function handleVideoStream(request: NextRequest, method: 'GET' | 'HEAD') {
     return new NextResponse('ID ou URL não fornecido.', { status: 400 });
   }
 
-  const range = request.headers.get('range');
+  // Para download direto de arquivos grandes do Drive, redireciona direto para evitar limite de 4.5MB da Vercel
+  if (isDownload && id && method === 'GET') {
+    return NextResponse.redirect(targetUrl, 302);
+  }
+
+  // Limite máximo de 2 MB por chunk para nunca exceder o limite de payload (4.5 MB) das Serverless Functions da Vercel
+  const MAX_CHUNK_BYTES = 2 * 1024 * 1024;
+  const rawRange = request.headers.get('range');
+  let boundedRange: string | undefined;
+
+  if (rawRange) {
+    const match = rawRange.match(/^bytes=(\d+)-(\d*)$/i);
+    if (match) {
+      const start = parseInt(match[1], 10);
+      const requestedEnd = match[2] ? parseInt(match[2], 10) : null;
+      const maxEnd = start + MAX_CHUNK_BYTES - 1;
+      const finalEnd = requestedEnd !== null ? Math.min(requestedEnd, maxEnd) : maxEnd;
+      boundedRange = `bytes=${start}-${finalEnd}`;
+    } else {
+      boundedRange = rawRange;
+    }
+  } else if (method === 'GET' && !isDownload) {
+    boundedRange = `bytes=0-${MAX_CHUNK_BYTES - 1}`;
+  }
+
   const headers: Record<string, string> = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
   };
-  if (range) {
-    headers['Range'] = range;
+  if (boundedRange) {
+    headers['Range'] = boundedRange;
   }
 
   try {

@@ -65,6 +65,7 @@ export function VideoPlayerReview({
   const [duration, setDuration] = useState(0);
   const [isMuted, setIsMuted] = useState(false);
   const [videoError, setVideoError] = useState(false);
+  const [useDriveIframeFallback, setUseDriveIframeFallback] = useState(false);
 
   // Proporção e Enquadramento: Sem bordas pretas para verticais e proporção correta para horizontais
   const [videoDimensions, setVideoDimensions] = useState<{ width: number; height: number } | null>(null);
@@ -456,22 +457,41 @@ export function VideoPlayerReview({
                     </div>
                   )}
 
-                  {/* Mensagem caso o vídeo não carregue */}
-                  {videoError && (
+                  {/* Mensagem caso o vídeo não carregue ou player alternativo do Drive */}
+                  {useDriveIframeFallback && finalVideoUrl.includes('id=') ? (
+                    <iframe
+                      src={`https://drive.google.com/file/d/${finalVideoUrl.match(/[?&]id=([a-zA-Z0-9_-]+)/)?.[1]}/preview`}
+                      className="w-full h-full border-0"
+                      allow="autoplay; fullscreen"
+                      title="Player Google Drive"
+                    />
+                  ) : videoError && (
                     <div className="absolute inset-0 bg-black/85 flex flex-col items-center justify-center p-6 text-center text-white z-20">
                       <p className="font-black text-sm text-[#FD3100] mb-1">Não foi possível reproduzir este vídeo</p>
                       <p className="text-xs text-white/70 max-w-sm mb-4">
-                        O arquivo pode estar sem permissão pública no Google Drive ou em processamento.
+                        O arquivo pode estar sem permissão pública no Google Drive, em processamento ou com codec não suportado pelo navegador.
                       </p>
-                      <a
-                        href={videoUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="btn-vb-primary px-4 py-2 rounded-xl text-xs uppercase font-black flex items-center gap-1.5"
-                      >
-                        <span>Abrir no Google Drive</span>
-                        <ExternalLink className="w-3.5 h-3.5" />
-                      </a>
+                      <div className="flex flex-wrap items-center justify-center gap-2">
+                        {finalVideoUrl.includes('id=') && (
+                          <button
+                            type="button"
+                            onClick={() => setUseDriveIframeFallback(true)}
+                            className="btn-vb-primary px-4 py-2 rounded-xl text-xs uppercase font-black flex items-center gap-1.5"
+                          >
+                            <Play className="w-3.5 h-3.5" />
+                            <span>Assistir via Player Drive</span>
+                          </button>
+                        )}
+                        <a
+                          href={videoUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="px-4 py-2 rounded-xl text-xs uppercase font-black bg-white text-[#111111] hover:bg-[#EEEDEA] flex items-center gap-1.5"
+                        >
+                          <ExternalLink className="w-3.5 h-3.5" />
+                          <span>Abrir no Google Drive</span>
+                        </a>
+                      </div>
                     </div>
                   )}
 
