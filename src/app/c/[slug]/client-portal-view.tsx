@@ -564,150 +564,153 @@ export function ClientPortalView({ client }: ClientPortalViewProps) {
         </div>
       </header>
 
-      {/* Conteúdo Principal */}
-      <main className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-6 sm:py-10 flex-1 w-full">
-        {/* Barra Superior com Modos de Visualização & Filtros */}
-        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 sm:gap-6 mb-6 sm:mb-8">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-black text-[#111111] uppercase tracking-tight">
-              Planejamento de <span style={{ color: '#FD3100' }}>Conteúdo</span>
-            </h1>
-            <p className="text-xs sm:text-sm text-[#66635D] mt-1 font-medium">
-              Acompanhe a harmonia do feed, visualize o mês completo e aprove seus posts.
-            </p>
-          </div>
+      {/* Conteúdo Principal com Menu Lateral (Desktop) */}
+      <main className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-6 sm:py-8 flex-1 w-full">
+        <div className="flex flex-col lg:flex-row items-start gap-6 lg:gap-8">
+          {/* MENU LATERAL ESQUERDO (Desktop) */}
+          <aside className="hidden lg:block w-60 shrink-0 sticky top-24">
+            <div className="bg-white border-2 border-[#DCD6CC] rounded-3xl p-3 shadow-sm space-y-1">
+              <div className="px-3 py-2 text-[10px] font-black uppercase tracking-widest text-[#66635D]">
+                Navegação
+              </div>
 
-          {/* Seletores de Modo de Visualização */}
-          <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 w-full lg:w-auto">
-            {/* Seletor de Modo com Letras Pretas e Laranja no Ativo */}
-            <div className="grid grid-cols-3 sm:flex items-center bg-white p-1 rounded-2xl border-2 border-[#DCD6CC] shadow-sm text-[11px] sm:text-xs font-black uppercase w-full sm:w-auto gap-0.5">
-              <button
-                onClick={() => setViewMode('instagram')}
-                style={viewMode === 'instagram' ? { backgroundColor: '#FD3100', color: '#FFFFFF' } : { color: '#111111' }}
-                className="flex items-center justify-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-2 rounded-xl transition-all font-black"
-                title="Ver prévia como Grade do Instagram"
-              >
-                <Instagram className="w-3.5 sm:w-4 h-3.5 sm:h-4 stroke-[2.5]" />
-                <span className="truncate">Feed</span>
-              </button>
+              {[
+                { id: 'instagram' as const, label: 'Feed', icon: Instagram },
+                { id: 'calendar' as const, label: 'Calendário', icon: CalendarDays },
+                { id: 'cards' as const, label: 'Cards', icon: LayoutGrid },
+                { id: 'videos' as const, label: 'Vídeos', icon: Play, count: videoOnlyPosts.length },
+                { id: 'photos' as const, label: 'Fotos', icon: Camera },
+                { id: 'scripts' as const, label: 'Roteiros', icon: Video, count: scripts.length },
+                { id: 'metrics' as const, label: 'Métricas', icon: BarChart3 },
+                { id: 'chat' as const, label: 'Chat com a VB', icon: MessageSquare, unread: clientUnreadChat },
+              ].map((item) => {
+                const Icon = item.icon;
+                const isActive = viewMode === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => setViewMode(item.id)}
+                    style={isActive ? { backgroundColor: '#FD3100', color: '#FFFFFF' } : {}}
+                    className={`w-full flex items-center justify-between gap-2.5 px-3.5 py-2.5 rounded-2xl text-xs font-black uppercase tracking-wider transition-all ${
+                      isActive
+                        ? 'shadow-md'
+                        : 'text-[#111111] hover:bg-[#FAF9F7] hover:text-[#FD3100]'
+                    }`}
+                  >
+                    <span className="flex items-center gap-2.5 min-w-0">
+                      <Icon className="w-4 h-4 shrink-0" />
+                      <span className="truncate">{item.label}</span>
+                    </span>
+                    {typeof item.count === 'number' && item.count > 0 && (
+                      <span
+                        className={`px-2 py-0.5 rounded-full text-[10px] font-black ${
+                          isActive
+                            ? 'bg-white/20 text-white'
+                            : 'bg-[#FAF9F7] text-[#66635D] border border-[#DCD6CC]'
+                        }`}
+                      >
+                        {item.count}
+                      </span>
+                    )}
+                    {typeof item.unread === 'number' && item.unread > 0 && (
+                      <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse shrink-0" />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </aside>
 
-              <button
-                onClick={() => setViewMode('calendar')}
-                style={viewMode === 'calendar' ? { backgroundColor: '#FD3100', color: '#FFFFFF' } : { color: '#111111' }}
-                className="flex items-center justify-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-2 rounded-xl transition-all font-black"
-                title="Ver como Calendário Mensal"
-              >
-                <CalendarDays className="w-3.5 sm:w-4 h-3.5 sm:h-4 stroke-[2.5]" />
-                <span className="truncate">Mês</span>
-              </button>
+          {/* CONTEÚDO PRINCIPAL */}
+          <div className="flex-1 min-w-0 w-full">
+            {/* Barra Superior com Título, Menu Mobile & Filtros */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+              <div>
+                <h1 className="text-2xl sm:text-3xl font-black text-[#111111] uppercase tracking-tight">
+                  Planejamento de <span style={{ color: '#FD3100' }}>Conteúdo</span>
+                </h1>
+                <p className="text-xs sm:text-sm text-[#66635D] mt-1 font-medium">
+                  Acompanhe seus materiais, visualize entregas e aprove seus conteúdos.
+                </p>
+              </div>
 
-              <button
-                onClick={() => setViewMode('cards')}
-                style={viewMode === 'cards' ? { backgroundColor: '#FD3100', color: '#FFFFFF' } : { color: '#111111' }}
-                className="flex items-center justify-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-2 rounded-xl transition-all font-black"
-                title="Ver lista de cards com legenda"
-              >
-                <LayoutGrid className="w-3.5 sm:w-4 h-3.5 sm:h-4 stroke-[2.5]" />
-                <span className="truncate">Cards</span>
-              </button>
-
-              <button
-                onClick={() => setViewMode('scripts')}
-                style={viewMode === 'scripts' ? { backgroundColor: '#FD3100', color: '#FFFFFF' } : { color: '#111111' }}
-                className="flex items-center justify-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-2 rounded-xl transition-all font-black"
-                title="Visualizar e editar roteiros de gravação por cenas"
-              >
-                <Video className="w-3.5 sm:w-4 h-3.5 sm:h-4 stroke-[2.5]" />
-                <span className="truncate">Roteiros</span>
-                {scripts.length > 0 && (
-                  <span className="ml-0.5 px-1.5 py-0.2 rounded-full text-[9px] font-black bg-white/90 text-[#111111] border border-[#DCD6CC]">
-                    {scripts.length}
-                  </span>
-                )}
-              </button>
-
-              <button
-                onClick={() => setViewMode('metrics')}
-                style={viewMode === 'metrics' ? { backgroundColor: '#FD3100', color: '#FFFFFF' } : { color: '#111111' }}
-                className="flex items-center justify-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-2 rounded-xl transition-all font-black"
-                title="Acompanhar métricas e gráficos de resultados do mês"
-              >
-                <BarChart3 className="w-3.5 sm:w-4 h-3.5 sm:h-4 stroke-[2.5]" />
-                <span className="truncate">Métricas</span>
-              </button>
-
-              <button
-                onClick={() => setViewMode('videos')}
-                style={viewMode === 'videos' ? { backgroundColor: '#FD3100', color: '#FFFFFF' } : { color: '#111111' }}
-                className="flex items-center justify-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-2 rounded-xl transition-all font-black"
-                title="Visualizar e aprovar vídeos avulsos"
-              >
-                <Play className="w-3.5 sm:w-4 h-3.5 sm:h-4 stroke-[2.5]" />
-                <span className="truncate">Vídeos</span>
-                {videoOnlyPosts.length > 0 && (
-                  <span className="ml-0.5 px-1.5 py-0.2 rounded-full text-[9px] font-black bg-white/90 text-[#111111] border border-[#DCD6CC]">
-                    {videoOnlyPosts.length}
-                  </span>
-                )}
-              </button>
-
-              <button
-                onClick={() => setViewMode('photos')}
-                style={viewMode === 'photos' ? { backgroundColor: '#FD3100', color: '#FFFFFF' } : { color: '#111111' }}
-                className="flex items-center justify-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-2 rounded-xl transition-all font-black"
-                title="Acessar e baixar pastas de fotos por mês"
-              >
-                <Camera className="w-3.5 sm:w-4 h-3.5 sm:h-4 stroke-[2.5]" />
-                <span className="truncate">Fotos</span>
-              </button>
-
-              <button
-                onClick={() => setViewMode('chat')}
-                style={viewMode === 'chat' ? { backgroundColor: '#FD3100', color: '#FFFFFF' } : { color: '#111111' }}
-                className="flex items-center justify-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-2 rounded-xl transition-all font-black relative"
-                title="Tirar dúvidas ou conversar com a agência"
-              >
-                <MessageSquare className="w-3.5 sm:w-4 h-3.5 sm:h-4 stroke-[2.5]" />
-                <span className="truncate">Chat</span>
-                {clientUnreadChat > 0 && (
-                  <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse ml-0.5" />
-                )}
-              </button>
+              {/* Filtro por Status (para Feed, Mês, Cards e Vídeos) */}
+              {(viewMode === 'instagram' ||
+                viewMode === 'calendar' ||
+                viewMode === 'cards' ||
+                viewMode === 'videos') && (
+                <div className="grid grid-cols-4 sm:flex items-center bg-white p-1 rounded-2xl border-2 border-[#DCD6CC] shadow-sm text-[10px] sm:text-xs font-black uppercase text-center w-full sm:w-auto">
+                  <button
+                    onClick={() => setStatusFilter('ALL')}
+                    style={statusFilter === 'ALL' ? { backgroundColor: '#111111', color: '#FFFFFF' } : { color: '#111111' }}
+                    className="px-2 sm:px-3 py-2 rounded-xl transition-all font-black truncate"
+                  >
+                    Todos ({viewMode === 'videos' ? videoOnlyPosts.length : regularPosts.length})
+                  </button>
+                  <button
+                    onClick={() => setStatusFilter('PENDENTE')}
+                    style={statusFilter === 'PENDENTE' ? { backgroundColor: '#B45309', color: '#FFFFFF' } : { color: '#111111' }}
+                    className="px-2 sm:px-3 py-2 rounded-xl transition-all font-black truncate"
+                  >
+                    Pendentes
+                  </button>
+                  <button
+                    onClick={() => setStatusFilter('AJUSTES')}
+                    style={statusFilter === 'AJUSTES' ? { backgroundColor: '#FD3100', color: '#FFFFFF' } : { color: '#111111' }}
+                    className="px-2 sm:px-3 py-2 rounded-xl transition-all font-black truncate"
+                  >
+                    Ajustes
+                  </button>
+                  <button
+                    onClick={() => setStatusFilter('APROVADO')}
+                    style={statusFilter === 'APROVADO' ? { backgroundColor: '#047857', color: '#FFFFFF' } : { color: '#111111' }}
+                    className="px-2 sm:px-3 py-2 rounded-xl transition-all font-black truncate"
+                  >
+                    Aprovados
+                  </button>
+                </div>
+              )}
             </div>
 
-            {/* Filtro por Status com Letras Pretas */}
-            <div className="grid grid-cols-4 sm:flex items-center bg-white p-1 rounded-2xl border-2 border-[#DCD6CC] shadow-sm text-[10px] sm:text-xs font-black uppercase text-center w-full sm:w-auto">
-              <button
-                onClick={() => setStatusFilter('ALL')}
-                style={statusFilter === 'ALL' ? { backgroundColor: '#111111', color: '#FFFFFF' } : { color: '#111111' }}
-                className="px-2 sm:px-3 py-2 rounded-xl transition-all font-black truncate"
-              >
-                Todos ({viewMode === 'videos' ? videoOnlyPosts.length : regularPosts.length})
-              </button>
-              <button
-                onClick={() => setStatusFilter('PENDENTE')}
-                style={statusFilter === 'PENDENTE' ? { backgroundColor: '#B45309', color: '#FFFFFF' } : { color: '#111111' }}
-                className="px-2 sm:px-3 py-2 rounded-xl transition-all font-black truncate"
-              >
-                Pendentes
-              </button>
-              <button
-                onClick={() => setStatusFilter('AJUSTES')}
-                style={statusFilter === 'AJUSTES' ? { backgroundColor: '#FD3100', color: '#FFFFFF' } : { color: '#111111' }}
-                className="px-2 sm:px-3 py-2 rounded-xl transition-all font-black truncate"
-              >
-                Ajustes
-              </button>
-              <button
-                onClick={() => setStatusFilter('APROVADO')}
-                style={statusFilter === 'APROVADO' ? { backgroundColor: '#047857', color: '#FFFFFF' } : { color: '#111111' }}
-                className="px-2 sm:px-3 py-2 rounded-xl transition-all font-black truncate"
-              >
-                Aprovados
-              </button>
+            {/* Menu Horizontal Compacto apenas no Mobile/Tablet (< lg) */}
+            <div className="lg:hidden mb-6 overflow-x-auto no-scrollbar">
+              <div className="inline-flex items-center bg-white p-1 rounded-2xl border-2 border-[#DCD6CC] shadow-sm text-[11px] font-black uppercase gap-1 min-w-full">
+                {[
+                  { id: 'instagram' as const, label: 'Feed', icon: Instagram },
+                  { id: 'calendar' as const, label: 'Mês', icon: CalendarDays },
+                  { id: 'cards' as const, label: 'Cards', icon: LayoutGrid },
+                  { id: 'videos' as const, label: 'Vídeos', icon: Play, count: videoOnlyPosts.length },
+                  { id: 'photos' as const, label: 'Fotos', icon: Camera },
+                  { id: 'scripts' as const, label: 'Roteiros', icon: Video, count: scripts.length },
+                  { id: 'metrics' as const, label: 'Métricas', icon: BarChart3 },
+                  { id: 'chat' as const, label: 'Chat', icon: MessageSquare, unread: clientUnreadChat },
+                ].map((item) => {
+                  const Icon = item.icon;
+                  const isActive = viewMode === item.id;
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => setViewMode(item.id)}
+                      style={isActive ? { backgroundColor: '#FD3100', color: '#FFFFFF' } : { color: '#111111' }}
+                      className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl transition-all font-black whitespace-nowrap shrink-0"
+                    >
+                      <Icon className="w-3.5 h-3.5 stroke-[2.5]" />
+                      <span>{item.label}</span>
+                      {typeof item.count === 'number' && item.count > 0 && (
+                        <span className="px-1.5 py-0.2 rounded-full text-[9px] font-black bg-white/90 text-[#111111] border border-[#DCD6CC]">
+                          {item.count}
+                        </span>
+                      )}
+                      {typeof item.unread === 'number' && item.unread > 0 && (
+                        <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-          </div>
-        </div>
 
         {/* 1. VISÃO FEED DO INSTAGRAM (GRADE 3x3) */}
         {viewMode === 'instagram' && (
@@ -1794,6 +1797,8 @@ export function ClientPortalView({ client }: ClientPortalViewProps) {
             </div>
           </div>
         )}
+          </div>
+        </div>
       </main>
 
       {/* Toast de Reprogramação de Post */}
