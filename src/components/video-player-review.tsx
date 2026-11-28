@@ -1,6 +1,6 @@
 ﻿'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {
   Play,
   Pause,
@@ -66,6 +66,7 @@ export function VideoPlayerReview({
   const [isMuted, setIsMuted] = useState(false);
   const [videoError, setVideoError] = useState(false);
   const [useDriveIframeFallback, setUseDriveIframeFallback] = useState(false);
+  const [fileSizeMb, setFileSizeMb] = useState<number | null>(null);
 
   // Proporção e Enquadramento: Sem bordas pretas para verticais e proporção correta para horizontais
   const [videoDimensions, setVideoDimensions] = useState<{ width: number; height: number } | null>(null);
@@ -74,6 +75,29 @@ export function VideoPlayerReview({
 
   // Garante que links do Google Drive usem a rota de streaming interno sem bloqueio de CORP do navegador
   const finalVideoUrl = parseMediaUrl(videoUrl);
+
+  // Detecta vídeos muito pesados (> 80 MB) do Google Drive e ativa automaticamente o modo 720p fluido para não travar
+  useEffect(() => {
+    if (!finalVideoUrl.includes('id=')) return;
+    let cancelled = false;
+    fetch(finalVideoUrl, { headers: { Range: 'bytes=0-0' } })
+      .then((res) => {
+        const cr = res.headers.get('content-range');
+        const match = cr?.match(/\/(\d+)$/);
+        if (!cancelled && match) {
+          const totalBytes = parseInt(match[1], 10);
+          const mb = Math.round(totalBytes / (1024 * 1024));
+          setFileSizeMb(mb);
+          if (totalBytes > 80 * 1024 * 1024) {
+            setUseDriveIframeFallback(true);
+          }
+        }
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [finalVideoUrl]);
 
   // Comentário State
   const [commentText, setCommentText] = useState('');
@@ -379,20 +403,52 @@ export function VideoPlayerReview({
                   </button>
                 </div>
 
-                {/* Alternância Sem Bordas (Preencher) vs Conter + Baixar Vídeo */}
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setFitMode(fitMode === 'cover' ? 'contain' : 'cover')}
-                    style={fitMode === 'cover' ? { backgroundColor: '#FD3100', color: '#FFFFFF' } : {}}
-                    className={`flex items-center gap-1.5 px-3 py-1 rounded-lg font-black uppercase text-[10px] transition-all ${
-                      fitMode === 'cover' ? 'shadow-sm' : 'bg-white/10 text-white/80 hover:bg-white/20'
-                    }`}
-                    title={fitMode === 'cover' ? 'Sem bordas pretas (Preenchimento total)' : 'Conter (Exibir vídeo completo com bordas)'}
-                  >
-                    {fitMode === 'cover' ? <Maximize2 className="w-3 h-3" /> : <Minimize2 className="w-3 h-3" />}
-                    <span>{fitMode === 'cover' ? 'Sem Bordas (Preencher)' : 'Conter'}</span>
-                  </button>
+                {/* Qualidade (720p Leve vs Original) + Enquadramento + Baixar Vídeo em Alta Qualidade */}
+                <div className="flex flex-wrap items-center gap-2">
+                  {finalVideoUrl.includes('id=') && (
+                    <div className="flex items-center gap-1 bg-white/10 p-0.5 rounded-lg">
+                      <button
+                        type="button"
+                        onClick={() => setUseDriveIframeFallback(true)}
+                        style={useDriveIframeFallback ? { backgroundColor: '#FD3100', color: '#FFFFFF' } : {}}
+                        className={`px-2.5 py-1 rounded-md font-black uppercase text-[10px] transition-all ${
+                          useDriveIframeFallback ? 'shadow-sm' : 'text-white/80 hover:text-white'
+                        }`}
+                        title="Reprodução fluida em 720p (ideal para vídeos pesados sem travar)"
+                      >
+                        720p (Sem Travar)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setUseDriveIframeFallback(false);
+                          setVideoError(false);
+                        }}
+                        style={!useDriveIframeFallback ? { backgroundColor: '#FD3100', color: '#FFFFFF' } : {}}
+                        className={`px-2.5 py-1 rounded-md font-black uppercase text-[10px] transition-all ${
+                          !useDriveIframeFallback ? 'shadow-sm' : 'text-white/80 hover:text-white'
+                        }`}
+                        title={fileSizeMb ? `Arquivo original (${fileSizeMb} MB)` : 'Qualidade original do arquivo'}
+                      >
+                        Original {fileSizeMb ? `(${fileSizeMb} MB)` : ''}
+                      </button>
+                    </div>
+                  )}
+
+                  {!useDriveIframeFallback && (
+                    <button
+                      type="button"
+                      onClick={() => setFitMode(fitMode === 'cover' ? 'contain' : 'cover')}
+                      style={fitMode === 'cover' ? { backgroundColor: '#FD3100', color: '#FFFFFF' } : {}}
+                      className={`flex items-center gap-1.5 px-3 py-1 rounded-lg font-black uppercase text-[10px] transition-all ${
+                        fitMode === 'cover' ? 'shadow-sm' : 'bg-white/10 text-white/80 hover:bg-white/20'
+                      }`}
+                      title={fitMode === 'cover' ? 'Sem bordas pretas (Preenchimento total)' : 'Conter (Exibir vídeo completo com bordas)'}
+                    >
+                      {fitMode === 'cover' ? <Maximize2 className="w-3 h-3" /> : <Minimize2 className="w-3 h-3" />}
+                      <span>{fitMode === 'cover' ? 'Sem Bordas' : 'Conter'}</span>
+                    </button>
+                  )}
 
                   <a
                     href={
@@ -402,10 +458,10 @@ export function VideoPlayerReview({
                     }
                     download="video-vbhub.mp4"
                     className="flex items-center gap-1.5 px-3 py-1 rounded-lg font-black uppercase text-[10px] bg-white text-[#111111] hover:bg-[#FD3100] hover:text-white transition-all shadow-sm"
-                    title="Baixar este vídeo em MP4"
+                    title="Baixar arquivo original em alta qualidade"
                   >
                     <Download className="w-3 h-3" />
-                    <span>Baixar Vídeo</span>
+                    <span>Baixar Vídeo em Alta Qualidade</span>
                   </a>
                 </div>
               </div>
